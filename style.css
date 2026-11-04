@@ -22,6 +22,7 @@
   --blocked-bg: var(--text-primary); /* same as star battle's void cells */
   --tile-bg: rgba(25, 118, 210, 0.14);
   --tile-bad-bg: rgba(255, 0, 0, 0.18);
+  --cell-hover: rgba(0, 0, 0, 0.09);       /* cell under the mouse (desktop) */
   --drag-bg: rgba(126, 87, 194, 0.32);     /* cells traced so far, not yet the tile shape */
   --drag-ok-bg: rgba(46, 160, 67, 0.38);   /* traced cells form the tile: release to draw it */
   --hint-yellow: rgba(255, 235, 0, 0.65);
@@ -52,6 +53,7 @@
   --cell-border: #444;
   --tile-bg: rgba(100, 181, 246, 0.2);
   --tile-bad-bg: rgba(255, 80, 80, 0.28);
+  --cell-hover: rgba(255, 255, 255, 0.14);
   --drag-bg: rgba(179, 136, 255, 0.38);
   --drag-ok-bg: rgba(76, 205, 110, 0.42);
   --hint-yellow: rgba(255, 255, 80, 0.5);
