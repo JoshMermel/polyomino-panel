@@ -649,7 +649,8 @@ function setupPrint(setupModal) {
     $('print-book-total').textContent = total;
     sel.value = total <= 1 ? '1' : `1-${Math.min(total, 10)}`;
     update();
-    setTimeout(() => { sel.focus(); sel.select(); }, 0);
+    // focus the field for keyboard users, but not on a phone, where it would pop the keyboard up
+    if (matchMedia('(pointer: fine)').matches) setTimeout(() => { sel.focus(); sel.select(); }, 0);
   });
   sel.addEventListener('input', update);
   perPageSel.addEventListener('change', () => { store.set('pp_printPerPage', perPageSel.value); update(); });
