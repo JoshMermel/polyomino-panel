@@ -513,7 +513,7 @@ function displayHint(h) {
   } else {
     const [kind, r, c] = item;
     board.showHint({ target: edgeCells(puzzle, kind, r, c), crosses: [item] });
-    text = 'the two yellow cells are in the same tile, so there is no line between them. You can mark that edge with a ✕.';
+    text = "no logical inference is available right now, so here's a peek at the answer: the two yellow cells belong to the same tile. Mark the edge between them with a ✕.";
   }
   showToast(`${label}: ${text}`, 'hint', HINT_TOAST_MS);
 }
