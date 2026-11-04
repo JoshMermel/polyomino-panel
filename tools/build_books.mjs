@@ -47,7 +47,7 @@ const all = [];
 for (const tile of recipes.shapes) for (const size of recipes.sizes) all.push({ tile, size, id: bookId(tile, size) });
 const recipeFor = id => ({ ...recipes.defaults, ...(recipes.overrides?.[id] ?? {}) });
 
-const globs = patterns.map(g => new RegExp('^' + g.replace(/\*/g, '.*') + '$'));
+const globs = patterns.map(g => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'));
 const selected = flags.has('--all') || flags.has('--list') || !patterns.length
   ? all : all.filter(b => globs.some(re => re.test(b.id)));
 
@@ -115,7 +115,7 @@ if (flags.has('--promote')) {
 
   // manifest.json lists every book present in data/, ordered by recipe.
   const order = new Map(all.map((b, i) => [b.id, i]));
-  const books = readdirSync(dataDir).filter(f => /^[A-Z0-9]+_\d+x\d+\.csv$/.test(f)).map(f => {
+  const books = readdirSync(dataDir).filter(f => /^[A-Z0-9+]+_\d+x\d+\.csv$/.test(f)).map(f => {
     const [p] = parseCsv(readFileSync(new URL(f, dataDir), 'utf8'));
     const count = parseCsv(readFileSync(new URL(f, dataDir), 'utf8')).length;
     return { tile: p.tile, rows: p.rows, cols: p.cols, file: f, count };

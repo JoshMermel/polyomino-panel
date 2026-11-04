@@ -2,7 +2,8 @@
   "_comment": "Which books exist and how they are built from the pools in tools/library/. A book is one shape at one square size. See tools/build_books.mjs.",
   "defaultBook": "L_6x6",
   "sizes": [6, 8, 10],
-  "shapes": ["I3", "V3", "L", "T", "S", "F5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5"],
+  "shapes": ["I3", "V3", "L", "T", "S", "F5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5",
+             "V3+I3", "L+T", "L+S", "T+S", "F5+P5", "I3+T", "V3+L", "L+P5"],
   "defaults": {
     "count": 75,
     "minCount": 10,
@@ -10,5 +11,17 @@
     "high": 0.98,
     "tiers": { "Beginner": 0.35, "Medium": 0.35, "Hard": 0.2, "Expert": 0.07, "Unsolved": 0.03 }
   },
-  "overrides": {}
+  "overrides": {
+    "V3+I3_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "L+T_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "L+S_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "T+S_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "I3+T_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "I3+T_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "V3+L_6x6": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "V3+L_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "L+P5_6x6": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "L+P5_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
+    "L+P5_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} }
+  }
 }

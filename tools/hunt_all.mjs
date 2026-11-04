@@ -25,7 +25,7 @@ const minutes = args.minutes ?? '30';
 const jobs = Number(args.jobs ?? Math.max(1, os.cpus().length - 1));
 const want = args.want ?? 'Hard,Expert,Unsolved';
 const targets = args.targets ?? (want.includes('Beginner') ? 'Beginner=300,Medium=300' : 'Hard=300,Expert=300,Unsolved=150');
-const only = args.only ? args.only.split(',').map(g => new RegExp('^' + g.replace(/\*/g, '.*') + '$')) : null;
+const only = args.only ? args.only.split(',').map(g => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$')) : null;
 const until = Date.now() + hours * 3600000;
 const logFile = new URL('./library/hunt.log', import.meta.url);
 const say = line => { console.log(line); appendFileSync(logFile, line + '\n'); };

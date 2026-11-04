@@ -16,7 +16,7 @@ const recipes = JSON.parse(readFileSync(new URL('./books/recipes.json', import.m
 const target = args.target ?? '400';
 const jobs = Number(args.jobs ?? Math.max(1, os.cpus().length - 1));
 const maxMinutes = args['max-minutes'] ?? '15';
-const only = args.only ? args.only.split(',').map(g => new RegExp('^' + g.replace(/\*/g, '.*') + '$')) : null;
+const only = args.only ? args.only.split(',').map(g => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$')) : null;
 
 const combos = [];
 for (const size of recipes.sizes) for (const tile of recipes.shapes) {
