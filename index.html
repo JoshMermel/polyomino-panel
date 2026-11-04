@@ -96,6 +96,16 @@
             <button type="button" id="csv-btn">Choose file…</button>
             <input type="file" id="csv-file" accept=".csv,text/csv,text/plain" hidden>
           </div>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Offline play</span>
+              <span class="settings-desc">Saves the app and every puzzle book on this device so it works with no internet connection. Updates show up on the visit after you reconnect.</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-offline" role="switch">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
           <div class="settings-row">
             <div class="settings-row-text">
               <span class="settings-label">Print puzzles</span>
@@ -228,5 +238,28 @@
   <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
 
   <script type="module" src="js/main.js"></script>
+  <script>
+    // Offline play is opt-in (Settings). When on, register the service worker (sw.js); when off,
+    // remove any worker and caches left from an earlier visit so the app is always fetched fresh.
+    // Visit once with ?sw=on or ?sw=off to flip the same stored setting by hand.
+    (function () {
+      var KEY = 'pp_offline', on = false;
+      try {
+        var p = new URLSearchParams(location.search).get('sw');
+        if (p === 'on') localStorage.setItem(KEY, '1');
+        if (p === 'off') localStorage.setItem(KEY, '0');
+        on = localStorage.getItem(KEY) === '1';
+      } catch (e) { /* storage unavailable: stay online-only */ }
+      if (!('serviceWorker' in navigator)) return;
+      if (on) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function (err) { console.warn('Service worker registration failed:', err); });
+        });
+      } else {
+        navigator.serviceWorker.getRegistrations().then(function (regs) { regs.forEach(function (r) { r.unregister(); }); });
+        if (window.caches) caches.keys().then(function (keys) { keys.filter(function (k) { return k.indexOf('pp-') === 0; }).forEach(function (k) { caches.delete(k); }); });
+      }
+    })();
+  </script>
 </body>
 </html>

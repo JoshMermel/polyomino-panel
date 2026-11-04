@@ -796,6 +796,37 @@ function bindControls() {
     store.set('pp_dark', dark.checked ? '1' : '0');
   });
 
+  // Offline play: register / remove the service worker (sw.js) and keep every book cached.
+  const offline = $('setting-offline');
+  offline.checked = store.get('pp_offline') === '1';
+  offline.addEventListener('change', async () => {
+    if (!('serviceWorker' in navigator)) {
+      offline.checked = false;
+      showToast('Offline play is not supported in this browser.', 'error', 3000);
+      return;
+    }
+    store.set('pp_offline', offline.checked ? '1' : '0');
+    try {
+      if (offline.checked) {
+        await navigator.serviceWorker.register('sw.js');
+        await navigator.serviceWorker.ready;
+        const books = state.sets.filter(s => !s.custom);
+        await fetchText('data/manifest.json');
+        for (const b of books) await fetchText(`data/${b.file}`);          // the worker caches each as it passes
+        showToast(`Offline play is on: the app and all ${books.length} books are saved on this device.`, 'success', 3500);
+      } else {
+        (await navigator.serviceWorker.getRegistrations()).forEach(r => r.unregister());
+        (await caches.keys()).filter(k => k.startsWith('pp-')).forEach(k => caches.delete(k));
+        showToast('Offline play is off.', 'info', 2500);
+      }
+    } catch (err) {
+      console.error(err);
+      offline.checked = false;
+      store.set('pp_offline', '0');
+      showToast('Could not turn offline play on.', 'error', 3000);
+    }
+  });
+
   // Clear saves: first click asks "Are you sure?" (reverts after 4 s), second click erases.
   const clearBtn = $('clear-saves-btn');
   let clearTimer = null;
