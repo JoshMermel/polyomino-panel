@@ -6,14 +6,17 @@
 //   node tools/build_books.mjs --list          what the pools can supply for each book, by tier
 //   --seed N                                   tie-break seed (default 1; builds are deterministic for a seed)
 //   --fresh                                    ignore the books already in data/ (default: keep their puzzles, see below)
+//   --trim                                     also trim shapes whose weight is below 1 down to their share (drops published
+//                                              puzzles of those shapes; use after lowering a shapeWeight). Other shapes only grow.
 //
 // There is one book per (number of tile shapes, board size): "One shape" and "Two shapes", each on
 // 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard; see
 // js/rating.js), easiest first. How a book is made:
 //   1. The tier shares are even: the book's size is split equally over the tiers, and a tier with
 //      too few puzzles gives up what it can't fill, the others sharing the difference.
-//   2. Within a tier the puzzles are shared out as evenly as possible over the shapes (or pairs) that
-//      have puzzles of that tier, again with the shortfall passed on.
+//   2. Within a tier the puzzles are shared out over the shapes (or pairs) that have puzzles of that tier,
+//      in proportion to their weights (shapeWeights in collections.json; 1 unless listed, so evenly),
+//      again with the shortfall passed on.
 //   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
 //      book follows the pool's own spread of difficulty from its easy end to its hard end.
 //   4. The book is sorted by tier, then score. One book can start with a shape-by-shape "tour" of
@@ -32,13 +35,14 @@ import {
 import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickQuantiles, pickStable, evenAllocation } from './lib/pick.mjs';
+import { pickStable, evenAllocation, weightedAllocation } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
 const seedIdx = argv.indexOf('--seed');
 const seed = seedIdx >= 0 ? Number(argv[seedIdx + 1]) : 1;
 const fresh = flags.has('--fresh');
+const trim = flags.has('--trim');
 
 const root = new URL('..', import.meta.url);
 const recipes = JSON.parse(readFileSync(new URL('tools/books/recipes.json', root), 'utf8'));
@@ -100,9 +104,14 @@ const books = [];
 
 // Share `count` slots over `groups` (an array of candidate arrays) evenly, then take each group's
 // share at evenly spaced score ranks.
+const weightOf = tile => config.shapeWeights?.[tile] ?? 1;
 function pickAcross(groups, count, isKept) {
-  const alloc = evenAllocation(count, groups.map(g => g.length));
-  return groups.flatMap((g, i) => pickStable(g, { count: alloc[i], seed, isKept, keepAll: true }).picks);
+  const alloc = weightedAllocation(count, groups.map(g => g.length), groups.map(g => weightOf(g[0].tile)));
+  // --trim only trims down-weighted shapes; every other shape keeps all its published puzzles
+  return groups.flatMap((g, i) => {
+    const trimmed = trim && weightOf(g[0].tile) < 1;
+    return alloc[i] || !trimmed ? pickStable(g, { count: alloc[i], seed, isKept, keepAll: !trimmed }).picks : [];
+  });
 }
 const byTile = cands => {
   const m = new Map();

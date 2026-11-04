@@ -1,7 +1,7 @@
 // Run with: node --test tests/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickQuantiles, pickStable, hashString } from '../tools/lib/pick.mjs';
+import { pickQuantiles, pickStable, hashString, weightedAllocation, evenAllocation } from '../tools/lib/pick.mjs';
 
 const pool = scores => scores.map((score, i) => ({ name: `p${i}`, score }));
 
@@ -48,7 +48,6 @@ test('hashString is stable', () => {
   assert.notEqual(hashString('abc'), hashString('abd'));
 });
 
-import { evenAllocation } from '../tools/lib/pick.mjs';
 
 test('evenAllocation: equal shares, small cells give up what they cannot fill', () => {
   assert.deepEqual(evenAllocation(30, [99, 99, 99]), [10, 10, 10]);
@@ -86,4 +85,30 @@ test('pickStable keeps what is already published and fills the rest at quantiles
   // growing a book never drops a published puzzle: picks for a bigger count still contain every kept puzzle
   const grown = pickStable(cands, { count: 40, isKept });
   for (const name of kept) assert.ok(grown.picks.some(p => p.name === name));
+});
+
+test('weightedAllocation: shares follow the weights, capacities redistribute, zero weight gets nothing', () => {
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  // proportional when nothing is capped
+  assert.deepEqual(weightedAllocation(100, [999, 999, 999], [1, 1, 0.5]), [40, 40, 20]);
+  assert.deepEqual(weightedAllocation(30, [999, 999], [2, 1]), [20, 10]);
+  // a capped cell gives up its share; the rest keep their proportions
+  const capped = weightedAllocation(100, [10, 999, 999], [1, 1, 0.5]);
+  assert.equal(capped[0], 10);
+  assert.equal(sum(capped), 100);
+  assert.ok(Math.abs(capped[1] / capped[2] - 2) < 0.1, `rest stay 2:1, got ${capped}`);
+  // zero weight: excluded entirely
+  assert.deepEqual(weightedAllocation(10, [99, 99], [1, 0]), [10, 0]);
+  // fewer slots than cells go to the heaviest first
+  assert.deepEqual(weightedAllocation(1, [5, 5, 5], [0.5, 1, 0.5]), [0, 1, 0]);
+  // totals: min(count, capacity of weighted cells), never above a cap
+  for (const [n, caps, w] of [[7, [1, 2, 50], [1, 0.3, 1]], [101, [10, 20, 30, 40], [1, 0.25, 1, 0.5]], [13, [0, 5, 0, 9], [1, 1, 1, 1]]]) {
+    const a = weightedAllocation(n, caps, w);
+    assert.equal(sum(a), Math.min(n, sum(caps)));
+    a.forEach((v, i) => assert.ok(v <= caps[i]));
+  }
+  // equal weights are exactly the even split (the old behaviour)
+  for (const [n, caps] of [[30, [99, 99, 99]], [30, [4, 99, 99]], [10, [3, 3, 3]], [2, [5, 5, 5]], [101, [10, 20, 30, 40]]]) {
+    assert.deepEqual(weightedAllocation(n, caps, caps.map(() => 1)), evenAllocation(n, caps));
+  }
 });

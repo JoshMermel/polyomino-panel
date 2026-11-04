@@ -40,26 +40,31 @@ export function pickStable(cands, { count, seed = 1, isKept = () => false, keepA
   return { picks: [...kept, ...more.picks].sort(byScore), short: more.short };
 }
 
-// Split `count` slots across cells as evenly as their capacities allow: every cell gets the
-// same number, except that a cell with fewer candidates than that gives up what it can't fill
-// and the others share the difference (water-filling). `caps` is the number of candidates in
-// each cell; returns the allocation, same order. The total is min(count, sum of caps).
-export function evenAllocation(count, caps) {
+// Split `count` slots across cells in proportion to `weights` (default: equal), as far as their
+// capacities allow: a cell that can't fill its share gives up what it can't and the others share the
+// difference in the same proportions (weighted water-filling). `caps` is the number of candidates in each
+// cell; a cell with weight 0 gets nothing. Returns the allocation, same order; the total is
+// min(count, sum of caps of the cells with weight). With equal weights this is the even split.
+export function weightedAllocation(count, caps, weights = caps.map(() => 1)) {
   const alloc = new Array(caps.length).fill(0);
-  let left = Math.min(count, caps.reduce((a, b) => a + b, 0));
+  let left = Math.min(count, caps.reduce((sum, c, i) => sum + (weights[i] > 0 ? c : 0), 0));
   for (;;) {
-    const open = caps.map((c, i) => i).filter(i => alloc[i] < caps[i]);
+    const open = caps.map((c, i) => i).filter(i => alloc[i] < caps[i] && weights[i] > 0);
     if (left <= 0 || !open.length) break;
-    const each = Math.floor(left / open.length);
-    if (each === 0) {                                  // fewer slots than cells: one each, in order
-      for (const i of open.slice(0, left)) alloc[i]++;
+    const total = open.reduce((sum, i) => sum + weights[i], 0);
+    const gives = open.map(i => Math.floor(left * weights[i] / total));
+    if (gives.every(g => g === 0)) {                    // fewer slots than cells: one each, heaviest first
+      for (const i of [...open].sort((a, b) => weights[b] - weights[a] || a - b).slice(0, left)) alloc[i]++;
       break;
     }
-    for (const i of open) {
-      const give = Math.min(each, caps[i] - alloc[i]);
-      alloc[i] += give;
-      left -= give;
-    }
+    open.forEach((i, k) => {
+      const g = Math.min(gives[k], caps[i] - alloc[i]);
+      alloc[i] += g;
+      left -= g;
+    });
   }
   return alloc;
 }
+
+// The even split: every cell the same, as far as capacities allow.
+export const evenAllocation = (count, caps) => weightedAllocation(count, caps);

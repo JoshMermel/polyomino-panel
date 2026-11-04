@@ -1,12 +1,41 @@
 {
   "_comment": "Which books exist and how they are built from the pools in tools/library/. See tools/build_books.mjs. One book per (number of shapes, board size); each runs through every difficulty tier, easiest first. A puzzle is in at most one book.",
   "default": "one-6",
-  "tiers": ["Beginner", "Medium", "Hard"],
-  "sizes": [6, 8, 10],
+  "tiers": [
+    "Beginner",
+    "Medium",
+    "Hard"
+  ],
+  "sizes": [
+    6,
+    8,
+    10
+  ],
   "perBook": 300,
+  "_shapeWeights": "Relative share of a book each shape (or pair) gets within a tier; unlisted shapes weigh 1. The 'boring' shapes weigh a third: they can only make Beginner or Medium puzzles that all use the same single technique (the line pieces domino, I tetromino and I pentomino, and the rigid pentominoes T, U, V, Z and X). A rebuild only adds puzzles unless run with --trim, so new weights take full effect with --trim.",
+  "shapeWeights": {
+    "I2": 0.33,
+    "I": 0.33,
+    "I5": 0.33,
+    "T5": 0.33,
+    "U5": 0.33,
+    "V5": 0.33,
+    "Z5": 0.33,
+    "X5": 0.33
+  },
   "groups": [
-    { "name": "One shape", "idPrefix": "one", "shapes": 1, "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard." },
-    { "name": "Two shapes", "idPrefix": "two", "shapes": 2, "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard." }
+    {
+      "name": "One shape",
+      "idPrefix": "one",
+      "shapes": 1,
+      "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard."
+    },
+    {
+      "name": "Two shapes",
+      "idPrefix": "two",
+      "shapes": 2,
+      "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard."
+    }
   ],
   "sizeBlurbs": {
     "6": "Small boards, quick to solve.",
@@ -18,6 +47,20 @@
     "book": "one-6",
     "tier": "Beginner",
     "perShape": 2,
-    "shapes": ["I2", "I3", "V3", "L", "T", "S", "P5", "F5", "N5", "W5", "Y5", "L5", "U5"]
+    "shapes": [
+      "I2",
+      "I3",
+      "V3",
+      "L",
+      "T",
+      "S",
+      "P5",
+      "F5",
+      "N5",
+      "W5",
+      "Y5",
+      "L5",
+      "U5"
+    ]
   }
 }
