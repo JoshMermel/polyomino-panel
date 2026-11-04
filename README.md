@@ -27,6 +27,7 @@ The main view is deliberately sparse: a title bar (⚙ settings, **?** help), th
   - **Right-click** an edge toggles a ✕ directly.
   - A whole gesture is one undo step; **Esc** cancels a drag in progress. Touch drags on the board don't scroll the page.
 - Edges next to a black cell or the outer border are implicit walls and aren't clickable.
+- **← / →** (arrow keys) go to the previous / next puzzle in the book, like star battle; held keys repeat. They are ignored while typing in a field, mid-drag, or with a dialog open.
 - Hovering highlights the edge (clickable) or the cell (drag across cells to trace a tile) under the pointer.
 - The puzzle's **difficulty tier** is shown as filled and empty stars plus a word (Beginner, Medium, Hard, Expert, Extreme); hover for what it means. "Extreme" is the Unsolved tier: the hint rules can't finish it alone.
 - **Correct so far?** compares every line and ✕ with the solution and reports in a toast ("So far so good!" or "N marks are incorrect."). It highlights nothing. Unplaced lines aren't counted against you.

@@ -194,7 +194,13 @@ function updateFeedbackLink() {
   link.href = url.href;
 }
 
-const step = d => goTo(state.setIdx, state.puzIdx + d);
+// Previous / next puzzle in the current book. Stops at the ends (reloading the same puzzle
+// would wipe the undo history for nothing).
+const step = d => {
+  const i = state.puzIdx + d;
+  if (i < 0 || i >= (curSet().puzzles?.length ?? 0)) return;
+  return goTo(state.setIdx, i);
+};
 
 // Keep the controls above the board exactly as wide as the board (see .column).
 function syncColumnWidth() {
@@ -887,6 +893,17 @@ function bindControls() {
       $('settings-modal').classList.add('modal-hidden');
       showToast(`Couldn't load ${file.name}: ${err.message}`, 'error', 4000);
     }
+  });
+
+  // Left / right arrow: previous / next puzzle in this book (as in star battle). Not while typing,
+  // dragging, or with a dialog open; holding the key keeps stepping.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.defaultPrevented || gesture) return;
+    if (e.target.closest?.('input:not([type=checkbox]), textarea, select, [contenteditable]')) return;
+    if (modals.some(({ modal }) => !modal.classList.contains('modal-hidden'))) return;
+    e.preventDefault();
+    step(e.key === 'ArrowRight' ? 1 : -1);
   });
 
   document.addEventListener('keydown', e => {
