@@ -62,49 +62,19 @@ test('hashString is stable', () => {
   assert.notEqual(hashString('abc'), hashString('abd'));
 });
 
-import { tierQuotas, pickTiered } from '../tools/lib/pick.mjs';
+import { evenAllocation } from '../tools/lib/pick.mjs';
 
-const TIERS = ['Beginner', 'Medium', 'Hard', 'Expert', 'Unsolved'];
-const SHARES = { Beginner: 0.2, Medium: 0.2, Hard: 0.3, Expert: 0.2, Unsolved: 0.1 };
-
-test('tierQuotas: shares, rounding, availability caps, and redistribution', () => {
-  const plenty = Object.fromEntries(TIERS.map(t => [t, 99]));
-  // plenty of everything: 30 splits by share
-  let r = tierQuotas(30, SHARES, plenty);
-  assert.deepEqual(r.quotas, { Beginner: 6, Medium: 6, Hard: 9, Expert: 6, Unsolved: 3 });
-  assert.equal(r.short, 0);
-  // rounding always sums to the count
-  for (const n of [7, 10, 29, 31, 50]) {
-    const q = tierQuotas(n, SHARES, Object.fromEntries(TIERS.map(t => [t, 999]))).quotas;
-    assert.equal(Object.values(q).reduce((a, b) => a + b, 0), n);
+test('evenAllocation: equal shares, small cells give up what they cannot fill', () => {
+  assert.deepEqual(evenAllocation(30, [99, 99, 99]), [10, 10, 10]);
+  assert.deepEqual(evenAllocation(30, [4, 99, 99]), [4, 13, 13]);          // the small cell is exhausted, the rest share
+  assert.deepEqual(evenAllocation(10, [3, 3, 3]), [3, 3, 3]);              // total capped by availability (9)
+  assert.deepEqual(evenAllocation(2, [5, 5, 5]), [1, 1, 0]);               // fewer slots than cells
+  assert.deepEqual(evenAllocation(5, []), []);
+  assert.deepEqual(evenAllocation(0, [3, 3]), [0, 0]);
+  // always sums to min(count, capacity) and never exceeds a cell
+  for (const [n, caps] of [[7, [1, 2, 50]], [100, [10, 20, 30, 40]], [101, [10, 20, 30, 40]], [13, [0, 5, 0, 9]]]) {
+    const a = evenAllocation(n, caps);
+    assert.equal(a.reduce((x, y) => x + y, 0), Math.min(n, caps.reduce((x, y) => x + y, 0)));
+    a.forEach((v, i) => assert.ok(v <= caps[i]));
   }
-  // no hard puzzles in the pool: their share moves to the other tiers (biggest share first)
-  r = tierQuotas(30, SHARES, { ...plenty, Hard: 0, Expert: 0, Unsolved: 0 });
-  assert.equal(r.quotas.Hard + r.quotas.Expert + r.quotas.Unsolved, 0);
-  assert.equal(r.quotas.Beginner + r.quotas.Medium, 30);
-  assert.equal(r.short, 0);
-  // a pool too small overall reports the shortfall
-  r = tierQuotas(30, SHARES, { Beginner: 3, Medium: 0, Hard: 0, Expert: 0, Unsolved: 0 });
-  assert.equal(r.quotas.Beginner, 3);
-  assert.equal(r.short, 27);
-});
-
-test('pickTiered: quotas per tier, spread within each tier, ordered easiest first', () => {
-  const cands = [];
-  TIERS.forEach((t, ti) => {
-    for (let i = 0; i < 80; i++) cands.push({ name: `${t}${i}`, tier: t, score: ti * 100 + i });   // tiers do not overlap in score here
-  });
-  const { picks, perTier, short } = pickTiered(cands, { count: 30, tiers: TIERS, shares: SHARES });
-  assert.equal(picks.length, 30);
-  assert.equal(short, 0);
-  assert.deepEqual(TIERS.map(t => perTier[t].got), [6, 6, 9, 6, 3]);
-  assert.equal(new Set(picks.map(p => p.name)).size, 30);
-  // inside the 'Hard' tier (scores 200..279) the 9 picks span it
-  const hard = picks.filter(p => p.tier === 'Hard').map(p => p.score);
-  assert.ok(Math.max(...hard) - Math.min(...hard) >= 60, `Hard picks span ${hard}`);
-  // a missing tier hands its share on
-  const noEasy = cands.filter(c => c.tier === 'Hard' || c.tier === 'Unsolved');
-  const r2 = pickTiered(noEasy, { count: 30, tiers: TIERS, shares: SHARES });
-  assert.equal(r2.picks.length, 30);
-  assert.equal(r2.perTier.Beginner.got + r2.perTier.Medium.got, 0);
 });

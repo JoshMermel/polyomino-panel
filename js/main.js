@@ -4,9 +4,9 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileInterior, tileSize, tileSizes, tileSpecs, minTileSize, shapeName, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, } from './logic.js';
 import { Board } from './board.js';
-import { renderTileInfo, tileShapeSvg } from './tile-view.js';
+import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
@@ -32,7 +32,8 @@ function unpackEdges(puzzle, s) {
 
 // --- State ------------------------------------------------------------------
 const state = {
-  sets: [],            // books: [{id, tile, rows, cols, file?, custom?, title?, puzzles|null}]
+  sets: [],            // books: [{id, group, title, label, blurb, tier?, file?, count, custom?, puzzles|null}]
+  groups: [],          // [{name, blurb}]: the picker's sections, in order
   setIdx: 0,
   puzIdx: 0,
   puzzle: null,
@@ -101,9 +102,8 @@ async function init() {
 
   try {
     const manifest = JSON.parse(await fetchText('data/manifest.json'));
-    state.sets = manifest.books.map(b => ({
-      id: `${b.tile}_${b.rows}x${b.cols}`, tile: b.tile, rows: b.rows, cols: b.cols, file: b.file, puzzles: null,
-    }));
+    state.sets = manifest.books.map(b => ({ ...b, puzzles: null }));
+    state.groups = manifest.groups ?? [];
     state.defaultSet = Math.max(0, state.sets.findIndex(s => s.id === manifest.default));
   } catch (err) {
     showFatal(err);
@@ -113,8 +113,7 @@ async function init() {
   // last puzzle, found by hash so renumbering doesn't matter.
   let setIdx = state.defaultSet ?? 0, puzIdx = 0;
   const params = new URLSearchParams(location.search);
-  // (a hand-typed '+' in ?book=L+T_8x8 arrives as a space)
-  const bookIdx = state.sets.findIndex(s => s.id === params.get('book')?.replaceAll(' ', '+'));
+  const bookIdx = state.sets.findIndex(s => s.id === params.get('book'));
   if (bookIdx >= 0) {
     await goTo(bookIdx, (parseInt(params.get('puzzle'), 10) || 1) - 1);
     return;
@@ -559,12 +558,15 @@ function renderBrowse() {
   const grid = $('browse-grid');
   grid.textContent = '';
   const solved = puzzles.filter(isSolved).length;
-  const name = set.custom ? set.title : `${shapeName(set.tile)}, ${set.rows}×${set.cols}`;
-  $('browse-summary').textContent = `${name}: ${solved} of ${puzzles.length} solved`;
+  $('browse-summary').textContent = `${set.title}: ${solved} of ${puzzles.length} solved`;
 
+  // Tier headings only when the book runs through its tiers in order (a curriculum or a
+  // one-tier book would just have a heading in the wrong place, or one pointless heading).
+  const order = puzzles.map(p => TIERS.indexOf(p.tier));
+  const byTier = new Set(order).size > 1 && order.every((v, i) => i === 0 || v >= order[i - 1]);
   let tier = null;
   puzzles.forEach((p, i) => {
-    if (p.tier && p.tier !== tier) {
+    if (byTier && p.tier && p.tier !== tier) {
       tier = p.tier;
       const info = TIER_INFO[tier];
       const head = document.createElement('div');
@@ -630,7 +632,7 @@ function setupPrint(setupModal, hideSettings) {
   setupModal('print-modal', 'print-btn', () => {
     hideSettings();
     const set = curSet(), total = (set.puzzles ?? []).length;
-    $('print-book-name').textContent = set.custom ? set.title : `${shapeName(set.tile)}, ${set.rows}×${set.cols}`;
+    $('print-book-name').textContent = set.title;
     $('print-book-total').textContent = total;
     sel.value = total <= 1 ? '1' : `1-${Math.min(total, 10)}`;
     update();
@@ -650,32 +652,15 @@ function setupPrint(setupModal, hideSettings) {
 }
 
 // --- Controls ---------------------------------------------------------------
-// Cell-count groups for the shape menu.
-const SHAPE_GROUPS = [[3, 'Trominoes'], [4, 'Tetrominoes'], [5, 'Pentominoes']];
-const MIXED_GROUP = 'Two or more shapes';
-const shapeGroup = tile => (tileSpecs(tile).length > 1 ? MIXED_GROUP : SHAPE_GROUPS.find(([max]) => tileSize(tile) <= max)[1]);
-// Menu order: single shapes in the library's order, then combinations (by their parts' order).
-const shapeRank = tile => {
-  const parts = tileSpecs(tile).map(sp => { const i = SHAPE_ORDER.indexOf(sp); return i < 0 ? 999 : i; });
-  return [parts.length > 1 ? 1 : 0, ...parts];
-};
-const compareShapes = (a, b) => {
-  const x = shapeRank(a), y = shapeRank(b);
-  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? -1) !== (y[i] ?? -1)) return (x[i] ?? -1) - (y[i] ?? -1);
-  return 0;
-};
-
-// The book picker: a button showing the current book (shape(s) and board size) opens a modal that
-// lists every book, shapes grouped by cell count and each with its sizes; files loaded from disk
-// get their own section. Only combinations that have a book appear.
-const bookTitle = set => (set.custom ? set.title : `${shapeName(set.tile)} · ${set.rows}×${set.cols}`);
-
+// The book picker: a button showing the current book opens a modal listing every book, in
+// sections (Start here, Classical L-panel, One shape, Two shapes; files loaded from disk get their
+// own). Each row shows the book's name, what it holds, and how many puzzles you have solved in it.
 function syncBookButton() {
   const btn = $('book-btn');
   btn.textContent = '';
   const name = document.createElement('span');
   name.className = 'book-btn-name';
-  name.textContent = bookTitle(curSet());
+  name.textContent = curSet().title;
   btn.append(name);
 }
 
@@ -685,73 +670,56 @@ const chooseBook = idx => {
   if (idx !== state.setIdx) goTo(idx, 0);
 };
 
-// Switching shape keeps the board size if that shape has it, else the nearest.
-function nearestSize(indices) {
-  const want = curSet().rows;
-  return [...indices].sort((a, b) => Math.abs(state.sets[a].rows - want) - Math.abs(state.sets[b].rows - want))[0];
-}
-
 function renderBookPicker() {
   const body = $('bp-body');
   body.textContent = '';
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-  const cur = curSet();
 
-  const sections = new Map();                    // section name -> [tile spec, ...]
-  const tiles = [...new Set(state.sets.filter(s => !s.custom).map(s => s.tile))].sort(compareShapes);
-  for (const t of tiles) {
-    const g = shapeGroup(t);
-    if (!sections.has(g)) sections.set(g, []);
-    sections.get(g).push(t);
-  }
-  const addSection = (name, build) => {
+  // sections in the manifest's order, then any group a book names that the manifest doesn't list
+  const names = [...state.groups.map(g => g.name)];
+  for (const s of state.sets) if (!names.includes(s.group)) names.push(s.group);
+  const progress = [];                                    // rows to fill in once their book is loaded
+  for (const name of names) {
+    const idxs = state.sets.map((s, i) => i).filter(i => state.sets[i].group === name);
+    if (!idxs.length) continue;
     const sec = el('div', 'bp-section');
     sec.append(el('h3', '', name));
-    build(sec);
+    const blurb = state.groups.find(g => g.name === name)?.blurb;
+    const blurbShownByBook = idxs.length === 1 && state.sets[idxs[0]].blurb === blurb;     // "Start here"
+    if (blurb && !blurbShownByBook) sec.append(el('p', 'bp-blurb', blurb));
+    for (const i of idxs) {
+      const set = state.sets[i];
+      const row = el('button', 'bp-book' + (i === state.setIdx ? ' bp-current' : ''));
+      row.type = 'button';
+      if (i === state.setIdx) row.setAttribute('aria-current', 'true');
+      const text = el('span', 'bp-book-text');
+      // a tier book shows its stars; the others just their name
+      const level = TIERS.indexOf(set.tier);
+      const title = el('span', 'bp-book-title', set.label ?? set.title);
+      if (level >= 0) title.prepend(el('span', 'bp-stars', '★'.repeat(level + 1) + '☆'.repeat(TIERS.length - level - 1) + ' '));
+      text.append(title);
+      // tier books are explained by their stars (and the help dialog); other books say what they hold
+      if (set.blurb && level < 0) text.append(el('span', 'bp-book-blurb', set.blurb));
+      if (set.blurb) row.title = set.blurb;
+      const count = el('span', 'bp-count', `${set.count ?? set.puzzles?.length ?? ''} puzzles`);
+      row.append(text, count);
+      row.addEventListener('click', () => chooseBook(i));
+      sec.append(row);
+      progress.push({ i, count });
+    }
     body.append(sec);
-  };
-
-  for (const [name, list] of sections) {
-    addSection(name, sec => {
-      for (const tile of list) {
-        const idxs = state.sets.map((s, i) => i).filter(i => !state.sets[i].custom && state.sets[i].tile === tile)
-          .sort((a, b) => state.sets[a].rows - state.sets[b].rows);
-        const row = el('div', 'bp-row' + (cur.tile === tile ? ' bp-current' : ''));
-        const main = el('button', 'bp-main');
-        main.type = 'button';
-        const pics = el('span', 'bp-swatches');
-        tileSpecs(tile).forEach(sp => pics.append(tileShapeSvg(sp)));
-        main.append(pics, el('span', 'bp-name', shapeName(tile)));
-        main.addEventListener('click', () => chooseBook(nearestSize(idxs)));
-        const sizes = el('div', 'bp-sizes');
-        for (const i of idxs) {
-          const b = el('button', 'bp-size', `${state.sets[i].rows}×${state.sets[i].cols}`);
-          b.type = 'button';
-          b.setAttribute('aria-pressed', String(i === state.setIdx));
-          b.setAttribute('aria-label', `${shapeName(tile)}, ${state.sets[i].rows} by ${state.sets[i].cols}`);
-          b.addEventListener('click', () => chooseBook(i));
-          sizes.append(b);
-        }
-        row.append(main, sizes);
-        sec.append(row);
-      }
-    });
-  }
-  const custom = state.sets.map((s, i) => i).filter(i => state.sets[i].custom);
-  if (custom.length) {
-    addSection('Loaded from file', sec => {
-      for (const i of custom) {
-        const row = el('div', 'bp-row' + (i === state.setIdx ? ' bp-current' : ''));
-        const main = el('button', 'bp-main');
-        main.type = 'button';
-        main.append(el('span', 'bp-name', state.sets[i].title));
-        main.addEventListener('click', () => chooseBook(i));
-        row.append(main);
-        sec.append(row);
-      }
-    });
   }
   requestAnimationFrame(() => body.querySelector('.bp-current')?.scrollIntoView({ block: 'center' }));
+
+  // how many of each book's puzzles are solved: needs the book's puzzles, so load them (a small
+  // file each, cached by the browser) and update the rows as they arrive
+  for (const { i, count } of progress) {
+    ensureLoaded(state.sets[i]).then(puzzles => {
+      const solved = puzzles.filter(isSolved).length;
+      count.textContent = solved ? `${solved} / ${puzzles.length} solved` : `${puzzles.length} puzzles`;
+      count.classList.toggle('bp-count-done', solved === puzzles.length);
+    }).catch(() => { /* the count stays as it was */ });
+  }
 }
 
 function bindControls() {
@@ -900,7 +868,7 @@ function bindControls() {
     try {
       const puzzles = parseCsv(await file.text());
       if (!puzzles.length) throw new Error('no puzzles found');
-      state.sets.push({ id: `custom:${file.name}`, custom: true, title: `📄 ${file.name}`, tile: puzzles[0].tile, rows: puzzles[0].rows, cols: puzzles[0].cols, puzzles });
+      state.sets.push({ id: `custom:${file.name}`, custom: true, group: 'Loaded from file', title: `📄 ${file.name}`, label: `📄 ${file.name}`, count: puzzles.length, puzzles });
       $('settings-modal').classList.add('modal-hidden');
       await goTo(state.sets.length - 1, 0);
     } catch (err) {

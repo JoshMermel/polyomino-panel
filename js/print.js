@@ -4,7 +4,7 @@
 //
 // buildPrintRoot() fills the hidden #print-root element; style.css shows only that element
 // when printing (see "Printing" there).
-import { resolveShape, shapeName, tileSpecs, edgesFromSolution, playableEdges, getEdge, EDGE_LINE } from './logic.js';
+import { resolveShape, tileSpecs, edgesFromSolution, playableEdges, getEdge, EDGE_LINE } from './logic.js';
 import { TIER_INFO } from './rating.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -69,12 +69,13 @@ function boardSvg(puzzle, solution) {
   return svg;
 }
 
-function swatchSvg(spec) {
+// A picture of one allowed shape, `cellMm` millimetres per cell.
+function swatchSvg(spec, cellMm = 1.7) {
   const cells = resolveShape(spec);
   const rows = Math.max(...cells.map(([r]) => r)) + 1, cols = Math.max(...cells.map(([, c]) => c)) + 1;
   const svg = svgEl('svg', { viewBox: `-0.05 -0.05 ${cols + 0.1} ${rows + 0.1}`, class: 'print-swatch' });
-  svg.style.height = `${Math.min(9, 4 + 1.4 * rows)}mm`;
-  svg.style.width = `${Math.min(9, 4 + 1.4 * rows) * (cols + 0.1) / (rows + 0.1)}mm`;
+  svg.style.height = `${(rows + 0.1) * cellMm}mm`;
+  svg.style.width = `${(cols + 0.1) * cellMm}mm`;
   for (const [r, c] of cells) svgEl('rect', { x: c, y: r, width: 1, height: 1, fill: SWATCH, stroke: INK, 'stroke-width': 0.06 }, svg);
   return svg;
 }
@@ -88,7 +89,7 @@ const div = (cls, parent, text) => {
 };
 
 // Fill (and return) the #print-root element.
-//   book       { tile, rows, cols, title? } the current book
+//   book       { title } the current book
 //   puzzles    the book's puzzle array;  ids  the 1-based numbers to print
 //   perPage    puzzles per page (1, 2, 4 or 6)
 //   solutionOf puzzle -> solution string (or null)
@@ -96,21 +97,23 @@ export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, soluti
   let root = document.getElementById('print-root');
   if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
   root.textContent = '';
-  const bookName = book.custom ? book.title : `${shapeName(book.tile)}, ${book.rows}×${book.cols}`;
+  const bookName = book.title;
 
   const addPages = (list, k, withSolution, heading) => {
     for (let i = 0; i < list.length; i += k) {
       const page = div(`print-page k${k}`, root);
       const head = div('print-head', page);
       div('print-brand', head, 'Polyomino Panel');
-      for (const sp of tileSpecs(book.tile)) head.append(swatchSvg(sp));
       div('print-book', head, `${bookName}${heading ? ` · ${heading}` : ''}`);
       const grid = div('print-grid', page);
       for (const id of list.slice(i, i + k)) {
         const p = puzzles[id - 1];
         const fig = div('print-item', grid);
         const tier = TIER_INFO[p.tier]?.name;
-        div('print-caption', fig, `${withSolution ? 'Answer ' : 'Puzzle '}${id}${!withSolution && tier ? ` · ${tier}` : ''}`);
+        // books mix shapes, so each puzzle says which tile shapes it uses
+        const cap = div('print-caption', fig);
+        cap.append(document.createTextNode(`${withSolution ? 'Answer ' : 'Puzzle '}${id}${!withSolution && tier ? ` · ${tier}` : ''}`));
+        for (const sp of tileSpecs(p.tile)) cap.append(swatchSvg(sp));
         fig.append(boardSvg(p, withSolution ? solutionOf(p) : null));
       }
     }

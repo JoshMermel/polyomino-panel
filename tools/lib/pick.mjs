@@ -51,60 +51,26 @@ export function pickEven(cands, { count, low = 0.02, high = 0.98, range = null, 
   return { picks: picked, lo, hi, short: 0 };
 }
 
-// Quotas per tier: `shares` is {tier: share} (any positive numbers); `avail` is
-// {tier: how many candidates the pool has}. Each tier gets its share of `count`,
-// capped by what is available; the shortfall is handed to tiers that still have
-// spare candidates, largest share first, one puzzle at a time. Returns
-// {quotas, short} where short is whatever could not be placed at all.
-export function tierQuotas(count, shares, avail) {
-  const tiers = Object.keys(shares);
-  const total = tiers.reduce((a, t) => a + shares[t], 0) || 1;
-  // largest-remainder rounding of the ideal allocation
-  const ideal = Object.fromEntries(tiers.map(t => [t, count * shares[t] / total]));
-  const quotas = Object.fromEntries(tiers.map(t => [t, Math.floor(ideal[t])]));
-  let left = count - tiers.reduce((a, t) => a + quotas[t], 0);
-  for (const t of [...tiers].sort((a, b) => (ideal[b] - Math.floor(ideal[b])) - (ideal[a] - Math.floor(ideal[a])))) {
-    if (left <= 0) break;
-    quotas[t]++; left--;
-  }
-  // cap by availability, then redistribute the deficit
-  let deficit = 0;
-  for (const t of tiers) {
-    const have = avail[t] ?? 0;
-    if (quotas[t] > have) { deficit += quotas[t] - have; quotas[t] = have; }
-  }
-  const byShare = [...tiers].sort((a, b) => shares[b] - shares[a]);
-  while (deficit > 0) {
-    let moved = false;
-    for (const t of byShare) {
-      if (deficit > 0 && quotas[t] < (avail[t] ?? 0) && shares[t] > 0) { quotas[t]++; deficit--; moved = true; }
+// Split `count` slots across cells as evenly as their capacities allow: every cell gets the
+// same number, except that a cell with fewer candidates than that gives up what it can't fill
+// and the others share the difference (water-filling). `caps` is the number of candidates in
+// each cell; returns the allocation, same order. The total is min(count, sum of caps).
+export function evenAllocation(count, caps) {
+  const alloc = new Array(caps.length).fill(0);
+  let left = Math.min(count, caps.reduce((a, b) => a + b, 0));
+  for (;;) {
+    const open = caps.map((c, i) => i).filter(i => alloc[i] < caps[i]);
+    if (left <= 0 || !open.length) break;
+    const each = Math.floor(left / open.length);
+    if (each === 0) {                                  // fewer slots than cells: one each, in order
+      for (const i of open.slice(0, left)) alloc[i]++;
+      break;
     }
-    if (!moved) {                                       // tiers with zero share may still help
-      for (const t of byShare) {
-        if (deficit > 0 && quotas[t] < (avail[t] ?? 0)) { quotas[t]++; deficit--; moved = true; }
-      }
+    for (const i of open) {
+      const give = Math.min(each, caps[i] - alloc[i]);
+      alloc[i] += give;
+      left -= give;
     }
-    if (!moved) break;
   }
-  return { quotas, short: deficit };
-}
-
-// Pick a book in tiers: each tier gets its quota (see tierQuotas) of puzzles
-// spread evenly over that tier's own score range (pickEven). Candidates need
-// `tier` and `score`. Returns { picks (tier order, then score), perTier, short }.
-//   tiers   ordered list of tier names, easiest first
-//   shares  {tier: share}
-export function pickTiered(cands, { count, tiers, shares, tierKey = 'tier', low = 0.02, high = 0.98, seed = 1 }) {
-  const groups = Object.fromEntries(tiers.map(t => [t, cands.filter(c => c[tierKey] === t)]));
-  const avail = Object.fromEntries(tiers.map(t => [t, groups[t].length]));
-  const { quotas, short } = tierQuotas(count, Object.fromEntries(tiers.map(t => [t, shares[t] ?? 0])), avail);
-  const picks = [], perTier = {};
-  for (const t of tiers) {
-    // trim outliers only when the tier is big enough for percentiles to mean something
-    const trim = groups[t].length >= 50 ? { low, high } : { low: 0, high: 1 };
-    const r = quotas[t] > 0 ? pickEven(groups[t], { count: quotas[t], seed, ...trim }) : { picks: [], lo: 0, hi: 0 };
-    perTier[t] = { quota: quotas[t], avail: avail[t], got: r.picks.length, lo: r.lo, hi: r.hi };
-    picks.push(...r.picks);
-  }
-  return { picks, perTier, short };
+  return alloc;
 }

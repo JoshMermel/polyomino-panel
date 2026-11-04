@@ -1,15 +1,34 @@
 {
-  "_comment": "Which books exist and how they are built from the pools in tools/library/. A book is one shape at one square size. See tools/build_books.mjs.",
-  "defaultBook": "L_6x6",
-  "sizes": [6, 8, 10],
-  "shapes": ["I3", "V3", "L", "T", "S", "F5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5",
-             "V3+I3", "L+T", "L+S", "T+S", "F5+P5", "I3+T", "V3+L", "L+P5"],
-  "defaults": {
-    "count": 75,
-    "minCount": 10,
-    "low": 0.02,
-    "high": 0.98,
-    "tiers": { "Beginner": 0.2, "Medium": 0.2, "Hard": 0.2, "Expert": 0.2, "Unsolved": 0.2 }
-  },
-  "overrides": {}
+  "_comment": "Which shapes (single shapes, and pairs joined with +) and board sizes have pools in tools/library/. Used by tools/fill_all.mjs, tools/hunt_all.mjs and tools/build_books.mjs. The books themselves are listed in collections.json.",
+  "sizes": [
+    6,
+    8,
+    10
+  ],
+  "shapes": [
+    "I3",
+    "V3",
+    "L",
+    "T",
+    "S",
+    "F5",
+    "L5",
+    "N5",
+    "P5",
+    "T5",
+    "U5",
+    "V5",
+    "W5",
+    "X5",
+    "Y5",
+    "Z5",
+    "V3+I3",
+    "L+T",
+    "L+S",
+    "T+S",
+    "F5+P5",
+    "I3+T",
+    "V3+L",
+    "L+P5"
+  ]
 }

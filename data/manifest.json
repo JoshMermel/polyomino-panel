@@ -1,488 +1,182 @@
 {
-  "default": "L_6x6",
+  "default": "start",
+  "groups": [
+    {
+      "name": "Start here",
+      "blurb": "A guided path on 6×6 boards: one new shape at a time, easy first, ending with a taste of two shapes."
+    },
+    {
+      "name": "Classical L-panel",
+      "blurb": "The original puzzle: cut the board into L tetrominoes. Mixed board sizes."
+    },
+    {
+      "name": "One shape",
+      "blurb": "Every tile is the same shape (not the L): a mix of shapes and board sizes in each book."
+    },
+    {
+      "name": "Two shapes",
+      "blurb": "Each tile is either of two shapes: a mix of pairs and board sizes in each book."
+    }
+  ],
   "books": [
     {
-      "tile": "I3",
-      "rows": 6,
-      "cols": 6,
-      "file": "I3_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "I3",
-      "rows": 8,
-      "cols": 8,
-      "file": "I3_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "I3",
-      "rows": 10,
-      "cols": 10,
-      "file": "I3_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3",
-      "rows": 6,
-      "cols": 6,
-      "file": "V3_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3",
-      "rows": 8,
-      "cols": 8,
-      "file": "V3_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3",
-      "rows": 10,
-      "cols": 10,
-      "file": "V3_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "L",
-      "rows": 6,
-      "cols": 6,
-      "file": "L_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "L",
-      "rows": 8,
-      "cols": 8,
-      "file": "L_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L",
-      "rows": 10,
-      "cols": 10,
-      "file": "L_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "T",
-      "rows": 6,
-      "cols": 6,
-      "file": "T_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "T",
-      "rows": 8,
-      "cols": 8,
-      "file": "T_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "T",
-      "rows": 10,
-      "cols": 10,
-      "file": "T_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "S",
-      "rows": 6,
-      "cols": 6,
-      "file": "S_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "S",
-      "rows": 8,
-      "cols": 8,
-      "file": "S_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "S",
-      "rows": 10,
-      "cols": 10,
-      "file": "S_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5",
-      "rows": 6,
-      "cols": 6,
-      "file": "F5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5",
-      "rows": 8,
-      "cols": 8,
-      "file": "F5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5",
-      "rows": 10,
-      "cols": 10,
-      "file": "F5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "L5",
-      "rows": 6,
-      "cols": 6,
-      "file": "L5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "L5",
-      "rows": 8,
-      "cols": 8,
-      "file": "L5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L5",
-      "rows": 10,
-      "cols": 10,
-      "file": "L5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "N5",
-      "rows": 6,
-      "cols": 6,
-      "file": "N5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "N5",
-      "rows": 8,
-      "cols": 8,
-      "file": "N5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "N5",
-      "rows": 10,
-      "cols": 10,
-      "file": "N5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "P5",
-      "rows": 6,
-      "cols": 6,
-      "file": "P5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "P5",
-      "rows": 8,
-      "cols": 8,
-      "file": "P5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "P5",
-      "rows": 10,
-      "cols": 10,
-      "file": "P5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "T5",
-      "rows": 6,
-      "cols": 6,
-      "file": "T5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "T5",
-      "rows": 8,
-      "cols": 8,
-      "file": "T5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "T5",
-      "rows": 10,
-      "cols": 10,
-      "file": "T5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "U5",
-      "rows": 6,
-      "cols": 6,
-      "file": "U5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "U5",
-      "rows": 8,
-      "cols": 8,
-      "file": "U5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "U5",
-      "rows": 10,
-      "cols": 10,
-      "file": "U5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "V5",
-      "rows": 6,
-      "cols": 6,
-      "file": "V5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "V5",
-      "rows": 8,
-      "cols": 8,
-      "file": "V5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "V5",
-      "rows": 10,
-      "cols": 10,
-      "file": "V5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "W5",
-      "rows": 6,
-      "cols": 6,
-      "file": "W5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "W5",
-      "rows": 8,
-      "cols": 8,
-      "file": "W5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "W5",
-      "rows": 10,
-      "cols": 10,
-      "file": "W5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "X5",
-      "rows": 10,
-      "cols": 10,
-      "file": "X5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "Y5",
-      "rows": 6,
-      "cols": 6,
-      "file": "Y5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "Y5",
-      "rows": 8,
-      "cols": 8,
-      "file": "Y5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "Y5",
-      "rows": 10,
-      "cols": 10,
-      "file": "Y5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "Z5",
-      "rows": 6,
-      "cols": 6,
-      "file": "Z5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "Z5",
-      "rows": 8,
-      "cols": 8,
-      "file": "Z5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "Z5",
-      "rows": 10,
-      "cols": 10,
-      "file": "Z5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3+I3",
-      "rows": 6,
-      "cols": 6,
-      "file": "V3+I3_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3+I3",
-      "rows": 8,
-      "cols": 8,
-      "file": "V3+I3_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3+I3",
-      "rows": 10,
-      "cols": 10,
-      "file": "V3+I3_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+T",
-      "rows": 6,
-      "cols": 6,
-      "file": "L+T_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+T",
-      "rows": 8,
-      "cols": 8,
-      "file": "L+T_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+T",
-      "rows": 10,
-      "cols": 10,
-      "file": "L+T_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+S",
-      "rows": 6,
-      "cols": 6,
-      "file": "L+S_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+S",
-      "rows": 8,
-      "cols": 8,
-      "file": "L+S_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+S",
-      "rows": 10,
-      "cols": 10,
-      "file": "L+S_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "T+S",
-      "rows": 6,
-      "cols": 6,
-      "file": "T+S_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "T+S",
-      "rows": 8,
-      "cols": 8,
-      "file": "T+S_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "T+S",
-      "rows": 10,
-      "cols": 10,
-      "file": "T+S_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5+P5",
-      "rows": 6,
-      "cols": 6,
-      "file": "F5+P5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5+P5",
-      "rows": 8,
-      "cols": 8,
-      "file": "F5+P5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "F5+P5",
-      "rows": 10,
-      "cols": 10,
-      "file": "F5+P5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "I3+T",
-      "rows": 6,
-      "cols": 6,
-      "file": "I3+T_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "I3+T",
-      "rows": 8,
-      "cols": 8,
-      "file": "I3+T_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "I3+T",
-      "rows": 10,
-      "cols": 10,
-      "file": "I3+T_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3+L",
-      "rows": 6,
-      "cols": 6,
-      "file": "V3+L_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "V3+L",
-      "rows": 8,
-      "cols": 8,
-      "file": "V3+L_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+P5",
-      "rows": 6,
-      "cols": 6,
-      "file": "L+P5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+P5",
-      "rows": 8,
-      "cols": 8,
-      "file": "L+P5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "L+P5",
-      "rows": 10,
-      "cols": 10,
-      "file": "L+P5_10x10.csv",
-      "count": 75
+      "id": "start",
+      "group": "Start here",
+      "title": "Start here",
+      "label": "Start here",
+      "blurb": "A guided path on 6×6 boards: one new shape at a time, easy first, ending with a taste of two shapes.",
+      "file": "start.csv",
+      "count": 66
+    },
+    {
+      "id": "l-beginner",
+      "group": "Classical L-panel",
+      "title": "Classical L-panel: Beginner",
+      "label": "Beginner",
+      "blurb": "only needs \"this cell can only be covered one way\" steps",
+      "tier": "Beginner",
+      "file": "l-beginner.csv",
+      "count": 100
+    },
+    {
+      "id": "l-medium",
+      "group": "Classical L-panel",
+      "title": "Classical L-panel: Medium",
+      "label": "Medium",
+      "blurb": "needs edges that two or three candidate tiles agree on",
+      "tier": "Medium",
+      "file": "l-medium.csv",
+      "count": 100
+    },
+    {
+      "id": "l-hard",
+      "group": "Classical L-panel",
+      "title": "Classical L-panel: Hard",
+      "label": "Hard",
+      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
+      "tier": "Hard",
+      "file": "l-hard.csv",
+      "count": 100
+    },
+    {
+      "id": "l-expert",
+      "group": "Classical L-panel",
+      "title": "Classical L-panel: Expert",
+      "label": "Expert",
+      "blurb": "needs chains of consequences several steps long",
+      "tier": "Expert",
+      "file": "l-expert.csv",
+      "count": 100
+    },
+    {
+      "id": "l-extreme",
+      "group": "Classical L-panel",
+      "title": "Classical L-panel: Extreme",
+      "label": "Extreme",
+      "blurb": "the hint rules cannot finish this one on their own",
+      "tier": "Unsolved",
+      "file": "l-extreme.csv",
+      "count": 100
+    },
+    {
+      "id": "one-beginner",
+      "group": "One shape",
+      "title": "One shape: Beginner",
+      "label": "Beginner",
+      "blurb": "only needs \"this cell can only be covered one way\" steps",
+      "tier": "Beginner",
+      "file": "one-beginner.csv",
+      "count": 150
+    },
+    {
+      "id": "one-medium",
+      "group": "One shape",
+      "title": "One shape: Medium",
+      "label": "Medium",
+      "blurb": "needs edges that two or three candidate tiles agree on",
+      "tier": "Medium",
+      "file": "one-medium.csv",
+      "count": 150
+    },
+    {
+      "id": "one-hard",
+      "group": "One shape",
+      "title": "One shape: Hard",
+      "label": "Hard",
+      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
+      "tier": "Hard",
+      "file": "one-hard.csv",
+      "count": 150
+    },
+    {
+      "id": "one-expert",
+      "group": "One shape",
+      "title": "One shape: Expert",
+      "label": "Expert",
+      "blurb": "needs chains of consequences several steps long",
+      "tier": "Expert",
+      "file": "one-expert.csv",
+      "count": 150
+    },
+    {
+      "id": "one-extreme",
+      "group": "One shape",
+      "title": "One shape: Extreme",
+      "label": "Extreme",
+      "blurb": "the hint rules cannot finish this one on their own",
+      "tier": "Unsolved",
+      "file": "one-extreme.csv",
+      "count": 150
+    },
+    {
+      "id": "two-beginner",
+      "group": "Two shapes",
+      "title": "Two shapes: Beginner",
+      "label": "Beginner",
+      "blurb": "only needs \"this cell can only be covered one way\" steps",
+      "tier": "Beginner",
+      "file": "two-beginner.csv",
+      "count": 100
+    },
+    {
+      "id": "two-medium",
+      "group": "Two shapes",
+      "title": "Two shapes: Medium",
+      "label": "Medium",
+      "blurb": "needs edges that two or three candidate tiles agree on",
+      "tier": "Medium",
+      "file": "two-medium.csv",
+      "count": 100
+    },
+    {
+      "id": "two-hard",
+      "group": "Two shapes",
+      "title": "Two shapes: Hard",
+      "label": "Hard",
+      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
+      "tier": "Hard",
+      "file": "two-hard.csv",
+      "count": 100
+    },
+    {
+      "id": "two-expert",
+      "group": "Two shapes",
+      "title": "Two shapes: Expert",
+      "label": "Expert",
+      "blurb": "needs chains of consequences several steps long",
+      "tier": "Expert",
+      "file": "two-expert.csv",
+      "count": 100
+    },
+    {
+      "id": "two-extreme",
+      "group": "Two shapes",
+      "title": "Two shapes: Extreme",
+      "label": "Extreme",
+      "blurb": "the hint rules cannot finish this one on their own",
+      "tier": "Unsolved",
+      "file": "two-extreme.csv",
+      "count": 100
     }
   ]
 }

@@ -1,7 +1,7 @@
 // Run with: node --test tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import {
   getOrientations, resolveShape, tileSize, parseCsv, toCsv, solve, searchTilings, countSolutions,
   analyze, edgesFromSolution, setEdge, getEdge, isPlayableEdge, EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
@@ -19,7 +19,19 @@ import { referenceSearch } from './reference_solver.mjs';
 import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule } from '../js/rating.js';
 import { LOOKAHEAD_2, LOOKAHEAD_3 } from '../js/logic.js';
 
-const data = name => parseCsv(readFileSync(new URL(`../data/${name}`, import.meta.url), 'utf8'));
+const manifestOf = () => JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
+let libraryCache = null;
+const library = () => libraryCache ??= manifestOf().books.flatMap(b => parseCsv(readFileSync(new URL(`../data/${b.file}`, import.meta.url), 'utf8')));
+// A book's puzzles by file name. Books mix shapes and board sizes now, so a name like 'L_6x6.csv'
+// (the old per-shape books) means "every published puzzle with that tile and size", easiest first.
+const data = name => {
+  if (existsSync(new URL(`../data/${name}`, import.meta.url))) return parseCsv(readFileSync(new URL(`../data/${name}`, import.meta.url), 'utf8'));
+  const m = /^(.+)_(\d+)x\d+\.csv$/.exec(name);
+  assert.ok(m, `no such book or shape file: ${name}`);
+  const found = library().filter(p => p.tile === m[1] && p.rows === Number(m[2]));
+  assert.ok(found.length > 0, `no published ${name} puzzles`);
+  return [...found].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
+};
 
 test('orientation counts', () => {
   assert.equal(getOrientations('L').length, 8);
@@ -375,16 +387,16 @@ test('lookaheadTile is sound, and goes beyond forcedTile', () => {
 });
 
 test('every set in the manifest loads, has unique solutions, and hints stay sound', () => {
-  const manifest = JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
+  const manifest = manifestOf();
   assert.ok(manifest.books.length >= 4);
-  assert.ok(manifest.books.some(b => `${b.tile}_${b.rows}x${b.cols}` === manifest.default), 'default book exists');
+  assert.ok(manifest.books.some(b => b.id === manifest.default), 'default book exists');
   const ids = new Set();
   for (const book of manifest.books) {
-    const set = { ...book, id: `${book.tile}_${book.rows}x${book.cols}` };
+    const set = book;
     assert.ok(!ids.has(set.id), `duplicate book ${set.id}`); ids.add(set.id);
     assert.equal(set.file, `${set.id}.csv`);
+    assert.ok(manifest.groups.some(g => g.name === set.group), `${set.id}: group ${set.group} is listed`);
     const puzzles = data(set.file);
-    assert.ok(puzzles.every(q => q.tile === book.tile && q.rows === book.rows && q.cols === book.cols), `${set.id}: puzzles match the book`);
     assert.equal(puzzles.length, set.count, set.id);
     for (const p of puzzles) {
       const sols = solve(p, 2);
@@ -504,10 +516,10 @@ test('sortByRules renumbers and sorts; every shipped book is sorted and its stor
       assert.equal(ps[i].tier, rs[i].tier, `${book.file} ${ps[i].name} tier column`);
       assert.equal(ps[i].score, rs[i].score, `${book.file} ${ps[i].name} score column`);
     }
-    for (let i = 1; i < rs.length; i++) {
-      // sorted by tier, then score (ties on both are broken by name, not by step count)
-      const byTierScore = (a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score;
-      assert.ok(byTierScore(rs[i - 1], rs[i]) <= 0, `${book.file} not sorted at ${i}`);
+    // a tier book holds only its tier and is sorted by score; "Start here" is in curriculum order
+    if (book.tier) {
+      assert.ok(rs.every(r => r.tier === book.tier), `${book.file}: only ${book.tier} puzzles`);
+      for (let i = 1; i < rs.length; i++) assert.ok(rs[i - 1].score <= rs[i].score, `${book.file} not sorted at ${i}`);
     }
   }
 });
@@ -1068,4 +1080,36 @@ test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks nev
       assert.ok(TIERS.includes(r.tier));
     }
   }
+});
+
+test('books: no puzzle is in two books, and each section holds what it says', () => {
+  const manifest = manifestOf();
+  const seen = new Set(), names = new Set();
+  for (const book of manifest.books) {
+    const ps = parseCsv(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'));
+    for (const p of ps) {
+      const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;      // rotations and mirror images count as the same puzzle
+      assert.ok(!seen.has(key), `${book.id}/${p.name} appears in more than one book`);
+      seen.add(key);
+      assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
+      names.add(p.name);
+    }
+    if (book.group === 'Classical L-panel') assert.ok(ps.every(p => p.tile === 'L'), `${book.id}: L tetrominoes only`);
+    if (book.group === 'One shape') assert.ok(ps.every(p => !p.tile.includes('+') && p.tile !== 'L'), `${book.id}: one shape, not the L`);
+    if (book.group === 'Two shapes') assert.ok(ps.every(p => tileSpecs(p.tile).length === 2), `${book.id}: two shapes`);
+    if (book.tier) {
+      // a tier book mixes board sizes (and, for One / Two shapes, several tile sets)
+      assert.ok(new Set(ps.map(p => p.rows)).size >= 2, `${book.id}: mixes board sizes`);
+      if (book.group !== 'Classical L-panel') assert.ok(new Set(ps.map(p => p.tile)).size >= 4, `${book.id}: mixes shapes`);
+      assert.ok(ps.length >= 50, `${book.id}: a reasonable size`);
+    }
+  }
+  // one book per tier in each section, in order
+  for (const group of ['Classical L-panel', 'One shape', 'Two shapes']) {
+    assert.deepEqual(manifest.books.filter(b => b.group === group).map(b => b.tier), TIERS, group);
+  }
+  // "Start here" is a 6x6 curriculum that begins with the straight tromino
+  const start = data(manifest.books.find(b => b.id === 'start').file);
+  assert.ok(start.every(p => p.rows === 6));
+  assert.equal(start[0].tile, 'I3');
 });
