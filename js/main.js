@@ -161,7 +161,6 @@ async function goTo(setIdx, puzIdx) {
   board.render(state.puzzle, state.edges);
   syncColumnWidth();
   renderTileInfo($('tile-info'), state.puzzle.tile);
-  renderTitle(state.puzzle.tile);
   renderTier(state.puzzle.tier);
   updateFeedbackLink();
   refresh();
@@ -212,13 +211,6 @@ function renderTier(tier) {
   });
   el.append(stars, TIER_INFO[tier].name);
   el.title = `${TIER_INFO[tier].name}: ${TIER_INFO[tier].blurb}`;
-}
-
-// The classic puzzle is called "L-Panel"; other tiles get the general name.
-function renderTitle(tile) {
-  const title = tile === 'L' ? 'L-Panel' : 'Polyomino Panel';
-  $('page-title').textContent = title;
-  document.title = title;
 }
 
 // --- Editing ----------------------------------------------------------------
