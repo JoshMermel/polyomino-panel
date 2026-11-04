@@ -142,6 +142,10 @@
       </div>
       <div class="modal-body browse-modal-body">
         <div id="browse-summary" class="browse-summary"></div>
+        <div id="browse-filter-row" class="browse-filter" hidden>
+          <label for="browse-filter">Show</label>
+          <select id="browse-filter" aria-label="Filter puzzles by shape"></select>
+        </div>
         <div class="browse-toolbar">
           <div class="browse-legend">
             <span class="legend-dot legend-solved"></span> Solved
@@ -188,8 +192,8 @@
         <button data-close aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
-        <p>Cut the white cells into tiles of the shape(s) shown, in any orientation/reflection.
-          Black cells are blocked. The frame turns green when you're done.</p>
+        <p>Cut the <span id="help-open-cells">white</span> cells into tiles of the shape(s) shown, in any orientation/reflection.
+          <span id="help-blocked-cells">Black</span> cells are blocked. The frame turns green when you're done.</p>
         <ul>
           <li><b>Drag across cells</b> to outline a whole tile, or <b>tap an edge</b> to cycle it:
             line, then ✕ ("no line here"), then empty.</li>

@@ -331,12 +331,14 @@ export function setEdge(puzzle, edges, kind, r, c, state) {
 // Group open cells into regions connected through edges that are not LINEs
 // (crosses are just reminders and don't separate anything), and test each
 // region against the puzzle's tile shape.
-// Returns { regions: [{cells: [idx...], valid, wrong}], validCount, total, solved }
+// Returns { regions: [{cells: [idx...], valid, shape, wrong}], validCount, total, solved }
+// (shape = index into tileSpecs(tile) of a valid region's shape, else -1)
 // where total = number of tiles a solution needs: open cells / tile size when every allowed
 // shape has the same size, else the number in the stored solution (null if there is none).
 export function analyze(puzzle, edges) {
   const { rows, cols, tile } = puzzle;
   const sizes = tileSizes(tile);
+  const specs = tileSpecs(tile);
   const minSize = sizes[0];
   const keys = new Set(allOrientations(tile).map(cellsKey));
   const seen = new Uint8Array(rows * cols);
@@ -367,15 +369,16 @@ export function analyze(puzzle, edges) {
       visit(r + 1, c, 'h', r + 1, c);
       visit(r - 1, c, 'h', r, c);
     }
-    let valid = false;
+    let valid = false, shape = -1;               // shape: which allowed shape (index into tileSpecs) a valid tile is
     if (sizes.includes(cells.length)) {
       const norm = normalize(cells.map(i => [Math.floor(i / cols), i % cols]));
       valid = keys.has(cellsKey(norm));
+      if (valid) shape = specs.length === 1 ? 0 : shapeIndexOf(tile, cells, cols);
     }
     // A region that is already too small, or exactly tile-sized but the wrong
     // shape, can never become a tile: it's walled in by lines/blocked cells.
     // (Bigger regions might still be cut up later, so they aren't "wrong".)
-    regions.push({ cells, valid, wrong: !valid && cells.length <= minSize });
+    regions.push({ cells, valid, shape, wrong: !valid && cells.length <= minSize });
   }
 
   const validCount = regions.filter(r => r.valid).length;

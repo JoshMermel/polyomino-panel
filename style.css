@@ -29,6 +29,11 @@
   --hint-blue: rgba(0, 123, 255, 0.28);
   --hint-line: #e08e00;
   --frame: #111;
+  /* one color per allowed shape (puzzles with several shapes): the header picture and the fill of a finished tile */
+  --shape-0: var(--primary-blue); --shape-0-bg: var(--tile-bg);
+  --shape-1: #ef6c00; --shape-1-bg: rgba(239, 108, 0, 0.22);
+  --shape-2: #00897b; --shape-2-bg: rgba(0, 137, 123, 0.22);
+  --shape-3: #c2185b; --shape-3-bg: rgba(194, 24, 91, 0.20);
 }
 
 :root[data-theme="dark"] {
@@ -60,6 +65,9 @@
   --hint-blue: rgba(80, 160, 255, 0.4);
   --hint-line: #ffb300;
   --frame: #ddd;
+  --shape-1: #ffa726; --shape-1-bg: rgba(255, 167, 38, 0.28);
+  --shape-2: #4db6ac; --shape-2-bg: rgba(77, 182, 172, 0.28);
+  --shape-3: #f48fb1; --shape-3-bg: rgba(244, 143, 177, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -180,7 +188,10 @@ select, input[type="number"] {
 
 .cell { fill: var(--cell-bg); }
 .cell.blocked { fill: var(--blocked-bg); }
-.cell.tile-ok { fill: var(--tile-bg); }
+.cell.tile-ok { fill: var(--shape-fill, var(--tile-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
+.cell.shape-1 { --shape-fill: var(--shape-1-bg); }
+.cell.shape-2 { --shape-fill: var(--shape-2-bg); }
+.cell.shape-3 { --shape-fill: var(--shape-3-bg); }
 .cell.tile-bad { fill: var(--tile-bad-bg); }
 
 .dash {
@@ -395,6 +406,9 @@ select, input[type="number"] {
   flex-shrink: 0;
 }
 /* cells are separated by a thin gap in the page background */
+.tile-shape-svg.shape-1 rect { fill: var(--shape-1); }
+.tile-shape-svg.shape-2 rect { fill: var(--shape-2); }
+.tile-shape-svg.shape-3 rect { fill: var(--shape-3); }
 .tile-shape-svg rect {
   fill: var(--primary-blue);
   stroke: var(--bg-white);
@@ -431,6 +445,9 @@ select, input[type="number"] {
 .browse-btn { padding: 4px 10px; font-size: 0.85rem; margin-left: 4px; }
 .browse-modal-body { padding: 12px 16px 20px; }
 .browse-summary { font-weight: 600; margin-bottom: 8px; }
+.browse-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.browse-filter[hidden] { display: none; }
+.browse-filter select { flex: 1; min-width: 0; text-overflow: ellipsis; }
 .browse-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .browse-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 0.8rem; color: var(--text-secondary); }
 .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 2px; }

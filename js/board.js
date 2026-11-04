@@ -17,6 +17,7 @@ import {
 
 const NS = 'http://www.w3.org/2000/svg';
 const TAP_SLOP = 0.25;    // a press on an edge counts as a tap if the pointer moves less than this (cell units)
+const SHAPE_COLORS = 4;     // how many shapes have their own color (--shape-N in style.css)
 const BAD_DELAY_MS = 300; // how long a wrong-shape (red) tint waits, so a double-click can finish first
 
 
@@ -337,10 +338,10 @@ export class Board {
   // analysis: result of logic.analyze(). When showTiles is on, enclosed regions
   // are tinted blue (valid tile) or red (wrong shape / too small to ever be one).
   update(analysis, showTiles) {
-    const valid = new Set(), wrong = new Set();
+    const valid = new Map(), wrong = new Set();           // valid: cell -> which allowed shape it is part of
     if (showTiles) {
       for (const reg of analysis.regions) {
-        if (reg.valid) reg.cells.forEach(i => valid.add(i));
+        if (reg.valid) reg.cells.forEach(i => valid.set(i, reg.shape));
         else if (reg.wrong) reg.cells.forEach(i => wrong.add(i));
       }
     }
@@ -351,6 +352,7 @@ export class Board {
     const newlyBad = [];
     this.cellEls.forEach((rect, i) => {
       rect.classList.toggle('tile-ok', valid.has(i));
+      for (let n = 0; n < SHAPE_COLORS; n++) rect.classList.toggle(`shape-${n}`, valid.get(i) === n);   // each shape has its own color
       if (!wrong.has(i)) rect.classList.remove('tile-bad');
       else if (!rect.classList.contains('tile-bad')) newlyBad.push(rect);
     });

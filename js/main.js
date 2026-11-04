@@ -4,7 +4,7 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, } from './logic.js';
+  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints } from './rating.js';
@@ -38,6 +38,7 @@ const state = {
   puzIdx: 0,
   puzzle: null,
   edges: null,
+  browseFilter: '',    // Browse's shape filter: '' (all), 'tile:<spec>' or 'has:<shape>' (reset when the book changes)
   hint: null,          // the hint on screen: { tier, items, index } (see hint())
   undo: [],            // each entry: {changes: [{kind,r,c,from,to}]}
   redo: [],
@@ -150,6 +151,7 @@ async function goTo(setIdx, puzIdx) {
   if (!puzzles.length) { showFatal(new Error(`${set.title} has no puzzles`)); return; }
   puzIdx = Math.max(0, Math.min(puzzles.length - 1, puzIdx));
 
+  if (setIdx !== state.setIdx) state.browseFilter = '';
   state.setIdx = setIdx;
   state.puzIdx = puzIdx;
   state.puzzle = puzzles[puzIdx];
@@ -561,20 +563,59 @@ function refresh() {
 // --- Browse puzzles -----------------------------------------------------------
 // A grid of the current book's puzzles, grouped under their difficulty tier and coloured
 // by status: solved (green), in progress (yellow, some marks saved), current (blue ring).
+// A Show menu filters the grid (and "First unsolved") by shape: books mix shapes, so someone who
+// likes one shape can play just those puzzles.
 let closeBrowse = () => {};   // set in bindControls
+const shapeRank = spec => { const i = SHAPE_ORDER.indexOf(spec); return i < 0 ? 999 : i; };
+const matchesFilter = (p, f) => !f || (f.startsWith('has:') ? tileSpecs(p.tile).includes(f.slice(4)) : p.tile === f.slice(5));
+
+// The puzzles of the current book that pass the filter, as [puzzle, number] pairs (number = position in the book).
+function browseVisible() {
+  const puzzles = curSet().puzzles ?? [];
+  return puzzles.map((p, i) => [p, i]).filter(([p]) => matchesFilter(p, state.browseFilter));
+}
+
+// Fill the Show menu from the shapes present in the book; hide it when there is only one choice.
+function fillBrowseFilter(puzzles) {
+  const sel = $('browse-filter'), row = $('browse-filter-row');
+  const tiles = [...new Set(puzzles.map(p => p.tile))].sort((a, b) => shapeRank(a) - shapeRank(b) || (a < b ? -1 : 1));
+  row.hidden = tiles.length < 2;
+  sel.textContent = '';
+  const add = (parent, value, label) => { const o = document.createElement('option'); o.value = value; o.textContent = label; parent.append(o); };
+  add(sel, '', `All shapes (${puzzles.length})`);
+  const count = f => puzzles.filter(p => matchesFilter(p, f)).length;
+  const pairs = tiles.filter(t => tileSpecs(t).length > 1);
+  if (pairs.length) {                                       // a book of pairs: by pair, or by a shape in any pair
+    const byPair = document.createElement('optgroup'); byPair.label = 'A pair';
+    pairs.forEach(t => add(byPair, `tile:${t}`, `${shapeName(t)} (${count(`tile:${t}`)})`));
+    const members = [...new Set(pairs.flatMap(t => tileSpecs(t)))].sort((a, b) => shapeRank(a) - shapeRank(b));
+    const byShape = document.createElement('optgroup'); byShape.label = 'A shape, in any pair';
+    members.forEach(s => add(byShape, `has:${s}`, `${shapeName(s)} (${count(`has:${s}`)})`));
+    sel.append(byShape, byPair);
+  } else {
+    tiles.forEach(t => add(sel, `tile:${t}`, `${shapeName(t)} (${count(`tile:${t}`)})`));
+  }
+  if (![...sel.options].some(o => o.value === state.browseFilter)) state.browseFilter = '';
+  sel.value = state.browseFilter;
+}
+
 function renderBrowse() {
   const set = curSet(), puzzles = set.puzzles ?? [];
+  fillBrowseFilter(puzzles);
   const grid = $('browse-grid');
   grid.textContent = '';
-  const solved = puzzles.filter(isSolved).length;
-  $('browse-summary').textContent = `${set.title}: ${solved} of ${puzzles.length} solved`;
+  const visible = browseVisible();
+  const solvedAll = puzzles.filter(isSolved).length, solvedShown = visible.filter(([p]) => isSolved(p)).length;
+  $('browse-summary').textContent = state.browseFilter
+    ? `${set.title}: ${solvedShown} of ${visible.length} solved here (${solvedAll} of ${puzzles.length} in the book)`
+    : `${set.title}: ${solvedAll} of ${puzzles.length} solved`;
 
-  // Tier headings only when the book runs through its tiers in order (a curriculum or a
+  // Tier headings only when the shown puzzles run through their tiers in order (a curriculum or a
   // one-tier book would just have a heading in the wrong place, or one pointless heading).
-  const order = puzzles.map(p => TIERS.indexOf(p.tier));
+  const order = visible.map(([p]) => TIERS.indexOf(p.tier));
   const byTier = new Set(order).size > 1 && order.every((v, i) => i === 0 || v >= order[i - 1]);
   let tier = null;
-  puzzles.forEach((p, i) => {
+  visible.forEach(([p, i]) => {
     if (byTier && p.tier && p.tier !== tier) {
       tier = p.tier;
       const info = TIER_INFO[tier];
@@ -597,7 +638,8 @@ function renderBrowse() {
     b.type = 'button';
     b.className = 'browse-tile' + (done ? ' bt-solved' : started ? ' bt-in-progress' : '') + (i === state.puzIdx ? ' bt-current' : '');
     b.textContent = i + 1;
-    b.setAttribute('aria-label', `Puzzle ${i + 1}${done ? ' (solved)' : started ? ' (in progress)' : ''}`);
+    b.title = shapeName(p.tile);
+    b.setAttribute('aria-label', `Puzzle ${i + 1}, ${shapeName(p.tile)}${done ? ' (solved)' : started ? ' (in progress)' : ''}`);
     b.addEventListener('click', () => {
       closeBrowse();
       goTo(state.setIdx, i);
@@ -658,6 +700,16 @@ function setupPrint(setupModal, hideSettings) {
     document.body.classList.add('printing-booklet');     // style.css prints only the booklet while this is set
     window.print();
   });
+}
+
+// The help text names the colors of the board, which depend on the theme: in light mode the cells to
+// cut up are white and the blocked ones black; in dark mode the blocked ones are near-white (they use the
+// text color, as star battle's void cells do) and the cells to cut up are dark. Re-worded each time the
+// dialog opens, so it always matches the current theme.
+function syncHelpText() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  $('help-open-cells').textContent = dark ? 'dark' : 'white';
+  $('help-blocked-cells').textContent = dark ? 'White' : 'Black';
 }
 
 // --- Controls ---------------------------------------------------------------
@@ -772,12 +824,14 @@ function bindControls() {
   closeBrowse = browse.close;
   setupPrint(setupModal, settings.close);
   $('browse-jump-btn').addEventListener('click', () => {
-    const i = (curSet().puzzles ?? []).findIndex(p => !isSolved(p));
-    if (i < 0) { showToast("You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
+    const next = browseVisible().find(([p]) => !isSolved(p));     // respects the Show filter
+    if (!next) { showToast(state.browseFilter ? "You've solved every puzzle with that shape! 🎉" : "You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
     browse.close();
-    goTo(state.setIdx, i);
+    goTo(state.setIdx, next[1]);
   });
-  const help = setupModal('help-modal', 'help-btn');
+  $('browse-filter').addEventListener('change', e => { state.browseFilter = e.target.value; renderBrowse(); });
+
+  const help = setupModal('help-modal', 'help-btn', syncHelpText);
   // Like star battle: show the help modal the very first time, then remember it was seen.
   if (!store.get('pp_seenHelp')) {
     store.set('pp_seenHelp', '1');

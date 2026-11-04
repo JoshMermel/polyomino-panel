@@ -6,13 +6,15 @@ import { resolveShape, shapeName, tileSizes, tileSpecs } from './logic.js';
 const NS = 'http://www.w3.org/2000/svg';
 
 // Build an SVG of the shape (1 unit = 1 cell).
-export function tileShapeSvg(spec) {
+// `shapeIndex` picks the shape's color (the --shape-N colors in style.css): with several allowed
+// shapes each gets its own, and finished tiles on the board are filled with the same color.
+export function tileShapeSvg(spec, shapeIndex = 0) {
   const cells = resolveShape(spec);
   const rows = Math.max(...cells.map(([r]) => r)) + 1;
   const cols = Math.max(...cells.map(([, c]) => c)) + 1;
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${cols} ${rows}`);
-  svg.setAttribute('class', 'tile-shape-svg');
+  svg.setAttribute('class', `tile-shape-svg shape-${shapeIndex}`);
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', shapeName(spec));
   svg.style.setProperty('--tile-cols', cols);
@@ -35,7 +37,7 @@ export function renderTileInfo(container, spec) {
   const specs = tileSpecs(spec);
   const pictures = document.createElement('span');
   pictures.className = 'tile-swatches';
-  specs.forEach(sp => pictures.append(tileShapeSvg(sp)));
+  specs.forEach((sp, i) => pictures.append(tileShapeSvg(sp, i)));
   const name = document.createElement('span');
   name.className = 'tile-info-name';
   name.textContent = shapeName(spec);
