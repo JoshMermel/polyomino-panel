@@ -49,6 +49,10 @@ const curSet = () => state.sets[state.setIdx];
 // set/name/position, so renumbering or reordering puzzles keeps saves intact.
 const hashOf = puzzle => (puzzle._hash ??= puzzleHash(puzzle));
 const saveKey = puzzle => `pp2_edges_${hashOf(puzzle)}`;
+// "Solved" is remembered separately from the marks, so it survives Reset (as in star battle).
+const solvedKey = puzzle => `pp2_solved_${hashOf(puzzle)}`;
+const isSolved = puzzle => store.get(solvedKey(puzzle)) === '1';
+const hasProgress = puzzle => store.get(saveKey(puzzle)) !== null;   // marks are only stored while some exist
 
 // Remove saves from the old name-based format (pp_edges_*, pp_last).
 function purgeLegacySaves() {
@@ -68,7 +72,7 @@ function clearSaves() {
     const doomed = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('pp2_edges_') || k === 'pp2_last')) doomed.push(k);
+      if (k && (k.startsWith('pp2_edges_') || k.startsWith('pp2_solved_') || k === 'pp2_last')) doomed.push(k);
     }
     doomed.forEach(k => localStorage.removeItem(k));
   } catch { /* ignore */ }
@@ -534,6 +538,7 @@ function refresh() {
   hideToast();
   const a = analyze(state.puzzle, state.edges);
   board.update(a, state.showTiles);
+  if (a.solved) store.set(solvedKey(state.puzzle), '1');
 
   const set = curSet();
   const hasMarks = state.edges.h.some(Boolean) || state.edges.v.some(Boolean);
@@ -562,6 +567,52 @@ function refresh() {
     st.className = 'status';
     st.textContent = `${a.validCount} / ${a.total} tiles`;
   }
+}
+
+// --- Browse puzzles -----------------------------------------------------------
+// A grid of the current book's puzzles, grouped under their difficulty tier and coloured
+// by status: solved (green), in progress (yellow, some marks saved), current (blue ring).
+function renderBrowse() {
+  const set = curSet(), puzzles = set.puzzles ?? [];
+  const grid = $('browse-grid');
+  grid.textContent = '';
+  const solved = puzzles.filter(isSolved).length;
+  const name = set.custom ? set.title : `${shapeName(set.tile)}, ${set.rows}×${set.cols}`;
+  $('browse-summary').textContent = `${name}: ${solved} of ${puzzles.length} solved`;
+
+  let tier = null;
+  puzzles.forEach((p, i) => {
+    if (p.tier && p.tier !== tier) {
+      tier = p.tier;
+      const info = TIER_INFO[tier];
+      const head = document.createElement('div');
+      head.className = 'browse-tier-header';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'browse-tier-name';
+      nameEl.textContent = info?.name ?? tier;
+      head.append(nameEl);
+      if (info?.blurb) {
+        const blurb = document.createElement('span');
+        blurb.className = 'browse-tier-blurb';
+        blurb.textContent = info.blurb;
+        head.append(blurb);
+      }
+      grid.append(head);
+    }
+    const done = isSolved(p), started = !done && hasProgress(p);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'browse-tile' + (done ? ' bt-solved' : started ? ' bt-in-progress' : '') + (i === state.puzIdx ? ' bt-current' : '');
+    b.textContent = i + 1;
+    b.setAttribute('aria-label', `Puzzle ${i + 1}${done ? ' (solved)' : started ? ' (in progress)' : ''}`);
+    b.addEventListener('click', () => {
+      $('browse-modal').querySelector('[data-close]').click();
+      goTo(state.setIdx, i);
+    });
+    grid.append(b);
+  });
+  // the modal becomes visible right after this runs, so wait a frame before scrolling
+  requestAnimationFrame(() => grid.querySelector('.bt-current')?.scrollIntoView({ block: 'nearest' }));
 }
 
 // --- Controls ---------------------------------------------------------------
@@ -646,10 +697,11 @@ function bindControls() {
 
   // --- Modals (settings, help) ---
   const modals = [];
-  const setupModal = (modalId, openBtnId) => {
+  const setupModal = (modalId, openBtnId, onOpen) => {
     const modal = $(modalId), openBtn = $(openBtnId);
     const close = () => { modal.classList.add('modal-hidden'); openBtn.focus(); };
     const open = () => {
+      onOpen?.();
       modal.classList.remove('modal-hidden');
       modal.querySelector('[data-close]').focus();
     };
@@ -660,6 +712,13 @@ function bindControls() {
     return { open, close };
   };
   setupModal('settings-modal', 'settings-btn');
+  setupModal('browse-modal', 'browse-btn', renderBrowse);
+  $('browse-jump-btn').addEventListener('click', () => {
+    const i = (curSet().puzzles ?? []).findIndex(p => !isSolved(p));
+    if (i < 0) { showToast("You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
+    $('browse-modal').querySelector('[data-close]').click();
+    goTo(state.setIdx, i);
+  });
   const help = setupModal('help-modal', 'help-btn');
   // Like star battle: show the help modal the very first time, then remember it was seen.
   if (!store.get('pp_seenHelp')) {

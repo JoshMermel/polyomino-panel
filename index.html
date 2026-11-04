@@ -34,6 +34,7 @@
           <input type="number" id="puz-num" min="1" aria-label="Puzzle number">
           <span class="pager-total">/ <span id="puz-total"></span></span>
           <button id="next-puz" class="step-btn" aria-label="Next puzzle">›</button>
+          <button id="browse-btn" class="browse-btn" aria-haspopup="dialog">Browse</button>
         </div>
       </div>
 
@@ -107,6 +108,28 @@
     </div>
   </div>
 
+  <div id="browse-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="browse-modal-title">
+    <div class="modal-box modal-box--wide">
+      <div class="modal-header">
+        <h2 id="browse-modal-title">Browse puzzles</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body browse-modal-body">
+        <div id="browse-summary" class="browse-summary"></div>
+        <div class="browse-toolbar">
+          <div class="browse-legend">
+            <span class="legend-dot legend-solved"></span> Solved
+            <span class="legend-dot legend-in-progress"></span> In progress
+            <span class="legend-dot legend-current"></span> Current
+            <span class="legend-dot legend-unsolved"></span> Not started
+          </div>
+          <button id="browse-jump-btn" type="button" class="browse-jump-btn">→ First unsolved</button>
+        </div>
+        <div id="browse-grid" class="browse-grid"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
     <div class="modal-box modal-box--wide">
       <div class="modal-header">
@@ -148,6 +171,8 @@
         <ul>
           <li>Closed regions are shaded blue when they are a valid tile and red when they can't become one
             (turn this off in Settings ⚙).</li>
+          <li><b>Browse</b> shows every puzzle in the book, grouped by difficulty, with the ones you've solved
+            (green) and started (yellow); tap one to jump to it.</li>
           <li>Your progress is saved in this browser for each puzzle.</li>
         </ul>
 
