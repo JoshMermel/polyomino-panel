@@ -62,6 +62,18 @@ function purgeLegacySaves() {
   } catch { /* ignore */ }
 }
 
+// Erase all saved puzzle progress (and the "resume here" position), keeping settings.
+function clearSaves() {
+  try {
+    const doomed = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('pp2_edges_') || k === 'pp2_last')) doomed.push(k);
+    }
+    doomed.forEach(k => localStorage.removeItem(k));
+  } catch { /* ignore */ }
+}
+
 // --- Loading puzzle sets ----------------------------------------------------
 async function fetchText(url) {
   const res = await fetch(url);
@@ -680,6 +692,27 @@ function bindControls() {
     store.set('pp_dark', dark.checked ? '1' : '0');
   });
 
+  // Clear saves: first click asks "Are you sure?" (reverts after 4 s), second click erases.
+  const clearBtn = $('clear-saves-btn');
+  let clearTimer = null;
+  const disarmClear = () => {
+    clearTimeout(clearTimer);
+    clearBtn.textContent = 'Clear saves';
+    clearBtn.classList.remove('danger-btn--confirm');
+  };
+  clearBtn.addEventListener('click', async () => {
+    if (!clearBtn.classList.contains('danger-btn--confirm')) {
+      clearBtn.textContent = 'Are you sure?';
+      clearBtn.classList.add('danger-btn--confirm');
+      clearTimer = setTimeout(disarmClear, 4000);
+      return;
+    }
+    disarmClear();
+    clearSaves();
+    await goTo(state.setIdx, state.puzIdx);       // reload the current puzzle, now blank
+    showToast('Saved progress cleared.', 'success', 2500);
+  });
+  $('settings-btn').addEventListener('click', disarmClear);
   $('csv-btn').addEventListener('click', () => $('csv-file').click());
   $('csv-file').addEventListener('change', async e => {
     const file = e.target.files[0];

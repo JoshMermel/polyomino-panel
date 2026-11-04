@@ -400,6 +400,14 @@ select, input[type="number"] {
 
 .settings-row button { white-space: nowrap; flex-shrink: 0; }
 
+/* Destructive button with a two-step confirm (first click turns it solid red) */
+.settings-row .danger-btn {
+  border: 1.5px solid #d9534f; background: transparent; color: #d9534f; font-weight: 600;
+}
+.settings-row .danger-btn:hover, .settings-row .danger-btn.danger-btn--confirm {
+  background: #d9534f; color: #fff; border-color: #d9534f;
+}
+
 /* --- Puzzle tier (stars + word) ------------------------------------------------ */
 .tier-info { font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; }
 .tier-stars { letter-spacing: 1px; margin-right: 4px; }
