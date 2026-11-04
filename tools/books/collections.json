@@ -1,53 +1,23 @@
 {
-  "_comment": "Which books exist and how they are built from the pools in tools/library/. See tools/build_books.mjs. Every puzzle goes in at most one book. Books are made in this order: Start here, then each section in turn.",
-  "default": "start",
-  "start": {
-    "id": "start",
-    "group": "Start here",
-    "title": "Start here",
-    "blurb": "A guided path on 6×6 boards: one new shape at a time, easy first, ending with a taste of two shapes.",
-    "size": 6,
-    "stages": [
-      { "tile": "I3", "Beginner": 3, "Medium": 2 },
-      { "tile": "V3", "Beginner": 3, "Medium": 2 },
-      { "tile": "L",  "Beginner": 3, "Medium": 2 },
-      { "tile": "T",  "Beginner": 3, "Medium": 2 },
-      { "tile": "S",  "Beginner": 3, "Medium": 2 },
-      { "tile": "P5", "Beginner": 3, "Medium": 2 },
-      { "tile": "F5", "Beginner": 3, "Medium": 2 },
-      { "tile": "N5", "Beginner": 3, "Medium": 2 },
-      { "tile": "W5", "Beginner": 3, "Medium": 2 },
-      { "tile": "Y5", "Beginner": 3, "Medium": 2 },
-      { "tile": "L5", "Beginner": 3, "Medium": 2 },
-      { "tile": "U5", "Beginner": 3, "Medium": 2 },
-      { "tile": "V3+I3", "Beginner": 2 },
-      { "tile": "L+T", "Beginner": 2 },
-      { "tile": "L+S", "Beginner": 2 }
-    ]
+  "_comment": "Which books exist and how they are built from the pools in tools/library/. See tools/build_books.mjs. One book per (number of shapes, board size); each runs through every difficulty tier, easiest first. A puzzle is in at most one book.",
+  "default": "one-6",
+  "tiers": ["Beginner", "Medium", "Hard"],
+  "sizes": [6, 8, 10],
+  "perBook": 300,
+  "groups": [
+    { "name": "One shape", "idPrefix": "one", "shapes": 1, "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard." },
+    { "name": "Two shapes", "idPrefix": "two", "shapes": 2, "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard." }
+  ],
+  "sizeBlurbs": {
+    "6": "Small boards, quick to solve.",
+    "8": "Mid-size boards.",
+    "10": "Large boards, long solves."
   },
-  "tiers": ["Beginner", "Medium", "Hard", "Expert", "Unsolved"],
-  "sections": [
-    {
-      "group": "Classical L-panel",
-      "blurb": "The original puzzle: cut the board into L tetrominoes. Mixed board sizes.",
-      "idPrefix": "l",
-      "only": ["L"],
-      "count": 100
-    },
-    {
-      "group": "One shape",
-      "blurb": "Every tile is the same shape (not the L): a mix of shapes and board sizes in each book.",
-      "idPrefix": "one",
-      "kind": "single",
-      "exclude": ["L"],
-      "count": 150
-    },
-    {
-      "group": "Two shapes",
-      "blurb": "Each tile is either of two shapes: a mix of pairs and board sizes in each book.",
-      "idPrefix": "two",
-      "kind": "pair",
-      "count": 100
-    }
-  ]
+  "tour": {
+    "_comment": "The first puzzles of this book are a shape-by-shape introduction: `perShape` easy puzzles of each shape in turn, before the rest of the book in difficulty order.",
+    "book": "one-6",
+    "tier": "Beginner",
+    "perShape": 2,
+    "shapes": ["I3", "V3", "L", "T", "S", "P5", "F5", "N5", "W5", "Y5", "L5", "U5"]
+  }
 }

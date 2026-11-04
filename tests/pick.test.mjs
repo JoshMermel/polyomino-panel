@@ -1,60 +1,46 @@
 // Run with: node --test tests/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickEven, hashString } from '../tools/lib/pick.mjs';
+import { pickQuantiles, hashString } from '../tools/lib/pick.mjs';
 
 const pool = scores => scores.map((score, i) => ({ name: `p${i}`, score }));
 
-test('picks are spread evenly over the score range, easiest first', () => {
+test('picks sit at evenly spaced ranks from the easiest to the hardest, easiest first', () => {
   const cands = pool(Array.from({ length: 1000 }, (_, i) => i));        // scores 0..999
-  const { picks, lo, hi, short } = pickEven(cands, { count: 10, low: 0, high: 1, seed: 1 });
-  assert.equal(picks.length, 10);
+  const { picks, short } = pickQuantiles(cands, { count: 10, seed: 1 });
   assert.equal(short, 0);
+  assert.deepEqual(picks.map(p => p.score), [0, 111, 222, 333, 444, 555, 666, 777, 888, 999]);
+  assert.deepEqual(pickQuantiles(cands, { count: 1 }).picks.map(p => p.score), [500], 'a single pick is the median');
   assert.equal(new Set(picks.map(p => p.name)).size, 10, 'no puzzle picked twice');
-  for (let i = 0; i < 10; i++) {
-    const centre = lo + (i + 0.5) * (hi - lo) / 10;
-    assert.ok(Math.abs(picks[i].score - centre) <= 1, `pick ${i}: ${picks[i].score} vs centre ${centre}`);
-  }
-  for (let i = 1; i < picks.length; i++) assert.ok(picks[i - 1].score <= picks[i].score);
 });
 
-test('a skewed pool still gives distinct picks covering the range as well as it can', () => {
-  // 95% of puzzles easy (0..99), a thin tail of hard ones
+test('picks follow the pool: a skewed pool gives mostly easy picks but still reaches the hard tail', () => {
+  // 95% easy (0..99), a thin tail of hard ones up to 960
   const scores = [...Array.from({ length: 380 }, (_, i) => i % 100), ...Array.from({ length: 20 }, (_, i) => 200 + i * 40)];
-  const { picks } = pickEven(pool(scores), { count: 30, low: 0, high: 1 });
-  assert.equal(picks.length, 30);
-  assert.equal(new Set(picks.map(p => p.name)).size, 30);
-  assert.ok(picks[picks.length - 1].score >= 600, 'reaches into the hard tail');
-  assert.ok(picks[0].score <= 25, 'starts at the easy end');
+  const { picks } = pickQuantiles(pool(scores), { count: 40 });
+  assert.equal(picks.length, 40);
+  assert.equal(new Set(picks.map(p => p.name)).size, 40);
+  assert.ok(picks.filter(p => p.score < 100).length >= 36, 'the easy 95% gets about 95% of the picks');
+  assert.equal(picks[picks.length - 1].score, 960, 'the top pick is the hardest puzzle');
+  assert.equal(picks[0].score, 0, 'the first pick is the easiest puzzle');
 });
 
-test('a pool smaller than the book returns everything and reports the shortfall', () => {
-  const { picks, short } = pickEven(pool([5, 1, 3]), { count: 5 });
+test('a pool smaller than the request returns everything and reports the shortfall', () => {
+  const { picks, short } = pickQuantiles(pool([5, 1, 3]), { count: 5 });
   assert.deepEqual(picks.map(p => p.score), [1, 3, 5]);
   assert.equal(short, 2);
-  assert.deepEqual(pickEven([], { count: 3 }), { picks: [], lo: 0, hi: 0, short: 3 });
+  assert.deepEqual(pickQuantiles([], { count: 3 }), { picks: [], short: 3 });
 });
 
-test('ties are broken deterministically by seed', () => {
+test('ties are broken deterministically by seed, whatever the pool order', () => {
   const cands = pool(Array.from({ length: 100 }, () => 7));              // every score equal
-  const a = pickEven(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
-  const b = pickEven(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
-  const c = pickEven(cands, { count: 10, seed: 2 }).picks.map(p => p.name);
+  const a = pickQuantiles(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
+  const b = pickQuantiles(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
+  const c = pickQuantiles(cands, { count: 10, seed: 2 }).picks.map(p => p.name);
   assert.deepEqual(a, b);
   assert.notDeepEqual(a, c);
   assert.equal(new Set(a).size, 10);
-  // shuffling the pool does not change the choice
-  const shuffled = [...cands].reverse();
-  assert.deepEqual(pickEven(shuffled, { count: 10, seed: 1 }).picks.map(p => p.name), a);
-});
-
-test('percentile bounds ignore outliers; an absolute range overrides them', () => {
-  const cands = pool([...Array.from({ length: 98 }, (_, i) => i), 5000, 9000]);
-  const trimmed = pickEven(cands, { count: 5, low: 0.02, high: 0.98 });
-  assert.ok(trimmed.hi < 200, `outliers trimmed: hi=${trimmed.hi}`);
-  const abs = pickEven(cands, { count: 5, range: [0, 50] });
-  assert.equal(abs.lo, 0); assert.equal(abs.hi, 50);
-  assert.ok(abs.picks.every(p => p.score <= 60));
+  assert.deepEqual(pickQuantiles([...cands].reverse(), { count: 10, seed: 1 }).picks.map(p => p.name), a);
 });
 
 test('hashString is stable', () => {

@@ -1,182 +1,69 @@
 {
-  "default": "start",
+  "default": "one-6",
   "groups": [
     {
-      "name": "Start here",
-      "blurb": "A guided path on 6×6 boards: one new shape at a time, easy first, ending with a taste of two shapes."
-    },
-    {
-      "name": "Classical L-panel",
-      "blurb": "The original puzzle: cut the board into L tetrominoes. Mixed board sizes."
-    },
-    {
       "name": "One shape",
-      "blurb": "Every tile is the same shape (not the L): a mix of shapes and board sizes in each book."
+      "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard."
     },
     {
       "name": "Two shapes",
-      "blurb": "Each tile is either of two shapes: a mix of pairs and board sizes in each book."
+      "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard."
     }
   ],
   "books": [
     {
-      "id": "start",
-      "group": "Start here",
-      "title": "Start here",
-      "label": "Start here",
-      "blurb": "A guided path on 6×6 boards: one new shape at a time, easy first, ending with a taste of two shapes.",
-      "file": "start.csv",
-      "count": 66
-    },
-    {
-      "id": "l-beginner",
-      "group": "Classical L-panel",
-      "title": "Classical L-panel: Beginner",
-      "label": "Beginner",
-      "blurb": "only needs \"this cell can only be covered one way\" steps",
-      "tier": "Beginner",
-      "file": "l-beginner.csv",
-      "count": 100
-    },
-    {
-      "id": "l-medium",
-      "group": "Classical L-panel",
-      "title": "Classical L-panel: Medium",
-      "label": "Medium",
-      "blurb": "needs edges that two or three candidate tiles agree on",
-      "tier": "Medium",
-      "file": "l-medium.csv",
-      "count": 100
-    },
-    {
-      "id": "l-hard",
-      "group": "Classical L-panel",
-      "title": "Classical L-panel: Hard",
-      "label": "Hard",
-      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
-      "tier": "Hard",
-      "file": "l-hard.csv",
-      "count": 100
-    },
-    {
-      "id": "l-expert",
-      "group": "Classical L-panel",
-      "title": "Classical L-panel: Expert",
-      "label": "Expert",
-      "blurb": "needs chains of consequences several steps long",
-      "tier": "Expert",
-      "file": "l-expert.csv",
-      "count": 100
-    },
-    {
-      "id": "l-extreme",
-      "group": "Classical L-panel",
-      "title": "Classical L-panel: Extreme",
-      "label": "Extreme",
-      "blurb": "the hint rules cannot finish this one on their own",
-      "tier": "Unsolved",
-      "file": "l-extreme.csv",
-      "count": 100
-    },
-    {
-      "id": "one-beginner",
+      "id": "one-6",
       "group": "One shape",
-      "title": "One shape: Beginner",
-      "label": "Beginner",
-      "blurb": "only needs \"this cell can only be covered one way\" steps",
-      "tier": "Beginner",
-      "file": "one-beginner.csv",
-      "count": 150
+      "title": "One shape · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "one-6.csv",
+      "count": 300
     },
     {
-      "id": "one-medium",
+      "id": "one-8",
       "group": "One shape",
-      "title": "One shape: Medium",
-      "label": "Medium",
-      "blurb": "needs edges that two or three candidate tiles agree on",
-      "tier": "Medium",
-      "file": "one-medium.csv",
-      "count": 150
+      "title": "One shape · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "one-8.csv",
+      "count": 300
     },
     {
-      "id": "one-hard",
+      "id": "one-10",
       "group": "One shape",
-      "title": "One shape: Hard",
-      "label": "Hard",
-      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
-      "tier": "Hard",
-      "file": "one-hard.csv",
-      "count": 150
+      "title": "One shape · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "one-10.csv",
+      "count": 300
     },
     {
-      "id": "one-expert",
-      "group": "One shape",
-      "title": "One shape: Expert",
-      "label": "Expert",
-      "blurb": "needs chains of consequences several steps long",
-      "tier": "Expert",
-      "file": "one-expert.csv",
-      "count": 150
-    },
-    {
-      "id": "one-extreme",
-      "group": "One shape",
-      "title": "One shape: Extreme",
-      "label": "Extreme",
-      "blurb": "the hint rules cannot finish this one on their own",
-      "tier": "Unsolved",
-      "file": "one-extreme.csv",
-      "count": 150
-    },
-    {
-      "id": "two-beginner",
+      "id": "two-6",
       "group": "Two shapes",
-      "title": "Two shapes: Beginner",
-      "label": "Beginner",
-      "blurb": "only needs \"this cell can only be covered one way\" steps",
-      "tier": "Beginner",
-      "file": "two-beginner.csv",
-      "count": 100
+      "title": "Two shapes · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "two-6.csv",
+      "count": 300
     },
     {
-      "id": "two-medium",
+      "id": "two-8",
       "group": "Two shapes",
-      "title": "Two shapes: Medium",
-      "label": "Medium",
-      "blurb": "needs edges that two or three candidate tiles agree on",
-      "tier": "Medium",
-      "file": "two-medium.csv",
-      "count": 100
+      "title": "Two shapes · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "two-8.csv",
+      "count": 300
     },
     {
-      "id": "two-hard",
+      "id": "two-10",
       "group": "Two shapes",
-      "title": "Two shapes: Hard",
-      "label": "Hard",
-      "blurb": "needs \"try a tile and see it fail\" lookahead, or comparing four or more candidate tiles",
-      "tier": "Hard",
-      "file": "two-hard.csv",
-      "count": 100
-    },
-    {
-      "id": "two-expert",
-      "group": "Two shapes",
-      "title": "Two shapes: Expert",
-      "label": "Expert",
-      "blurb": "needs chains of consequences several steps long",
-      "tier": "Expert",
-      "file": "two-expert.csv",
-      "count": 100
-    },
-    {
-      "id": "two-extreme",
-      "group": "Two shapes",
-      "title": "Two shapes: Extreme",
-      "label": "Extreme",
-      "blurb": "the hint rules cannot finish this one on their own",
-      "tier": "Unsolved",
-      "file": "two-extreme.csv",
-      "count": 100
+      "title": "Two shapes · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "two-10.csv",
+      "count": 300
     }
   ]
 }

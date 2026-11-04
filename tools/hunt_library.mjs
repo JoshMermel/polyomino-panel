@@ -1,14 +1,15 @@
 // Hunt for hard puzzles and add them to a pool in tools/library/.
 //
 //   node tools/hunt_library.mjs --tile L --size 8 --minutes 30
-//        [--want Hard,Expert,Unsolved] [--targets Hard=150,Expert=150,Unsolved=100]
+//        [--want chain,unsolved] [--targets chain=150,unsolved=100]
 //        [--min-distance 4] [--seed N]
 //        [--probe-minutes 3] [--stall-minutes 10] [--until EPOCH_MS]
 //
 // Rejection sampling (what tools/fill_library.mjs does) finds the easy and medium
 // puzzles quickly on small boards, but the top tiers are thin, so this tool looks
 // specifically for puzzles that need the hard rules (see js/rating.js) and stores only
-// those. With --want Beginner,Medium it hunts the other end instead: easy puzzles on
+// those (--want takes tier names, Beginner/Medium/Hard, or rule ids such as chain, unsolved or
+// edgesWide; a rule id means "puzzles whose hardest rule is exactly that"). With --want Beginner,Medium it hunts the other end instead: easy puzzles on
 // the bigger boards, where plain sampling almost never lands (the pools were thin there). Two
 // modes are mixed:
 //   explore  generate fresh uniquely-solvable puzzles at a blocked-cell count picked
@@ -43,9 +44,12 @@ const minutes = Number(args.minutes ?? 30);
 const probeMs = Number(args['probe-minutes'] ?? 3) * 60000;
 const stallMs = Number(args['stall-minutes'] ?? 10) * 60000;
 const seed = Number(args.seed ?? Math.floor(Math.random() * 2 ** 31));
-// which tiers count as finds (default: the hard ones; --want Beginner,Medium hunts easy puzzles)
-const want = new Set((args.want ?? 'Hard,Expert,Unsolved').split(',').filter(Boolean));
-const targets = { Beginner: 150, Medium: 150, Hard: 150, Expert: 150, Unsolved: 100 };
+// What counts as a find: a tier name or a rule id (default: the rarest hard puzzles, those whose
+// hardest rule is a chain or beyond the rules; --want Beginner,Medium hunts easy puzzles). A puzzle
+// falls in the bucket of its rule if that is wanted, else of its tier if that is wanted.
+const want = new Set((args.want ?? 'chain,unsolved').split(',').filter(Boolean));
+const bucketOf = p => (want.has(p.rules) ? p.rules : want.has(p.tier) ? p.tier : null);
+const targets = Object.fromEntries([...want].map(w => [w, 150]));
 const minDistance = Number(args['min-distance'] ?? 4);   // a find must differ from stored puzzles in this many cells
 for (const kv of (args.targets ?? '').split(',').filter(Boolean)) { const [k, v] = kv.split('='); targets[k] = Number(v); }
 const cap = t => (targets[t] ?? 0) * 4;                // stop storing a tier at 4x its target
@@ -58,8 +62,8 @@ mkdirSync(dir, { recursive: true });
 const file = new URL(`${tile}_${rows}x${cols}.csv`, dir);
 const pool = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : [];
 const seen = new Set(pool.map(p => canonicalGrid(p.grid, rows, cols)));
-const counts = Object.fromEntries(TIERS.map(t => [t, 0]));
-pool.forEach(p => { counts[p.tier] = (counts[p.tier] ?? 0) + 1; });
+const counts = Object.fromEntries([...want].map(w => [w, 0]));
+pool.forEach(p => { const b = bucketOf(p); if (b) counts[b]++; });
 const startCounts = { ...counts };
 const holesOf = p => { let k = 0; for (const c of p.grid) if (c === '#') k++; return k; };
 
@@ -72,9 +76,10 @@ function save() {
 }
 
 // --- what counts as a find -------------------------------------------------------
-const VALUE = { Beginner: 3, Medium: 1, Hard: 1, Expert: 3, Unsolved: 4 };   // how much a find of this tier is worth
+const VALUE = { Beginner: 3, Medium: 1, Hard: 1, forced: 3, edges: 1, lookahead2: 1, edgesWide: 1, lookahead3: 1, chain: 3, unsolved: 4 };   // how much a find in this bucket is worth
+const valueOf = b => VALUE[b] ?? 1;
 const needed = t => want.has(t) && counts[t] < (targets[t] ?? 0);
-const worth = t => (needed(t) ? VALUE[t] : 0.05);
+const worth = t => (needed(t) ? valueOf(t) : 0.05);
 const allMet = () => [...want].every(t => !needed(t));
 
 // Blocked-cell counts to try: the ones the pool already has puzzles for (so known feasible).
@@ -107,7 +112,7 @@ function tooSimilar(grid) {
 }
 
 // Parents for exploit mode: puzzles found (or already in the pool) that need hard rules.
-const parents = pool.filter(p => want.has(p.tier));
+const parents = pool.filter(p => bucketOf(p));
 parents.forEach(p => { p.uses = 0; });
 const stats = { explore: { tries: 0, found: 0, secs: 0 }, exploit: { tries: 0, found: 0, secs: 0 } };
 let lastFind = Date.now(), added = 0, nextSave = Date.now() + 60000, nextLog = Date.now() + 60000;
@@ -119,19 +124,20 @@ function consider(puzzle, mode, arm) {
   if (!openCellsConnected(puzzle)) return 0;                      // islands of open cells: reject
   if (hasSwastika(puzzle, puzzle.solution)) return 0;            // a swastika in the tile boundaries: reject
   const r = ratePuzzle(puzzle);
-  if (!want.has(r.tier) || counts[r.tier] >= cap(r.tier)) return 0;
+  const bucket = bucketOf(r);
+  if (!bucket || counts[bucket] >= cap(bucket)) return 0;
   if (tooSimilar(puzzle.grid)) return 0;
   addGrid(puzzle.grid);
   const row = { ...puzzle, name: `${tile}_${rows}x${cols}_${puzzleHash(puzzle).slice(0, 8)}`, rules: r.rules, tier: r.tier, score: r.score };
   pool.push(row);
   row.uses = 0;
   parents.push(row);
-  counts[r.tier]++;
+  counts[bucket]++;
   added++;
   stats[mode].found++;
   lastFind = Date.now();
-  if (arm !== undefined) arms.get(arm).value += worth(r.tier);
-  return worth(r.tier);
+  if (arm !== undefined) arms.get(arm).value += worth(bucket);
+  return worth(bucket);
 }
 
 while (Date.now() < deadline && !allMet()) {
@@ -147,7 +153,7 @@ while (Date.now() < deadline && !allMet()) {
       let best = null;
       for (let i = 0; i < 6; i++) {
         const c = parents[Math.floor(rng() * parents.length)];
-        if (!best || c.uses < best.uses || (c.uses === best.uses && VALUE[c.tier] > VALUE[best.tier])) best = c;
+        if (!best || c.uses < best.uses || (c.uses === best.uses && valueOf(bucketOf(c)) > valueOf(bucketOf(best)))) best = c;
       }
       best.uses++;
       return best;

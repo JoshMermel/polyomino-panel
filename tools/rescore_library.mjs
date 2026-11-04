@@ -23,7 +23,7 @@ if (opt('worker')) {
   let changed = 0;
   const lv = Object.fromEntries(TIERS.map(t => [t, 0]));
   for (const p of puzzles) {
-    const r = ratePuzzle(p);
+    const r = ratePuzzle({ ...p });          // a copy: its placement cache is freed once rated (big pools ran out of memory)
     if (p.rules !== r.rules || p.tier !== r.tier || p.score !== r.score) changed++;
     p.rules = r.rules; p.tier = r.tier; p.score = r.score; lv[r.tier]++;
   }
@@ -32,8 +32,8 @@ if (opt('worker')) {
   process.exit(0);
 }
 
-const only = opt('only') ? opt('only').split(',').map(g => new RegExp('^' + g.replace(/\*/g, '.*') + '$')) : null;
-const files = readdirSync(libDir).filter(f => /^[A-Z0-9]+_\d+x\d+\.csv$/.test(f))
+const only = opt('only') ? opt('only').split(',').map(g => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$')) : null;
+const files = readdirSync(libDir).filter(f => /^[A-Z0-9+]+_\d+x\d+\.csv$/.test(f))
   .filter(f => !only || only.some(re => re.test(f.replace('.csv', ''))));
 const jobs = Number(opt('jobs') ?? Math.max(1, os.cpus().length - 1));
 let next = 0, running = 0, done = 0;

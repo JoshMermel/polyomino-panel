@@ -25,17 +25,21 @@ import {
   EDGE_LINE, EDGE_CROSS, LOOKAHEAD_2, LOOKAHEAD_3, EDGES_NARROW, EDGES_WIDE,
 } from './logic.js';
 
-// Difficulty tiers, easiest first (named after multiverse star battle's).
-export const TIERS = ['Beginner', 'Medium', 'Hard', 'Expert', 'Unsolved'];
+// Difficulty tiers, easiest first. A puzzle's tier is the tier of the hardest rule it needs.
+// (There used to be five: Hard was split into Hard / Expert / Extreme. The per-puzzle `rules`
+// column keeps that finer information; see beyondHints below for the one split that still shows.)
+export const TIERS = ['Beginner', 'Medium', 'Hard'];
 
 // How the app presents each tier: its name and what it means.
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
-  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on' },
-  Hard: { name: 'Hard', blurb: 'needs "try a tile and see it fail" lookahead, or comparing four or more candidate tiles' },
-  Expert: { name: 'Expert', blurb: 'needs chains of consequences several steps long' },
-  Unsolved: { name: 'Extreme', blurb: 'the hint rules cannot finish this one on their own' },
+  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, or trying one of two tiles and seeing it fail' },
+  Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, or chains of consequences (a few need more than the hint rules can do)' },
 };
+
+// Puzzles the deduction rules can't finish (their `rules` value is 'unsolved'). They are in the Hard
+// tier, at the back of any score-sorted book, and are flagged so a player knows the hints will run dry.
+export const beyondHints = puzzle => puzzle.rules === 'unsolved';
 
 // The rule table. THIS is where rules are binned into tiers and given weights: to
 // re-bin a rule, change its tier here and run tools/rescore_library.mjs (the stored
@@ -51,7 +55,7 @@ export const RULES = [
   { id: 'edges', tier: 'Medium', weight: 3, hintKind: 'edges',
     find: (p, e) => edgeDeduction(p, e, EDGES_NARROW), findAll: (p, e) => allEdgeDeductions(p, e, EDGES_NARROW),
     label: 'an edge that every one of two or three possible tiles agrees on' },
-  { id: 'lookahead2', tier: 'Hard', weight: 6, hintKind: 'lookahead2',
+  { id: 'lookahead2', tier: 'Medium', weight: 6, hintKind: 'lookahead2',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_2), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_2),
     label: 'two possible tiles, one fails' },
   { id: 'edgesWide', tier: 'Hard', weight: 8, hintKind: 'edges',
@@ -60,7 +64,7 @@ export const RULES = [
   { id: 'lookahead3', tier: 'Hard', weight: 16, hintKind: 'lookahead3',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_3), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_3),
     label: 'three or more possible tiles, all but one fail' },
-  { id: 'chain', tier: 'Expert', weight: 30, hintKind: 'chain',
+  { id: 'chain', tier: 'Hard', weight: 30, hintKind: 'chain',
     find: chainTile, findAll: allChainTiles,
     label: 'a tile fails after a chain of forced steps' },
 ];
@@ -69,7 +73,7 @@ export const RULES = [
 export const UNDETERMINED_WEIGHT = 40;
 
 export const RULE_IDS = RULES.map(r => r.id);
-export const tierOfRule = id => (id === 'unsolved' ? 'Unsolved' : RULES.find(r => r.id === id).tier);
+export const tierOfRule = id => (id === 'unsolved' ? 'Hard' : RULES.find(r => r.id === id).tier);
 export const ruleLabel = id => (id === 'unsolved' ? 'none of the current rules finishes it' : RULES.find(r => r.id === id).label);
 
 // Solve with the rules alone. Returns

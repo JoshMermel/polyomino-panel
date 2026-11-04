@@ -7,7 +7,7 @@ import {
   cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
-import { RULES, TIERS, TIER_INFO } from './rating.js';
+import { RULES, TIERS, TIER_INFO, beyondHints } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
 const $ = id => document.getElementById(id);
@@ -167,7 +167,7 @@ async function goTo(setIdx, puzIdx) {
   board.render(state.puzzle, state.edges);
   syncColumnWidth();
   renderTileInfo($('tile-info'), state.puzzle.tile);
-  renderTier(state.puzzle.tier);
+  renderTier(state.puzzle);
   updateFeedbackLink();
   refresh();
 }
@@ -206,8 +206,10 @@ function syncColumnWidth() {
   if (svg) $('game-container').style.setProperty('--board-w', `${svg.getBoundingClientRect().width}px`);
 }
 
-// Difficulty tier of the current puzzle as filled/empty stars plus a word.
-function renderTier(tier) {
+// Difficulty tier of the current puzzle as filled/empty stars plus a word; a puzzle the hint rules
+// can't finish on their own also says so.
+function renderTier(puzzle) {
+  const tier = puzzle.tier;
   const el = $('tier-info');
   el.textContent = '';
   const level = TIERS.indexOf(tier);
@@ -223,6 +225,13 @@ function renderTier(tier) {
   });
   el.append(stars, TIER_INFO[tier].name);
   el.title = `${TIER_INFO[tier].name}: ${TIER_INFO[tier].blurb}`;
+  if (beyondHints(puzzle)) {
+    const note = document.createElement('span');
+    note.className = 'tier-beyond';
+    note.textContent = ' · no logical hints';
+    note.title = "The hint rules can't finish this puzzle on their own, so Hint will run out of logical steps.";
+    el.append(note);
+  }
 }
 
 // --- Editing ----------------------------------------------------------------

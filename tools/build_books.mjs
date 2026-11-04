@@ -3,30 +3,30 @@
 //
 //   node tools/build_books.mjs                 stage every book in tools/books_staging/ and print a report
 //   node tools/build_books.mjs --promote       ...and copy them into data/ (replacing the old books) + rewrite manifest.json
-//   node tools/build_books.mjs --list          what each pool can supply, by tier
+//   node tools/build_books.mjs --list          what the pools can supply for each book, by tier
 //   --seed N                                   tie-break seed (default 1; builds are deterministic for a seed)
 //
-// The books are:
-//   Start here          a guided 6x6 path, one shape at a time, then a taste of two shapes
-//   Classical L-panel   L tetromino puzzles, one book per difficulty tier
-//   One shape           puzzles with one tile shape (not the L), one book per tier
-//   Two shapes          puzzles where each tile is either of two shapes, one book per tier
-// Each tier book mixes shapes and board sizes: its puzzles are shared out as evenly as possible
-// over the (shape, board size) cells that have puzzles of that tier, then each cell's share is
-// spread evenly over that cell's score range, and the book is sorted by score (bigger boards
-// score higher, so they land towards the back). Every puzzle is in at most one book: a puzzle
-// used by an earlier book is never offered to a later one.
-//
-// Never published: puzzles whose open cells are not one connected region
-// (logic.openCellsConnected) and puzzles whose solution's tile boundaries contain a swastika
-// pattern (logic.hasSwastika). The pools to draw from are the shapes and sizes in recipes.json.
+// There is one book per (number of tile shapes, board size): "One shape" and "Two shapes", each on
+// 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard; see
+// js/rating.js), easiest first. How a book is made:
+//   1. The tier shares are even: the book's size is split equally over the tiers, and a tier with
+//      too few puzzles gives up what it can't fill, the others sharing the difference.
+//   2. Within a tier the puzzles are shared out as evenly as possible over the shapes (or pairs) that
+//      have puzzles of that tier, again with the shortfall passed on.
+//   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
+//      book follows the pool's own spread of difficulty from its easy end to its hard end.
+//   4. The book is sorted by tier, then score. One book can start with a shape-by-shape "tour" of
+//      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
+// Every puzzle is in at most one book. Never published: puzzles whose open cells are not one
+// connected region (logic.openCellsConnected) and puzzles whose solution's tile boundaries contain a
+// swastika pattern (logic.hasSwastika). The pools to draw from are the shapes and sizes in recipes.json.
 import {
   readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, rmSync,
 } from 'node:fs';
-import { parseCsv, toCsv, solve, shapeName, hasSwastika, openCellsConnected } from '../js/logic.js';
-import { TIERS, TIER_INFO } from '../js/rating.js';
+import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected } from '../js/logic.js';
+import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickEven, evenAllocation } from './lib/pick.mjs';
+import { pickQuantiles, evenAllocation } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -38,10 +38,10 @@ const recipes = JSON.parse(readFileSync(new URL('tools/books/recipes.json', root
 const config = JSON.parse(readFileSync(new URL('tools/books/collections.json', root), 'utf8'));
 const libDir = new URL('tools/library/', root), stageDir = new URL('tools/books_staging/', root), dataDir = new URL('data/', root);
 mkdirSync(stageDir, { recursive: true });
+for (const t of config.tiers) if (!TIERS.includes(t)) throw new Error(`collections.json: unknown tier ${t}`);
 
 // --- The pools -------------------------------------------------------------------------------
 const pool = [];                       // every puzzle that may be published
-const poolBySize = new Map();          // for the report
 for (const tile of recipes.shapes) {
   for (const size of recipes.sizes) {
     const f = new URL(`${tile}_${size}x${size}.csv`, libDir);
@@ -51,81 +51,65 @@ for (const tile of recipes.shapes) {
     }
   }
 }
-const isPair = p => p.tile.includes('+');
-const tierName = t => TIER_INFO[t].name;
-const tierSlug = t => tierName(t).toLowerCase();
+const shapeCount = p => tileSpecs(p.tile).length;
 
-if (flags.has('--list')) {
-  const sections = [{ group: 'Start here (6x6 curriculum draws from these)', test: p => !isPair(p) && p.rows === config.start.size }, ...config.sections.map(s => ({ group: s.group, test: p => matches(s, p) }))];
-  for (const s of sections) {
-    const per = TIERS.map(t => pool.filter(p => p.tier === t && s.test(p)).length);
-    console.log(`${s.group.padEnd(44)} ${TIERS.map((t, i) => `${tierName(t)} ${per[i]}`).join('  ')}`);
+// The books, in order.
+const specs = [];
+for (const g of config.groups) {
+  for (const size of config.sizes) {
+    specs.push({
+      id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
+      title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,
+      blurb: config.sizeBlurbs?.[size] ?? '', count: config.perBook,
+    });
   }
-  process.exit(0);
 }
 
-// Does this puzzle belong to a section (before the tier is considered)?
-function matches(section, p) {
-  if (section.only) return section.only.includes(p.tile);
-  if (section.kind === 'pair' && !isPair(p)) return false;
-  if (section.kind === 'single' && isPair(p)) return false;
-  return !(section.exclude ?? []).includes(p.tile);
+const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && p.rows === spec.size && !used.has(p.name));
+
+if (flags.has('--list')) {
+  for (const s of specs) {
+    const c = eligible(s, new Set());
+    console.log(`${s.id.padEnd(8)} wants ${s.count}  can supply ${config.tiers.map(t => `${t} ${c.filter(p => p.tier === t).length}`).join('  ')}`);
+  }
+  process.exit(0);
 }
 
 // --- Building ---------------------------------------------------------------------------------
 for (const f of readdirSync(stageDir)) if (f.endsWith('.csv')) rmSync(new URL(f, stageDir));
 const used = new Set();                // names of puzzles already in a book
-const books = [];                      // { meta, puzzles }
-const trim = n => (n >= 50 ? { low: 0.02, high: 0.98 } : { low: 0, high: 1 });   // ignore score outliers in big cells
+const books = [];
 
-// Start here: for each stage (a shape or pair, in order) the requested number of puzzles of each tier.
-{
-  const st = config.start, picked = [];
-  for (const stage of st.stages) {
-    for (const tier of TIERS) {
-      const want = stage[tier] ?? 0;
-      if (!want) continue;
-      const cands = pool.filter(p => p.tile === stage.tile && p.rows === st.size && p.tier === tier && !used.has(p.name));
-      const r = pickEven(cands, { count: want, seed, ...trim(cands.length) });
-      if (r.short) console.log(`  start: ${stage.tile} ${tierName(tier)}: only ${r.picks.length} of ${want} available`);
-      r.picks.forEach(p => { used.add(p.name); picked.push({ ...p, _stage: st.stages.indexOf(stage) }); });
-    }
-  }
-  picked.sort((a, b) => a._stage - b._stage || TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
-  books.push({
-    meta: { id: st.id, group: st.group, title: st.title, label: st.title, blurb: st.blurb, ordered: 'curriculum' },
-    puzzles: picked,
-    target: picked.length,
-  });
+// Share `count` slots over `groups` (an array of candidate arrays) evenly, then take each group's
+// share at evenly spaced score ranks.
+function pickAcross(groups, count) {
+  const alloc = evenAllocation(count, groups.map(g => g.length));
+  return groups.flatMap((g, i) => (alloc[i] ? pickQuantiles(g, { count: alloc[i], seed }).picks : []));
 }
+const byTile = cands => {
+  const m = new Map();
+  for (const p of cands) { if (!m.has(p.tile)) m.set(p.tile, []); m.get(p.tile).push(p); }
+  return [...m.keys()].sort().map(k => m.get(k));
+};
 
-// The sections: one book per tier.
-for (const section of config.sections) {
-  for (const tier of config.tiers) {
-    const cands = pool.filter(p => p.tier === tier && !used.has(p.name) && matches(section, p));
-    const cells = new Map();                                    // (tile, size) -> candidates
-    for (const p of cands) {
-      const key = `${p.tile}|${String(p.rows).padStart(3, '0')}`;
-      if (!cells.has(key)) cells.set(key, []);
-      cells.get(key).push(p);
+for (const spec of specs) {
+  const tour = [];
+  if (config.tour?.book === spec.id) {
+    for (const tile of config.tour.shapes) {
+      const cands = eligible(spec, used).filter(p => p.tile === tile && p.tier === config.tour.tier);
+      const r = pickQuantiles(cands, { count: config.tour.perShape, seed });
+      if (r.short) console.log(`  ${spec.id} tour: only ${r.picks.length} of ${config.tour.perShape} ${config.tour.tier} puzzles for ${tile}`);
+      r.picks.forEach(p => { used.add(p.name); tour.push(p); });
     }
-    const keys = [...cells.keys()].sort();
-    const alloc = evenAllocation(section.count, keys.map(k => cells.get(k).length));
-    const picks = [];
-    keys.forEach((k, i) => {
-      if (!alloc[i]) return;
-      const c = cells.get(k);
-      picks.push(...pickEven(c, { count: alloc[i], seed, ...trim(c.length) }).picks);
-    });
-    picks.forEach(p => used.add(p.name));
-    picks.sort((a, b) => a.score - b.score || (a.name < b.name ? -1 : 1));
-    const id = `${section.idPrefix}-${tierSlug(tier)}`;
-    books.push({
-      meta: { id, group: section.group, title: `${section.group}: ${tierName(tier)}`, label: tierName(tier), blurb: TIER_INFO[tier].blurb, tier, ordered: 'score' },
-      puzzles: picks,
-      target: section.count,
-    });
   }
+
+  const cands = eligible(spec, used);
+  const perTier = config.tiers.map(t => cands.filter(p => p.tier === t));
+  const alloc = evenAllocation(spec.count - tour.length, perTier.map(c => c.length));
+  const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i]));
+  rest.forEach(p => used.add(p.name));
+  rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
+  books.push({ meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...rest], target: spec.count, tourCount: tour.length });
 }
 
 // --- Checks, files, report ---------------------------------------------------------------------
@@ -140,21 +124,21 @@ for (const b of books) {
     seenKeys.add(key);
   }
   const pad = Math.max(2, String(b.puzzles.length).length);
-  const book = b.puzzles.map((p, i) => { const { _stage, ...rest } = p; return { ...rest, name: `${b.meta.id}_${String(i + 1).padStart(pad, '0')}` }; });
+  const book = b.puzzles.map((p, i) => ({ ...p, name: `${b.meta.id}_${String(i + 1).padStart(pad, '0')}` }));
   const header = `# ${b.meta.title}. Built by tools/build_books.mjs from a pool of ${pool.length} puzzles (seed ${seed}).\n` +
     '# grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).\n' +
-    `# rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. ${b.meta.ordered === 'score' ? 'Sorted easiest first.' : 'In curriculum order.'}\n`;
+    `# rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. ${b.tourCount ? `The first ${b.tourCount} puzzles are a shape-by-shape tour; the rest are ` : 'Sorted '}by tier, then score.\n`;
   writeFileSync(new URL(`${b.meta.id}.csv`, stageDir), header + toCsv(book));
   b.meta.file = `${b.meta.id}.csv`;
   b.meta.count = book.length;
 
-  const count = f => { const m = new Map(); b.puzzles.forEach(p => m.set(f(p), (m.get(f(p)) ?? 0) + 1)); return m; };
-  const fmt = m => [...m].sort((x, y) => (x[0] < y[0] ? -1 : 1)).map(([k, v]) => `${k}:${v}`).join(' ');
-  const tiers = fmt(count(p => tierName(p.tier)));
-  const sizes = fmt(count(p => `${p.rows}x${p.cols}`));
-  const shapes = count(p => p.tile);
-  const sc = b.puzzles.map(p => p.score);
-  console.log(`[${b.meta.id}] ${book.length}/${b.target}  tiers ${tiers}\n    sizes ${sizes}  | ${shapes.size} shape${shapes.size === 1 ? '' : 's'}${shapes.size <= 3 ? ` (${fmt(shapes)})` : ''}  | scores ${Math.min(...sc)}..${Math.max(...sc)}`);
+  const rest = b.puzzles.slice(b.tourCount);
+  const tiers = config.tiers.map(t => `${TIER_INFO[t].name} ${b.puzzles.filter(p => p.tier === t).length}`).join('  ');
+  const shapes = new Set(b.puzzles.map(p => p.tile));
+  const hard = rest.filter(p => p.tier === 'Hard');
+  const sc = t => { const s = rest.filter(p => p.tier === t).map(p => p.score); return s.length ? `${Math.min(...s)}..${Math.max(...s)}` : '-'; };
+  console.log(`[${b.meta.id}] ${book.length}/${b.target}  ${tiers}  | ${shapes.size} shape sets${b.tourCount ? `, tour ${b.tourCount}` : ''}  | beyond hints ${hard.filter(beyondHints).length}/${hard.length} of Hard\n` +
+    `    scores: ${config.tiers.map(t => `${TIER_INFO[t].name} ${sc(t)}`).join('  ')}`);
 }
 
 if (flags.has('--promote')) {
@@ -162,8 +146,8 @@ if (flags.has('--promote')) {
   for (const b of books) copyFileSync(new URL(b.meta.file, stageDir), new URL(b.meta.file, dataDir));
   const manifest = {
     default: config.default,
-    groups: [{ name: config.start.group, blurb: config.start.blurb }, ...config.sections.map(s => ({ name: s.group, blurb: s.blurb }))],
-    books: books.map(b => b.meta).map(({ ordered, ...m }) => m),
+    groups: config.groups.map(g => ({ name: g.name, blurb: g.blurb })),
+    books: books.map(b => b.meta),
   };
   writeFileSync(new URL('manifest.json', dataDir), JSON.stringify(manifest, null, 2) + '\n');
   console.log(`promoted ${books.length} books to data/ (${books.reduce((n, b) => n + b.meta.count, 0)} puzzles)`);

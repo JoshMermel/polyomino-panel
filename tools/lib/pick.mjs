@@ -1,10 +1,4 @@
-// Choose `count` puzzles from a scored pool so that scores are spread as evenly
-// as the pool allows across a score range (the same idea as multiverse star
-// battle's book builder): split the range into `count` equal bins and, for each
-// bin in turn, claim the unused candidate whose score is nearest the bin's
-// centre. Ties are broken by a hash of the puzzle's name and the seed, so
-// rescoring or re-sorting a pool doesn't reshuffle which equal-scored puzzle
-// is picked.
+// Helpers for choosing which puzzles go in which book (see tools/build_books.mjs).
 
 export function hashString(s) {
   let h = 2166136261;
@@ -12,43 +6,25 @@ export function hashString(s) {
   return h >>> 0;
 }
 
-// cands: [{name, score, ...}]
-// opts:  count; low/high = percentiles (0..1) of the pool's scores that bound the
-//        range; or range: [lo, hi] absolute scores (wins over percentiles); seed.
-// Returns { picks (ascending by score), lo, hi, short }.
-export function pickEven(cands, { count, low = 0.02, high = 0.98, range = null, seed = 1 }) {
-  const sorted = [...cands].sort((a, b) => a.score - b.score || (a.name < b.name ? -1 : 1));
-  const n = sorted.length;
-  if (n === 0) return { picks: [], lo: 0, hi: 0, short: count };
-  const q = f => sorted[Math.min(n - 1, Math.max(0, Math.round(f * (n - 1))))].score;
-  const lo = range ? range[0] : q(low), hi = range ? range[1] : q(high);
-  if (n <= count) return { picks: sorted, lo, hi, short: count - n };
-
+// Choose `count` puzzles from a scored pool at evenly spaced RANKS: sort by score and take the
+// puzzles at ranks 0, 1/(count-1), ..., 1 of the way through, so the picks include the pool's easiest
+// and hardest puzzle and follow its own distribution in between (a pool that is mostly easy gives
+// mostly easy picks). One pick is the median. (Star battle's builder spaces picks evenly over a fixed
+// score range instead, which suits hand-tuned ranges; ours are merged tiers whose scores run from
+// tens to over a thousand, so equal-width score bins would be dominated by the extreme tail.)
+// Equal scores are ordered by a hash of the puzzle's name and the seed, so rescoring or re-sorting a
+// pool doesn't reshuffle which of several equal puzzles is chosen.
+// cands: [{name, score, ...}]; returns { picks (ascending by score), short }.
+export function pickQuantiles(cands, { count, seed = 1 }) {
   const tie = c => hashString(`${c.name}#${seed}`);
-  const used = new Uint8Array(n);
-  const picked = [];
-  for (let i = 0; i < count; i++) {
-    const center = lo + (i + 0.5) * (hi - lo) / count;
-    // first index with score >= center (binary search)
-    let a = 0, b = n;
-    while (a < b) { const m = (a + b) >> 1; if (sorted[m].score < center) a = m + 1; else b = m; }
-    // expand outward to the nearest unused candidate(s); among equally near ones take the lowest tie-hash
-    let best = -1, bestDist = Infinity;
-    for (let step = 0; step < n; step++) {
-      const left = a - 1 - step, right = a + step;
-      const dl = left >= 0 ? Math.abs(sorted[left].score - center) : Infinity;
-      const dr = right < n ? Math.abs(sorted[right].score - center) : Infinity;
-      if (Math.min(dl, dr) > bestDist) break;                // nothing closer can follow
-      for (const [idx, d] of [[left, dl], [right, dr]]) {
-        if (idx < 0 || idx >= n || used[idx]) continue;
-        if (d < bestDist || (d === bestDist && tie(sorted[idx]) < tie(sorted[best]))) { best = idx; bestDist = d; }
-      }
-    }
-    used[best] = 1;
-    picked.push(sorted[best]);
-  }
-  picked.sort((x, y) => x.score - y.score || (x.name < y.name ? -1 : 1));
-  return { picks: picked, lo, hi, short: 0 };
+  const sorted = cands.map(c => ({ c, t: tie(c) }))
+    .sort((a, b) => a.c.score - b.c.score || a.t - b.t || (a.c.name < b.c.name ? -1 : 1))
+    .map(x => x.c);
+  const n = sorted.length;
+  if (n <= count) return { picks: sorted, short: count - n };
+  const picks = [];
+  for (let i = 0; i < count; i++) picks.push(sorted[count === 1 ? Math.floor(n / 2) : Math.round(i * (n - 1) / (count - 1))]);
+  return { picks, short: 0 };
 }
 
 // Split `count` slots across cells as evenly as their capacities allow: every cell gets the

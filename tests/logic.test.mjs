@@ -16,7 +16,7 @@ import {
   generatePuzzle, mulberry32, canonicalGrid, defaultHoles, stateFromPuzzle, puzzleFromState, neighborState,
 } from '../js/generator.js';
 import { referenceSearch } from './reference_solver.mjs';
-import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule } from '../js/rating.js';
+import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule, beyondHints } from '../js/rating.js';
 import { LOOKAHEAD_2, LOOKAHEAD_3 } from '../js/logic.js';
 
 const manifestOf = () => JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
@@ -489,13 +489,21 @@ test('ratePuzzle uses only the deduction rules and classifies correctly', () => 
   // the rule table: easiest first, tiers never decrease down the list
   const tierRank = id => TIERS.indexOf(RULES.find(x => x.id === id).tier);
   for (let i = 1; i < RULES.length; i++) assert.ok(tierRank(RULES[i].id) >= tierRank(RULES[i - 1].id));
-  assert.equal(tierOfRule('unsolved'), 'Unsolved');
+  // the bins: forced steps are Beginner; edges and two-way lookahead are Medium; wide edges, three-way
+  // lookahead, chains and puzzles beyond the rules are Hard
+  assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard']);
+  assert.deepEqual(RULES.map(x => [x.id, x.tier]), [
+    ['forced', 'Beginner'], ['edges', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['chain', 'Hard'],
+  ]);
+  assert.equal(tierOfRule('unsolved'), 'Hard');
+  assert.equal(beyondHints({ rules: 'unsolved' }), true);
+  assert.equal(beyondHints({ rules: 'chain' }), false);
   const rt = (tier, o = {}) => ({ tier, remaining: 0, steps: 1, score: 1, ...o });
   // tier order whatever the scores
   for (let i = 1; i < TIERS.length; i++) assert.ok(compareRatings(rt(TIERS[i - 1], { score: 999 }), rt(TIERS[i], { score: 1 })) < 0);
   // within a tier: lower score first
   assert.ok(compareRatings(rt('Hard', { score: 12 }), rt('Hard', { score: 30 })) < 0);
-  assert.ok(compareRatings(rt('Unsolved', { score: 520 }), rt('Unsolved', { score: 300 })) > 0);
+  assert.ok(compareRatings(rt('Hard', { score: 520 }), rt('Hard', { score: 300 })) > 0);
 });
 
 test('sortByRules renumbers and sorts; every shipped book is sorted and its stored ratings are current', () => {
@@ -516,10 +524,12 @@ test('sortByRules renumbers and sorts; every shipped book is sorted and its stor
       assert.equal(ps[i].tier, rs[i].tier, `${book.file} ${ps[i].name} tier column`);
       assert.equal(ps[i].score, rs[i].score, `${book.file} ${ps[i].name} score column`);
     }
-    // a tier book holds only its tier and is sorted by score; "Start here" is in curriculum order
-    if (book.tier) {
-      assert.ok(rs.every(r => r.tier === book.tier), `${book.file}: only ${book.tier} puzzles`);
-      for (let i = 1; i < rs.length; i++) assert.ok(rs[i - 1].score <= rs[i].score, `${book.file} not sorted at ${i}`);
+    // a book runs through the tiers in order, and within a tier by score; a book can open with a
+    // shape-by-shape "tour" of easy puzzles (its CSV header says how many), which is exempt
+    const tour = Number(/The first (\d+) puzzles are a shape-by-shape tour/.exec(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'))?.[1] ?? 0);
+    for (let i = 1; i < rs.length; i++) {
+      assert.ok(TIERS.indexOf(rs[i - 1].tier) <= TIERS.indexOf(rs[i].tier), `${book.file}: tiers out of order at ${i}`);
+      if (i - 1 >= tour && rs[i - 1].tier === rs[i].tier) assert.ok(rs[i - 1].score <= rs[i].score, `${book.file} not sorted by score at ${i}`);
     }
   }
 });
@@ -803,8 +813,8 @@ test('the whole rule ladder is sound on every published puzzle, and solves most 
       if (analyze(pz, e).solved) solved++;
     }
   }
-  // Extreme ("Unsolved") puzzles are the ones the rules can't finish, and books give them a fifth of
-  // each book, so most (not nearly all) of the sampled puzzles are solved by the rules alone.
+  // Some Hard puzzles are ones the rules can't finish, so most (not nearly all) of the sampled
+  // puzzles are solved by the rules alone.
   assert.ok(solved / puzzles > 0.6, `only ${solved}/${puzzles} solved`);
   assert.ok(chainSteps > 0 && crossSteps > 0, `chain steps ${chainSteps}, cross steps ${crossSteps}`);
 });
@@ -1082,7 +1092,7 @@ test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks nev
   }
 });
 
-test('books: no puzzle is in two books, and each section holds what it says', () => {
+test('books: no puzzle is in two books; each book is one size and shape count, runs through the tiers, and mixes shapes', () => {
   const manifest = manifestOf();
   const seen = new Set(), names = new Set();
   for (const book of manifest.books) {
@@ -1094,22 +1104,23 @@ test('books: no puzzle is in two books, and each section holds what it says', ()
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
-    if (book.group === 'Classical L-panel') assert.ok(ps.every(p => p.tile === 'L'), `${book.id}: L tetrominoes only`);
-    if (book.group === 'One shape') assert.ok(ps.every(p => !p.tile.includes('+') && p.tile !== 'L'), `${book.id}: one shape, not the L`);
-    if (book.group === 'Two shapes') assert.ok(ps.every(p => tileSpecs(p.tile).length === 2), `${book.id}: two shapes`);
-    if (book.tier) {
-      // a tier book mixes board sizes (and, for One / Two shapes, several tile sets)
-      assert.ok(new Set(ps.map(p => p.rows)).size >= 2, `${book.id}: mixes board sizes`);
-      if (book.group !== 'Classical L-panel') assert.ok(new Set(ps.map(p => p.tile)).size >= 4, `${book.id}: mixes shapes`);
-      assert.ok(ps.length >= 50, `${book.id}: a reasonable size`);
-    }
+    // id is <one|two>-<size>: every puzzle has that many shapes and that board size
+    const [kind, size] = book.id.split('-');
+    assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
+    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'one' ? 1 : 2)), `${book.id}: ${kind} shape(s)`);
+    assert.equal(book.group, kind === 'one' ? 'One shape' : 'Two shapes');
+    // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
+    const tiers = new Set(ps.map(p => p.tier));
+    assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
+    if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
+    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'one' ? 8 : 4), `${book.id}: mixes shapes`);
+    assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
-  // one book per tier in each section, in order
-  for (const group of ['Classical L-panel', 'One shape', 'Two shapes']) {
-    assert.deepEqual(manifest.books.filter(b => b.group === group).map(b => b.tier), TIERS, group);
-  }
-  // "Start here" is a 6x6 curriculum that begins with the straight tromino
-  const start = data(manifest.books.find(b => b.id === 'start').file);
-  assert.ok(start.every(p => p.rows === 6));
-  assert.equal(start[0].tile, 'I3');
+  // the L tetromino is an ordinary shape now
+  const oneBooks = manifest.books.filter(b => b.id.startsWith('one-'));
+  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the one-shape books');
+  // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the straight tromino
+  const first = data(manifest.books.find(b => b.id === manifest.default).file);
+  assert.equal(first[0].tile, 'I3');
+  assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I3', 'V3', 'L']);
 });
