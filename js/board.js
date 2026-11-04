@@ -6,16 +6,17 @@
 //
 // Input: pointer events on the whole SVG, decoded geometrically. Where a press
 // lands decides the kind of gesture:
-//   on an edge  -> an "edge" gesture: onEdgePress, then onEdgeEnter for every
-//                  other edge the pointer is dragged across
+//   on an edge  -> a tap: onEdgePress when the pointer is released without having moved
+//                  more than TAP_SLOP (cell units). Dragging from an edge does nothing.
 //   on a cell   -> a "cell" gesture: onCellPress, then onCellEnter for every
-//                  other open cell dragged across
-// and then onRelease (or onCancel if the browser cancels the pointer).
+//                  other open cell dragged across, then onRelease (or onCancel if the
+//                  browser cancels the pointer).
 import {
   EDGE_LINE, EDGE_CROSS, OPEN, isPlayableEdge, isOpen, getEdge,
 } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
+const TAP_SLOP = 0.25;    // a press on an edge counts as a tap if the pointer moves less than this (cell units)
 const BAD_DELAY_MS = 300; // how long a wrong-shape (red) tint waits, so a double-click can finish first
 
 
@@ -34,7 +35,7 @@ function edgeEnds(kind, r, c) {
 }
 
 export class Board {
-  // callbacks: { onEdgePress(kind, r, c), onEdgeEnter(kind, r, c),
+  // callbacks: { onEdgePress(kind, r, c),
   //              onCellPress(i), onCellEnter(i), onRelease(), onCancel(),
   //              onEdgeContext(kind, r, c) }
   constructor(container, callbacks) {
@@ -181,7 +182,8 @@ export class Board {
   _bindPointer(svg) {
     let mode = null;          // 'edge' | 'cell' while a gesture is in progress
     let last = null;          // last pointer position (cell units)
-    let lastEdgeKey = null, lastCell = -1;
+    let lastCell = -1;
+    let tap = null;           // an edge press waiting for its release: { edge, from: [x, y], moved }
 
     svg.addEventListener('pointerdown', e => {
       if (e.button !== 0 || mode) return;
@@ -190,8 +192,7 @@ export class Board {
       const edge = this._edgeAt(x, y);
       if (edge) {
         mode = 'edge';
-        lastEdgeKey = edge.join(':');
-        this.cb.onEdgePress(...edge);
+        tap = { edge, from: [x, y], moved: 0 };     // applied on release, if it really was a tap
       } else {
         const cell = this._cellAt(x, y);
         if (cell < 0) return;
@@ -214,27 +215,32 @@ export class Board {
         svg.style.cursor = edge ? 'pointer' : cell >= 0 ? 'cell' : '';
         return;
       }
+      if (mode === 'edge') {                          // dragging from an edge does nothing
+        tap.moved = Math.max(tap.moved, Math.hypot(x - tap.from[0], y - tap.from[1]));
+        return;
+      }
       // Sample along the segment from the last position, so a fast drag
-      // can't skip over edges or cells.
+      // can't skip over cells.
       const steps = Math.max(1, Math.ceil(Math.hypot(x - last[0], y - last[1]) / 0.1));
       for (let i = 1; i <= steps; i++) {
         const px = last[0] + (x - last[0]) * i / steps, py = last[1] + (y - last[1]) * i / steps;
-        if (mode === 'edge') {
-          const edge = this._edgeAt(px, py);
-          const key = edge ? edge.join(':') : null;
-          if (key && key !== lastEdgeKey) { lastEdgeKey = key; this.cb.onEdgeEnter(...edge); }
-        } else {
-          const cell = this._cellAt(px, py);
-          if (cell >= 0 && cell !== lastCell) { lastCell = cell; this.cb.onCellEnter(cell); }
-        }
+        const cell = this._cellAt(px, py);
+        if (cell >= 0 && cell !== lastCell) { lastCell = cell; this.cb.onCellEnter(cell); }
       }
       last = [x, y];
     });
 
     const finish = cancelled => e => {
       if (!mode) return;
+      const wasEdge = mode === 'edge';
       mode = null;
       try { svg.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (wasEdge) {
+        const t = tap;
+        tap = null;
+        if (!cancelled && t.moved < TAP_SLOP) this.cb.onEdgePress(...t.edge);
+        return;
+      }
       if (cancelled) this.cb.onCancel(); else this.cb.onRelease();
     };
     svg.addEventListener('pointerup', finish(false));

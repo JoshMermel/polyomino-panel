@@ -95,7 +95,7 @@ async function init() {
   purgeLegacySaves();
   window.addEventListener('resize', syncColumnWidth);
   board = new Board($('board'), {
-    onEdgePress, onEdgeEnter, onCellPress, onCellEnter, onRelease, onCancel, onEdgeContext,
+    onEdgePress, onCellPress, onCellEnter, onRelease, onCancel, onEdgeContext,
   });
   bindControls();
 
@@ -250,40 +250,21 @@ function commit(changes) {
 // Everything is deterministic (no timing involved). Where a press lands decides
 // the gesture:
 //
-//  * on an EDGE: a tap cycles it empty -> line -> ✕ -> empty. Dragging on
-//    paints: every other edge you drag over is set to whatever the first edge
-//    just became.
+//  * on an EDGE: a tap cycles it empty -> line -> ✕ -> empty. Dragging from an
+//    edge does nothing (it was only ever done by accident).
 //  * on a CELL: drag across cells; if the cells you covered form exactly the
 //    tile (any rotation/reflection), releasing draws every outline line of that
 //    tile. Anything else is ignored.
 //  * right-click on an edge toggles a ✕ directly.
 //
-// A whole gesture is one undo step. Edge strokes apply live; Escape or a
-// cancelled pointer reverts them.
-let gesture = null;   // { type: 'edge', target, touched: Set, changes: [] } | { type: 'cell', cells: [] }
+// Each of these is one undo step.
+let gesture = null;   // { cells: [] } while tracing a tile, else null
 
 const nextMark = cur => (cur === EDGE_EMPTY ? EDGE_LINE : cur === EDGE_LINE ? EDGE_CROSS : EDGE_EMPTY);
 
-function paintEdge(kind, r, c) {
-  const key = `${kind}:${r}:${c}`;
-  if (gesture.touched.has(key)) return;
-  gesture.touched.add(key);
-  const cur = getEdge(state.puzzle, state.edges, kind, r, c);
-  if (cur === gesture.target) return;
-  const change = { kind, r, c, from: cur, to: gesture.target };
-  gesture.changes.push(change);
-  applyChanges([change], 'forward');
-  refresh();
-}
-
 function onEdgePress(kind, r, c) {
   const cur = getEdge(state.puzzle, state.edges, kind, r, c);
-  gesture = { type: 'edge', target: nextMark(cur), touched: new Set(), changes: [] };
-  paintEdge(kind, r, c);
-}
-
-function onEdgeEnter(kind, r, c) {
-  if (gesture?.type === 'edge') paintEdge(kind, r, c);
+  commit([{ kind, r, c, from: cur, to: nextMark(cur) }]);
 }
 
 function showCellDrag() {
@@ -291,12 +272,12 @@ function showCellDrag() {
 }
 
 function onCellPress(cell) {
-  gesture = { type: 'cell', cells: [cell] };
+  gesture = { cells: [cell] };
   showCellDrag();
 }
 
 function onCellEnter(cell) {
-  if (gesture?.type !== 'cell' || gesture.cells.includes(cell)) return;
+  if (!gesture || gesture.cells.includes(cell)) return;
   gesture.cells.push(cell);
   showCellDrag();
 }
@@ -306,15 +287,6 @@ function onRelease() {
   gesture = null;
   board.setDrag([], false);
   if (!g) return;
-
-  if (g.type === 'edge') {
-    if (g.changes.length) {              // already applied live; record it as one step
-      state.undo.push({ changes: g.changes });
-      state.redo = [];
-      refresh();
-    }
-    return;
-  }
 
   // Cell drag.
   const { puzzle } = state;
@@ -337,13 +309,8 @@ function onRelease() {
 }
 
 function onCancel() {
-  const g = gesture;
   gesture = null;
   board.setDrag([], false);
-  if (g?.type === 'edge' && g.changes.length) {
-    applyChanges(g.changes, 'backward');
-    refresh();
-  }
 }
 
 function onEdgeContext(kind, r, c) {
@@ -548,8 +515,7 @@ function refresh() {
   hideToast();
   const a = analyze(state.puzzle, state.edges);
   board.update(a, state.showTiles);
-  // remembered only once a move is finished: a drag that is cancelled with Esc must not count
-  if (a.solved && !gesture) store.set(solvedKey(state.puzzle), '1');
+  if (a.solved) store.set(solvedKey(state.puzzle), '1');
 
   const set = curSet();
   const hasMarks = state.edges.h.some(Boolean) || state.edges.v.some(Boolean);

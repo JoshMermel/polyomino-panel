@@ -22,7 +22,7 @@ then open <http://localhost:8765>. (Opening `index.html` via `file://` won't wor
 The main view is deliberately sparse: a title bar (⚙ settings, **?** help), the book and puzzle picker, one info line (the tile shape on the left, progress or "Solved!" on the right), the action buttons and the board. The rules and controls are in the **?** "How to play" dialog. Summary:
 
 - **Where a press lands decides the gesture** (all deterministic, nothing depends on timing, and it works with mouse, touch and pen):
-  - **On an edge:** a tap cycles it empty → line → small ✕ → empty. **Dragging** from an edge paints: every other edge you drag across is set to whatever the first edge just became (so starting on an empty edge draws a line along the whole stroke, starting on a ✕ erases along it, and so on).
+  - **On an edge:** a tap cycles it empty → line → small ✕ → empty. Dragging from an edge does nothing (it used to paint along the stroke, but it only ever happened by accident), so a press that moves away from the edge is not a tap and changes nothing.
   - **On a cell:** drag across cells to trace a tile. The cells you cover are previewed (green once they form exactly the tile, in any rotation or reflection); on release, all of that tile's outline lines are drawn and any lines already inside it are erased (✕ marks inside are kept), all as one undo step. Cells that don't form the tile are ignored with a short message.
   - **Right-click** an edge toggles a ✕ directly.
   - A whole gesture is one undo step; **Esc** cancels a drag in progress. Touch drags on the board don't scroll the page.
@@ -98,7 +98,7 @@ L_6x6_01,6,6,L,#.....#...#.............#...........,#AAABB#ACC#BDDDCEBDFGCEH#FGE
 | `js/generator.js` | Puzzle generator (pure logic) |
 | `sw.js` | the offline-play service worker |
 | `js/print.js` | printable booklet pages (puzzle boards and answer key) and the range parser |
-| `js/board.js` | SVG board rendering; pointer gestures decoded geometrically (edge paint, cell trace); hint overlay |
+| `js/board.js` | SVG board rendering; pointer gestures decoded geometrically (edge tap, cell trace); hint overlay |
 | `js/tile-view.js` | Tile shape picture and name |
 | `js/main.js` | App controller: selection, marking gestures, undo/redo, hints (with cycling), toasts, settings and help dialogs, persistence |
 | `tools/generate.mjs` | General-purpose generator CLI (any shape, size, blocked-cell count) |
