@@ -59,12 +59,18 @@ export class Board {
     svg.style.setProperty('--grid-cols', cols);
     svg.style.setProperty('--grid-rows', rows);
 
+    // Lines are thick with round caps, so one that ends on the grid's outer edge would poke
+    // out past it. The line layers are clipped to the grid rectangle to keep them inside.
+    const clip = el('clipPath', { id: 'board-clip' }, el('defs', {}, svg));
+    el('rect', { x: 0, y: 0, width: cols, height: rows }, clip);
+    const inside = { 'clip-path': 'url(#board-clip)' };
+
     // Layers, bottom to top.
     const cellLayer = el('g', { class: 'layer-cells' }, svg);
-    const dashLayer = el('g', { class: 'layer-dash' }, svg);
-    const segLayer = el('g', { class: 'layer-seg' }, svg);
+    const dashLayer = el('g', { class: 'layer-dash', ...inside }, svg);
+    const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
-    this.hintLayer = el('g', { class: 'layer-hint' }, svg);   // ghost lines / cross for hints
+    this.hintLayer = el('g', { class: 'layer-hint', ...inside }, svg);   // ghost lines / cross for hints
     el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
 
     this.cellEls = [];
