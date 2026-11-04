@@ -446,3 +446,39 @@ select, input[type="number"] {
 }
 .browse-tier-name { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); }
 .browse-tier-blurb { font-size: 0.75rem; color: var(--text-muted); margin-left: 6px; }
+
+/* --- Print puzzles modal ----------------------------------------------------------- */
+.print-form { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin: 8px 0; }
+.print-form input[type="text"], .print-form select { min-width: 0; }
+.print-form input[type="checkbox"] { justify-self: start; width: 18px; height: 18px; }
+.print-error { color: var(--color-error); font-size: 0.85rem; margin: 6px 0; }
+.print-summary { color: var(--text-secondary); font-size: 0.85rem; min-height: 1.3em; }
+.print-actions { display: flex; justify-content: flex-end; }
+
+/* --- Printing: #print-root (see js/print.js) is the only thing printed ------------- */
+#print-root { display: none; }
+#print-root, #print-root * { box-sizing: border-box; }
+#print-root .print-page {
+  display: flex; flex-direction: column; gap: 5mm; color: #111; background: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; break-after: page;
+}
+#print-root .print-page:last-child { break-after: auto; }
+#print-root .print-head { display: flex; align-items: center; gap: 4mm; border-bottom: 0.4mm solid #111; padding-bottom: 2mm; }
+#print-root .print-brand { font-weight: 700; font-size: 5mm; }
+#print-root .print-book { margin-left: auto; font-size: 3.6mm; color: #333; }
+#print-root .print-grid { display: grid; gap: 6mm 8mm; justify-items: center; align-content: start; }
+#print-root .k1 .print-grid, #print-root .k2 .print-grid { grid-template-columns: 1fr; }
+#print-root .k4 .print-grid, #print-root .k6 .print-grid { grid-template-columns: 1fr 1fr; }
+#print-root .print-item { margin: 0; text-align: center; }
+#print-root .print-caption { font-weight: 600; font-size: 3.6mm; margin-bottom: 1.5mm; text-align: left; }
+#print-root .print-board { display: block; height: auto; width: var(--board, 80mm); }
+#print-root .k1 { --board: 165mm; }
+#print-root .k2 { --board: 105mm; }
+#print-root .k4 { --board: 84mm; }
+#print-root .k6 { --board: 62mm; }
+@media print {
+  @page { margin: 12mm; }
+  html, body { background: #fff !important; }
+  body > *:not(#print-root) { display: none !important; }
+  #print-root { display: block; }
+}

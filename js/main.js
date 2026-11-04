@@ -8,6 +8,7 @@ import {
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO } from './rating.js';
+import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
 const $ = id => document.getElementById(id);
 
@@ -615,6 +616,52 @@ function renderBrowse() {
   requestAnimationFrame(() => grid.querySelector('.bt-current')?.scrollIntoView({ block: 'nearest' }));
 }
 
+// --- Print puzzles ------------------------------------------------------------
+// Settings -> "Print puzzles" opens a modal to pick a range of the current book, then builds a
+// print-only page (js/print.js) and opens the browser's print dialog ("Save as PDF" there).
+function setupPrint(setupModal) {
+  const sel = $('print-selection'), perPageSel = $('print-per-page'), keyBox = $('print-answer-key');
+  const err = $('print-error'), summary = $('print-summary'), go = $('print-go-btn');
+  const savedPer = store.get('pp_printPerPage');
+  if ([...perPageSel.options].some(o => o.value === savedPer)) perPageSel.value = savedPer;
+  keyBox.checked = store.get('pp_printKey') !== '0';
+
+  const update = () => {
+    const puzzles = curSet().puzzles ?? [];
+    const { ids, error } = parseSelection(sel.value, puzzles.length);
+    err.hidden = !error;
+    err.textContent = error ?? '';
+    go.disabled = Boolean(error);
+    if (error) { summary.textContent = ''; return null; }
+    const perPage = Number(perPageSel.value);
+    const keyIds = ids.filter(id => solutionFor(puzzles[id - 1]));
+    const plan = planPrint({ count: ids.length, perPage, includeKey: keyBox.checked && keyIds.length > 0 });
+    const pages = n => `${n} page${n === 1 ? '' : 's'}`;
+    summary.textContent = `${ids.length} puzzle${ids.length === 1 ? '' : 's'}, ${perPage} per page: ${pages(plan.puzzlePages)}` +
+      (plan.keyPages ? ` + ${pages(plan.keyPages)} of answers.` : '.');
+    return { ids, puzzles, perPage };
+  };
+
+  setupModal('print-modal', 'print-btn', () => {
+    $('settings-modal').classList.add('modal-hidden');
+    const set = curSet(), total = (set.puzzles ?? []).length;
+    $('print-book-name').textContent = set.custom ? set.title : `${shapeName(set.tile)}, ${set.rows}×${set.cols}`;
+    $('print-book-total').textContent = total;
+    sel.value = total <= 1 ? '1' : `1-${Math.min(total, 10)}`;
+    update();
+    setTimeout(() => { sel.focus(); sel.select(); }, 0);
+  });
+  sel.addEventListener('input', update);
+  perPageSel.addEventListener('change', () => { store.set('pp_printPerPage', perPageSel.value); update(); });
+  keyBox.addEventListener('change', () => { store.set('pp_printKey', keyBox.checked ? '1' : '0'); update(); });
+  go.addEventListener('click', () => {
+    const r = update();
+    if (!r) return;
+    buildPrintRoot({ book: curSet(), puzzles: r.puzzles, ids: r.ids, perPage: r.perPage, includeKey: keyBox.checked, solutionOf: solutionFor });
+    window.print();
+  });
+}
+
 // --- Controls ---------------------------------------------------------------
 // Cell-count groups for the shape menu.
 const SHAPE_GROUPS = [[3, 'Domino & trominoes'], [4, 'Tetrominoes'], [5, 'Pentominoes']];
@@ -713,6 +760,7 @@ function bindControls() {
   };
   setupModal('settings-modal', 'settings-btn');
   setupModal('browse-modal', 'browse-btn', renderBrowse);
+  setupPrint(setupModal);
   $('browse-jump-btn').addEventListener('click', () => {
     const i = (curSet().puzzles ?? []).findIndex(p => !isSolved(p));
     if (i < 0) { showToast("You've solved every puzzle in this book! 🎉", 'success', 3000); return; }

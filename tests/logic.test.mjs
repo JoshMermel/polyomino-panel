@@ -918,3 +918,16 @@ test('no published puzzle has a swastika in its solution', () => {
     for (const p of data(book.file)) assert.equal(hasSwastika(p, p.solution), false, `${book.file} ${p.name}`);
   }
 });
+
+test('print: selection parsing and page planning', async () => {
+  const { parseSelection, planPrint, MAX_PRINT } = await import('../js/print.js');
+  assert.deepEqual(parseSelection('1-3, 7', 50).ids, [1, 2, 3, 7]);
+  assert.deepEqual(parseSelection('5 3 3, 4-5', 50).ids, [3, 4, 5]);          // sorted, no repeats, spaces ok
+  assert.deepEqual(parseSelection('50', 50).ids, [50]);
+  for (const bad of ['', '  ', 'abc', '0', '51', '3-60', '9-4', '1-', '1--3']) {
+    assert.ok(parseSelection(bad, 50).error, `"${bad}" should be rejected`);
+  }
+  assert.ok(parseSelection(`1-${MAX_PRINT + 1}`, 1000).error);
+  assert.deepEqual(planPrint({ count: 10, perPage: 4, includeKey: true }), { puzzlePages: 3, keyPages: 2 });
+  assert.deepEqual(planPrint({ count: 1, perPage: 1, includeKey: false }), { puzzlePages: 1, keyPages: 0 });
+});

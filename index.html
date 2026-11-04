@@ -98,6 +98,13 @@
           </div>
           <div class="settings-row">
             <div class="settings-row-text">
+              <span class="settings-label">Print puzzles</span>
+              <span class="settings-desc">Make a printable booklet from this book, with an optional answer key. Use "Save as PDF" in the print dialog for a file.</span>
+            </div>
+            <button type="button" id="print-btn">Print…</button>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text">
               <span class="settings-label">Clear saves</span>
               <span class="settings-desc">Erases your progress on every puzzle in this browser. Settings are kept. This can't be undone.</span>
             </div>
@@ -126,6 +133,31 @@
           <button id="browse-jump-btn" type="button" class="browse-jump-btn">→ First unsolved</button>
         </div>
         <div id="browse-grid" class="browse-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="print-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="print-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="print-modal-title">Print puzzles</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>From <b id="print-book-name"></b> (<span id="print-book-total"></span> puzzles).</p>
+        <div class="print-form">
+          <label for="print-selection">Puzzles</label>
+          <input type="text" id="print-selection" autocomplete="off" spellcheck="false" placeholder="e.g. 1-10, 15">
+          <label for="print-per-page">Per page</label>
+          <select id="print-per-page">
+            <option value="1">1</option><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option>
+          </select>
+          <label for="print-answer-key">Answer key</label>
+          <input type="checkbox" id="print-answer-key" checked>
+        </div>
+        <p id="print-error" class="print-error" hidden></p>
+        <p id="print-summary" class="print-summary"></p>
+        <div class="print-actions"><button type="button" id="print-go-btn">Print…</button></div>
       </div>
     </div>
   </div>

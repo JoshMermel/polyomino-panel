@@ -42,6 +42,7 @@ The main view is deliberately sparse: a title bar (⚙ settings, **?** help), th
 - ⚙ **Settings**: dark mode (defaults to your system theme) and tinting of closed tiles (blue = valid tile, red = enclosed but can't become one).
 - Ctrl/⌘-Z undo, Ctrl/⌘-Shift-Z (or Ctrl-Y) redo. Progress is saved in `localStorage`, keyed by a hash of the puzzle (tile, size, grid), so it survives renumbering or reordering a set.
 - Settings ⚙ → "Load puzzles from a file" opens any puzzle CSV for the session without touching `data/`.
+- Settings ⚙ → "Print puzzles" makes a printable booklet from the current book: pick puzzles (`1-10, 15`), 1, 2, 4 or 6 per page, and an optional answer key (boards with the tile boundaries drawn bold). It opens the browser's print dialog, where "Save as PDF" gives a file. Booklet pages are built by `js/print.js` as plain black-and-white SVG, independent of dark mode.
 - Settings ⚙ → "Clear saves" erases your saved progress on every puzzle (two clicks: it asks "Are you sure?" first). Dark mode and tint settings are kept.
 
 Solved = every region of open cells (cells connected through edges without a line) is a valid tile. Any valid tiling counts, not only the stored solution.
@@ -93,6 +94,7 @@ L_6x6_01,6,6,L,#.....#...#.............#...........,#AAABB#ACC#BDDDCEBDFGCEH#FGE
 | `js/logic.js` | Pure logic (no DOM): shapes, CSV, region analysis / solve check, DLX tiling search, mark checking, hint deductions |
 | `js/rating.js` | The rule table (rules, tiers, weights) and the solver that rates puzzles |
 | `js/generator.js` | Puzzle generator (pure logic) |
+| `js/print.js` | printable booklet pages (puzzle boards and answer key) and the range parser |
 | `js/board.js` | SVG board rendering; pointer gestures decoded geometrically (edge paint, cell trace); hint overlay |
 | `js/tile-view.js` | Tile shape picture and name |
 | `js/main.js` | App controller: selection, marking gestures, undo/redo, hints (with cycling), toasts, settings and help dialogs, persistence |
