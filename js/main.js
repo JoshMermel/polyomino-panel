@@ -675,7 +675,7 @@ function setupPrint(setupModal, hideSettings) {
 
 // --- Controls ---------------------------------------------------------------
 // Cell-count groups for the shape menu.
-const SHAPE_GROUPS = [[3, 'Domino & trominoes'], [4, 'Tetrominoes'], [5, 'Pentominoes']];
+const SHAPE_GROUPS = [[3, 'Trominoes'], [4, 'Tetrominoes'], [5, 'Pentominoes']];
 const shapeGroup = tile => SHAPE_GROUPS.find(([max]) => tileSize(tile) <= max)[1];
 
 // Two pickers: the shape (grouped by cell count; files loaded from disk get their

@@ -2,7 +2,7 @@
   "_comment": "Which books exist and how they are built from the pools in tools/library/. A book is one shape at one square size. See tools/build_books.mjs.",
   "defaultBook": "L_6x6",
   "sizes": [6, 8, 10],
-  "shapes": ["I2", "I3", "V3", "L", "I", "T", "S", "F5", "I5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5"],
+  "shapes": ["I3", "V3", "L", "T", "S", "F5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5"],
   "defaults": {
     "count": 75,
     "minCount": 10,

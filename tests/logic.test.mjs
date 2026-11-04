@@ -675,7 +675,7 @@ test('lookahead splits into a two-option and a three-or-more-option rule', () =>
 
 test('ratings are consistent with the rules each puzzle actually needs', () => {
   const seen = new Set();
-  for (const file of ['L_6x6.csv', 'L_8x8.csv', 'T_8x8.csv', 'V3_6x6.csv', 'W5_8x8.csv', 'I2_6x6.csv']) {
+  for (const file of ['L_6x6.csv', 'L_8x8.csv', 'T_8x8.csv', 'V3_6x6.csv', 'W5_8x8.csv', 'I3_6x6.csv']) {
     for (const p of data(file)) {
       const r = ratePuzzle(p);
       seen.add(r.rules);

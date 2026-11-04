@@ -2,27 +2,6 @@
   "default": "L_6x6",
   "books": [
     {
-      "tile": "I2",
-      "rows": 6,
-      "cols": 6,
-      "file": "I2_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "I2",
-      "rows": 8,
-      "cols": 8,
-      "file": "I2_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "I2",
-      "rows": 10,
-      "cols": 10,
-      "file": "I2_10x10.csv",
-      "count": 75
-    },
-    {
       "tile": "I3",
       "rows": 6,
       "cols": 6,
@@ -86,27 +65,6 @@
       "count": 75
     },
     {
-      "tile": "I",
-      "rows": 6,
-      "cols": 6,
-      "file": "I_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "I",
-      "rows": 8,
-      "cols": 8,
-      "file": "I_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "I",
-      "rows": 10,
-      "cols": 10,
-      "file": "I_10x10.csv",
-      "count": 75
-    },
-    {
       "tile": "T",
       "rows": 6,
       "cols": 6,
@@ -167,27 +125,6 @@
       "rows": 10,
       "cols": 10,
       "file": "F5_10x10.csv",
-      "count": 75
-    },
-    {
-      "tile": "I5",
-      "rows": 6,
-      "cols": 6,
-      "file": "I5_6x6.csv",
-      "count": 75
-    },
-    {
-      "tile": "I5",
-      "rows": 8,
-      "cols": 8,
-      "file": "I5_8x8.csv",
-      "count": 75
-    },
-    {
-      "tile": "I5",
-      "rows": 10,
-      "cols": 10,
-      "file": "I5_10x10.csv",
       "count": 75
     },
     {
