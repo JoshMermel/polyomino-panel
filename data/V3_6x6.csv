@@ -1,0 +1,34 @@
+# V tromino 6x6. Built by tools/build_books.mjs from a pool of 2605 (seed 1).
+# grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
+# rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
+name,rows,cols,tile,grid,solution,rules,tier,score
+V3_6x6_01,6,6,V3,.......#.##..##..#..##.#.####...##..,AABBCCA#B##CD##EE#DD##E#F####GFF##GG,forced,Beginner,3
+V3_6x6_02,6,6,V3,.##..#..#.#.##.......##.#.#...###..#,A##BB#AA#B#C##DDCCEED##F#E#GFF###GG#,forced,Beginner,4
+V3_6x6_03,6,6,V3,#....###...#....#.#..#..#...#####..#,#AABB###ACB#DDCC#E#DF#EE#FFG#####GG#,forced,Beginner,4
+V3_6x6_04,6,6,V3,...##.#.......####.##..##.........#.,AAB##C#ABBCCDD####D##EE##FGEHHFFGG#H,forced,Beginner,5
+V3_6x6_05,6,6,V3,.#......#...#....##...##..#.###.####,A#BBCCAA#BDC#EEDD##EFF##GG#F###G####,forced,Beginner,5
+V3_6x6_06,6,6,V3,.#...#..#....#.#.........##..#..####,A#BBC#AA#BCCD#E#FFDDEEGFH##GG#HH####,forced,Beginner,6
+V3_6x6_07,6,6,V3,.....##.....#....#...#.#.#..########,AABBC##ADBCC#DDEE#FFG#E#F#GG########,forced,Beginner,6
+V3_6x6_08,6,6,V3,#....#.....#......#...##...#########,#AABB#CADBE#CCDDEE#FGG##FFG#########,forced,Beginner,6
+V3_6x6_09,6,6,V3,.......##..##...##.#..........#....#,AABBCCA##BC##DDE##F#DEEGFFHIGG#HHII#,forced,Beginner,7
+V3_6x6_10,6,6,V3,.....#.#....#..#......#...#.###..###,AABBC#A#DBCC#DD#EEFFGG#EFH#G###HH###,forced,Beginner,7
+V3_6x6_11,6,6,V3,.....#...#..#..#.#..#.........#..##.,AABBC#ADB#CC#DD#E#FF#GEEFHGGII#HH##I,forced,Beginner,8
+V3_6x6_12,6,6,V3,#....#..##.....#......##....########,#AABB#CA##BDCCE#DDFEEG##FFGG########,edges,Medium,8
+V3_6x6_13,6,6,V3,#.##..........#..#.#......#.########,#A##BBCAADDBCC#DE#F#GGEEFF#G########,edges,Medium,9
+V3_6x6_14,6,6,V3,#..#...#..#......##...###..##.####..,#AA#BBC#AD#BCCEDD##FEE###FF##G####GG,edges,Medium,10
+V3_6x6_15,6,6,V3,#..#.#.#...#......#...#..#.........#,#AA#B#C#ABB#CCDDEE#FFD#EG#FHIIGGHHI#,edges,Medium,11
+V3_6x6_16,6,6,V3,...#.##......##..#......###...######,AAB#C##ABBCCD##EE#DDFFEG###FGG######,edges,Medium,12
+V3_6x6_17,6,6,V3,##.#...#......#...........#.###..###,##A#BBC#AADBCC#DDEFFGGEEFH#G###HH###,edges,Medium,13
+V3_6x6_18,6,6,V3,......#.......#.#....#.....#.#......,AABBCC#ABDDCEE#D#FEGG#FFHGI#J#HHIIJJ,edges,Medium,14
+V3_6x6_19,6,6,V3,#....#...#.##....#.......##..#######,#AABB#CCA#B##CDDE#FFDGEEF##GG#######,edges,Medium,15
+V3_6x6_20,6,6,V3,#.##..#...#.........#......#....##..,#A##BB#AAC#BDDCCEEDF#GGEHFF#GIHH##II,edges,Medium,16
+V3_6x6_21,6,6,V3,##...#....#...#........#......#..##.,##ABB#CAAB#DCC#EDDFFGEE#FHGGII#HH##I,edges,Medium,17
+V3_6x6_22,6,6,V3,..#.#.......#...##.#......##..###..#,AA#B#CADBBCC#DDE##F#EEGGFF##HG###HH#,lookahead3,Hard,21
+V3_6x6_23,6,6,V3,.....#......##..#.#...............#.,AABBC#ADDBCC##DE#F#GEEFFHGGIJJHHII#J,lookahead3,Hard,30
+V3_6x6_24,6,6,V3,.....#........#.......#........#.#.#,AABBC#ADDBCCED#FGGEEFF#GHHIIJJH#I#J#,lookahead3,Hard,39
+V3_6x6_25,6,6,V3,..#..##.#..#.....##.............#..#,AA#BB##A#CB#DDCCE##DFEEGHFFIGGHH#II#,lookahead3,Hard,47
+V3_6x6_26,6,6,V3,..#..#....#.#......#..##......##....,AA#BB#ACCB#D#CEEDDF#EG##FFHGGI##HHII,lookahead3,Hard,56
+V3_6x6_27,6,6,V3,#....###...#.....#........#.......##,#AABB###ACB#DDCCE#DFFEEGHF#IGGHHII##,lookahead3,Hard,66
+V3_6x6_28,6,6,V3,#..........#....##....##..##.##.#..#,#ABBCCAADBC#EDDF##EEFF##GG##H##G#HH#,chain,Expert,53
+V3_6x6_29,6,6,V3,#....##....##....#...#............##,#AABB##ACCB##DCEE#DDF#EGHFFIGGHHII##,chain,Expert,82
+V3_6x6_30,6,6,V3,##...##.....#...#.#.............##..,##AAB##CCABB#CDD#E#FDGEEHFFGGIHH##II,unsolved,Unsolved,350

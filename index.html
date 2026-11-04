@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polyomino Panel</title>
+  <script>
+    // Apply the saved theme before first paint (falls back to the system theme).
+    (function () {
+      var dark;
+      try { var s = localStorage.getItem('pp_dark'); dark = s === null ? null : s === '1'; } catch (e) { dark = null; }
+      if (dark === null) dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <div class="column">
+      <header class="topbar">
+        <h1 id="page-title">L-Panel</h1>
+        <div class="topbar-actions">
+          <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-haspopup="dialog">⚙</button>
+          <button id="help-btn" class="icon-btn" aria-label="How to play" aria-haspopup="dialog">?</button>
+        </div>
+      </header>
+
+      <div class="nav">
+        <select id="shape-select" aria-label="Shape"></select>
+        <select id="size-select" aria-label="Board size"></select>
+        <div class="pager">
+          <button id="prev-puz" class="step-btn" aria-label="Previous puzzle">‹</button>
+          <input type="number" id="puz-num" min="1" aria-label="Puzzle number">
+          <span class="pager-total">/ <span id="puz-total"></span></span>
+          <button id="next-puz" class="step-btn" aria-label="Next puzzle">›</button>
+        </div>
+      </div>
+
+      <div class="infobar">
+        <div id="tile-info" class="tile-info"></div>
+        <div id="tier-info" class="tier-info"></div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="controls">
+        <div class="btn-group">
+          <button id="undo-btn" class="ghost" disabled>Undo</button>
+          <button id="redo-btn" class="ghost" disabled>Redo</button>
+          <button id="reset-btn" class="ghost" disabled>Reset</button>
+        </div>
+        <div class="btn-group">
+          <button id="check-btn"><span class="label-long">Correct so far?</span><span class="label-short">Check</span></button>
+          <button id="hint-btn">Hint</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="board"></div>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="settings-modal-title">Settings</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-list">
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Dark mode</span>
+              <span class="settings-desc">Use a dark color theme throughout the app</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-dark-mode" role="switch">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Tint closed tiles</span>
+              <span class="settings-desc">Shade regions that are fully enclosed: blue if it is a valid tile, red if it can't become one</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-tint-tiles" role="switch">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Load puzzles from a file</span>
+              <span class="settings-desc">Adds a temporary book from a CSV file on your computer. Nothing is uploaded.</span>
+            </div>
+            <button type="button" id="csv-btn">Choose file…</button>
+            <input type="file" id="csv-file" accept=".csv,text/csv,text/plain" hidden>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="modal-box modal-box--wide">
+      <div class="modal-header">
+        <h2 id="help-modal-title">How to play</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <h3>Goal</h3>
+        <p>
+          Draw along the dotted lines to cut all the white cells into tiles of the shape shown above the board.
+          Every white cell belongs to exactly one tile, and tiles may be rotated or flipped.
+          Black cells are not part of any tile. When the puzzle is solved the frame turns green.
+        </p>
+
+        <h3>Marking the board</h3>
+        <ul>
+          <li><b>Click or tap an edge</b> to cycle it: line, then small ✕ ("no line here"), then empty.</li>
+          <li><b>Drag along edges</b> to paint: every edge you cross becomes whatever the first one just became.</li>
+          <li><b>Drag across cells</b> to trace a whole tile. If the cells you cover form the tile shape
+            (green preview), letting go draws its outline.</li>
+          <li><b>Right-click</b> an edge to toggle a ✕ directly.</li>
+          <li><b>Undo / Redo</b> with the buttons or Ctrl/⌘-Z and Ctrl/⌘-Shift-Z. <b>Esc</b> cancels a drag in progress.
+            <b>Reset</b> clears the board (and can be undone).</li>
+        </ul>
+
+        <h3>Checking and hints</h3>
+        <ul>
+          <li><b>Correct so far?</b> tells you whether the lines and ✕ you've placed agree with the solution.
+            It doesn't highlight anything, and lines you haven't drawn yet don't count against you.</li>
+          <li><b>Hint</b> never changes your marks. It shows, in order of preference: marks that are wrong (red);
+            a cell that only one tile can cover; lines and ✕ that every possible tile for a cell agrees on;
+            a cell where all but one possible tile would lead to a contradiction (a cell with nowhere to go, or a
+            walled-off pocket that can't be tiled); the same after following a chain of forced steps; or an edge
+            that can take a ✕. Dashed lines show what to draw, ✕ marks what to cross, and yellow marks the cell(s)
+            the hint is about. Press Hint again while one is showing to see the next hint of the same kind.</li>
+        </ul>
+
+        <h3>Other</h3>
+        <ul>
+          <li>Closed regions are shaded blue when they are a valid tile and red when they can't become one
+            (turn this off in Settings ⚙).</li>
+          <li>Your progress is saved in this browser for each puzzle.</li>
+        </ul>
+
+        <h3>Feedback</h3>
+        <p>
+          This is an early prototype. Too hard, too easy, a bug, a hint that didn't make sense?
+          <a id="feedback-link" href="https://github.com/JoshMermel/polyomino-panel/issues/new" target="_blank" rel="noopener">Report a problem or send a comment</a>
+          (the link fills in which puzzle you were on).
+        </p>
+
+        <h3>About</h3>
+        <p>
+          Based on the <i>L-panel</i> puzzle in Alex Bellos' <i>Puzzle Ninja</i>, generalized to other tile shapes.
+          Every puzzle here is generated by this program and has exactly one solution.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

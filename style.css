@@ -1,0 +1,403 @@
+/* Colour tokens and general look follow multiverse-star-battle. */
+:root {
+  color-scheme: light;
+  --primary-blue: #1976d2;
+  --color-solved: #2e7d32;
+  --color-progress: #f9a825;
+  --color-error: #c62828;
+
+  --bg-white: #fff;
+  --bg-light: #f8f9fa;
+  --border-light: #e0e0e0;
+  --border-subtle: #eee;
+  --primary-blue-hover-bg: #f0f6ff;
+  --border-input: #ddd;
+  --border-strong: #bbb;
+  --text-primary: #111;
+  --text-secondary: #666;
+  --text-muted: #888;
+
+  --cell-bg: #fff;
+  --cell-border: #ccc;
+  --blocked-bg: var(--text-primary); /* same as star battle's void cells */
+  --tile-bg: rgba(25, 118, 210, 0.14);
+  --tile-bad-bg: rgba(255, 0, 0, 0.18);
+  --hint-yellow: rgba(255, 235, 0, 0.65);
+  --hint-blue: rgba(0, 123, 255, 0.28);
+  --hint-line: #e08e00;
+  --frame: #111;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --primary-blue: #64b5f6;
+  --color-solved: #66bb6a;
+  --color-progress: #ffca28;
+  --color-error: #ef5350;
+
+  --bg-white: #1a1a1a;
+  --bg-light: #1e1e1e;
+  --border-light: #3a3a3a;
+  --border-subtle: #333;
+  --primary-blue-hover-bg: #1a2a3a;
+  --border-input: #444;
+  --border-strong: #555;
+  --text-primary: #e8e8e8;
+  --text-secondary: #aaa;
+  --text-muted: #888;
+
+  --cell-bg: #2a2a2a;
+  --cell-border: #444;
+  --tile-bg: rgba(100, 181, 246, 0.2);
+  --tile-bad-bg: rgba(255, 80, 80, 0.28);
+  --hint-yellow: rgba(255, 255, 80, 0.5);
+  --hint-blue: rgba(80, 160, 255, 0.4);
+  --hint-line: #ffb300;
+  --frame: #ddd;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: sans-serif;
+  margin: 0;
+  background-color: var(--bg-white);
+  color: var(--text-primary);
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px 32px;
+  min-height: 100vh;
+}
+
+/* Everything above the board shares one column width. */
+.column { width: 100%; max-width: max(24em, var(--board-w, 32em)); }   /* lines up with the board's edges */
+
+h1 { margin: 0; font-size: 1.25rem; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.topbar-actions { display: flex; gap: 8px; }
+
+button, select, input[type="number"] {
+  font: inherit;
+  color: var(--text-primary);
+}
+
+button {
+  padding: 6px 10px;
+  cursor: pointer;
+  background: var(--border-light);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+button:not(:disabled):hover { background: var(--border-input); }
+button.ghost { background: transparent; border-color: var(--border-light); color: var(--text-secondary); }
+button.ghost:not(:disabled):hover { background: var(--bg-light); color: var(--text-primary); }
+button:disabled {
+  background: var(--bg-light);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+select, input[type="number"] {
+  padding: 7px 8px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+}
+
+/* Row 1: book + pager */
+.nav { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.nav select { min-width: 0; text-overflow: ellipsis; }
+#shape-select { flex: 1 1 9em; }
+#size-select { flex: 0 1 6.5em; }
+.pager { display: flex; align-items: center; gap: 4px; flex-shrink: 0; color: var(--text-secondary); }
+.pager input { width: 3.2em; text-align: center; padding: 6px 4px; }
+.step-btn { padding: 4px 10px; font-size: 1.2rem; line-height: 1.1; }
+
+/* Row 2: tile shape (left), progress (right) */
+.infobar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-height: 28px;
+  margin-bottom: 10px;
+}
+.tile-info { display: inline-flex; align-items: center; gap: 8px; }
+.tile-info-name { font-size: 0.95rem; font-weight: 600; }
+.status { font-size: 0.9rem; color: var(--text-secondary); text-align: right; }
+.status.solved { color: var(--color-solved); font-weight: 600; }
+.status.error { flex: 1 1 100%; color: var(--color-error); text-align: left; }
+.link-btn { padding: 2px 8px; margin-left: 6px; font-size: 0.85rem; }
+
+/* Row 3: board actions (left), check + hint (right) */
+.controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.btn-group { display: flex; gap: 6px; }
+.controls button { padding: 6px 9px; font-size: 0.95rem; }   /* both groups fit a 6x6 board's width */
+.label-short { display: none; }
+@media (max-width: 480px) {
+  .label-long { display: none; }
+  .label-short { display: inline; }
+  .controls { flex-wrap: nowrap; gap: 6px; }
+  .controls button { padding: 6px 9px; }
+  .btn-group { gap: 4px; }
+}
+
+/* --- Board --------------------------------------------------------------- */
+#board {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation; /* no double-tap zoom while tapping edges */
+}
+
+.board-svg {
+  --cell-size: min(64px, 88vw / var(--grid-cols), (100vh - 250px) / var(--grid-rows));
+  display: block;
+  touch-action: none; /* drags on the board must not scroll the page */
+  width: calc(var(--cell-size) * var(--grid-cols) * 1.0);
+  height: calc(var(--cell-size) * var(--grid-rows) * 1.0);
+  /* viewBox includes a small pad for the frame stroke */
+  overflow: visible;
+}
+
+.cell { fill: var(--cell-bg); }
+.cell.blocked { fill: var(--blocked-bg); }
+.cell.tile-ok { fill: var(--tile-bg); }
+.cell.tile-bad { fill: var(--tile-bad-bg); }
+
+.dash {
+  stroke: var(--cell-border);
+  stroke-width: 0.025;
+  stroke-dasharray: 0.07 0.06;
+}
+
+.seg {
+  stroke: var(--primary-blue);
+  stroke-width: 0.1;
+  stroke-linecap: round;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg.hover { opacity: 0.28; }
+.seg.on { opacity: 1; }
+.seg.cross { opacity: 0; }
+.seg.bad { stroke: var(--color-error); opacity: 1; }
+
+.xmark line {
+  stroke: var(--text-secondary);
+  stroke-width: 0.045;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.xmark.bad line { stroke: var(--color-error); stroke-width: 0.075; }
+
+/* Hint highlights (the board's marks are never changed by a hint). Later
+   rules win, so target > tile when cells overlap. */
+/* Drag-to-draw preview (drag across cells to trace a tile) */
+.cell-hover { fill: var(--cell-hover); pointer-events: none; }
+.cell.drag { fill: var(--drag-bg); }
+.cell.drag-ok { fill: var(--drag-ok-bg); }
+
+.cell.hint-tile { fill: var(--hint-blue); }
+.cell.hint-target { fill: var(--hint-yellow); }
+.hint-line {
+  stroke: var(--hint-line);
+  stroke-width: 0.1;
+  stroke-linecap: round;
+  stroke-dasharray: 0.14 0.12;
+  pointer-events: none;
+}
+.hint-marker circle { fill: var(--color-error); stroke: #fff; stroke-width: 0.04; }
+.hint-marker text { fill: #fff; font-weight: 700; font-family: sans-serif; }
+.hint-marker { pointer-events: none; }
+.hint-x line {
+  stroke: var(--hint-line);
+  stroke-width: 0.07;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.frame {
+  fill: none;
+  stroke: var(--frame);
+  stroke-width: 0.05;
+  pointer-events: none;
+}
+.board-svg.solved .frame { stroke: var(--color-solved); stroke-width: 0.08; }
+
+
+
+
+
+/* --- Icon buttons (settings, help) and modals (same look as multiverse-star-battle) -------- */
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+  border-radius: 50%;
+  background: var(--bg-light);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:not(:disabled):hover {
+  background: var(--primary-blue-hover-bg);
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  transition: opacity 0.2s;
+}
+.modal-hidden { opacity: 0; pointer-events: none; }
+
+.modal-box {
+  background: var(--bg-white);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  max-width: 480px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal-header h2 { margin: 0; font-size: 1.2rem; }
+.modal-header button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  color: var(--text-secondary);
+}
+.modal-header button:not(:disabled):hover { background: var(--border-light); border-radius: 4px; }
+.modal-body { padding: 16px 20px; line-height: 1.6; }
+
+.settings-list { display: flex; flex-direction: column; }
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-text { display: flex; flex-direction: column; gap: 2px; }
+.settings-label { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+.settings-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35; }
+
+.toggle-switch { flex-shrink: 0; position: relative; }
+.toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  display: block;
+  width: 44px;
+  height: 24px;
+  background: var(--border-strong);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.toggle-switch input:checked + .toggle-track { background: var(--primary-blue); }
+.toggle-switch input:focus-visible + .toggle-track { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: var(--bg-white);
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+/* --- Toast (same look as multiverse-star-battle) ----------------------------- */
+#toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 500px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  z-index: 3000; /* above the settings modal */
+  transition: opacity 0.3s, transform 0.3s;
+  cursor: pointer;
+}
+#toast.toast-top { bottom: auto; top: 12px; }
+.toast-hidden {
+  opacity: 0;
+  transform: translate(-50%, -20px) !important;
+  pointer-events: none;
+}
+.toast-info, .toast-hint { background-color: var(--primary-blue); }
+.toast-success { background-color: var(--color-solved); }
+.toast-error { background-color: var(--color-error); }
+:root[data-theme="dark"] .toast-info,
+:root[data-theme="dark"] .toast-hint,
+:root[data-theme="dark"] .toast-success,
+:root[data-theme="dark"] .toast-error { color: #111; }
+
+/* --- Tile shape picture (next to its name in the info row) ---------------- */
+.tile-shape-svg {
+  --unit: 14px;
+  width: calc(var(--unit) * var(--tile-cols));
+  height: calc(var(--unit) * var(--tile-rows));
+  flex-shrink: 0;
+}
+/* cells are separated by a thin gap in the page background */
+.tile-shape-svg rect {
+  fill: var(--primary-blue);
+  stroke: var(--bg-white);
+  stroke-width: 0.08;
+}
+
+
+
+
+.modal-box--wide { max-width: 560px; width: 94%; max-height: 85vh; }
+.modal-body h3 { margin: 18px 0 6px; font-size: 1rem; }
+.modal-body h3:first-child { margin-top: 0; }
+.modal-body p { margin: 0 0 8px; }
+.modal-body ul { margin: 4px 0 8px; padding-left: 1.25em; }
+.modal-body li { margin: 6px 0; }
+
+.settings-row button { white-space: nowrap; flex-shrink: 0; }
+
+/* --- Puzzle tier (stars + word) ------------------------------------------------ */
+.tier-info { font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; }
+.tier-stars { letter-spacing: 1px; margin-right: 4px; }
+.tier-stars .on { color: #f9a825; }
+.tier-stars .off { color: var(--border-strong); }

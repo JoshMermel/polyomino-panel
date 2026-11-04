@@ -1,0 +1,34 @@
+# F pentomino 8x8. Built by tools/build_books.mjs from a pool of 1904 (seed 1).
+# grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
+# rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
+name,rows,cols,tile,grid,solution,rules,tier,score
+F5_8x8_01,8,8,F5,##.#...###......#......#.#....##.......#..#...##...##..##.###.##,##A#BCC###AABBCC#AABBDC#E#FFDD##EEEFFDD#GE#FHH##GGG##HH##G###H##,forced,Beginner,6
+F5_8x8_02,8,8,F5,#.#....##........#.#...#......#...##........##.##.#...######.###,#A#BBCC##AAABBCCD#A#BEC#DDDEEE#FGD##EFFFGGGH##F##G#HHH######H###,forced,Beginner,6
+F5_8x8_03,8,8,F5,.#....##.......##.....##.......#..#.#.......#.###....#####.#####,A#BBCC##AAABBCC##ADBEC##DDDEEEF#GD#E#FFFGGGH#F###GHHH#####H#####,forced,Beginner,6
+F5_8x8_04,8,8,F5,.#....##.......#..#...##...#...##.......##...##.#.....#####.####,A#BBCC##AAABBCC#DA#BEC##DDD#EEF##DGEEFFF##GGH##F#GGHHH#####H####,forced,Beginner,7
+F5_8x8_05,8,8,F5,.#..##.#..........#.#.#........#.......#...#...##.##..##########,A#BB##C#AAABBCCCDA#B#E#CDDDFEEE#GDFFFHE#GGG#FHH##G##HH##########,forced,Beginner,7
+F5_8x8_06,8,8,F5,......###......#..#.#..#.......#.......#...#....#.#####.########,AABBCC###AABBCC#DA#B#CE#DDDFEEE#GDFFFEH#GGG#FHHH#G#####H########,forced,Beginner,7
+F5_8x8_07,8,8,F5,....#.###......##......###...#.........#......###.#..#####..####,AABB#C###AABBCC##ADBCCE###DDF#EEGDDFFEE#GGGHFF###G#HH#####HH####,forced,Beginner,7
+F5_8x8_08,8,8,F5,....#..##....#....#..#.#...#...##..#...###......#......#########,AABB#CC##AABB#CCDA#BE#C#DDD#EEE##DF#GEH###FFGGHH#FFGGHH#########,forced,Beginner,7
+F5_8x8_09,8,8,F5,......###......#..#....#.......##..#....#.....##....#...##.###.#,AABBCC###AABBCC#DA#BECF#DDDEEFF##DG#EEFF#HGGGI##HHHG#III##H###I#,forced,Beginner,8
+F5_8x8_10,8,8,F5,.##..###...#...#..............#.#...#..#........#......#####.#.#,A##BB###AAA#BBC#DAEEBCCCDDDEEF#C#DGE#FF#GGGHFFII#GHHHII#####H#I#,forced,Beginner,8
+F5_8x8_11,8,8,F5,.#..#.##........#....#.##......##.......##......#..#....###..#.#,A#BB#C##AAABBCCC#ADBE#C##DDDEEF##DGEEFFF##GGHIIF#GG#HHII###HH#I#,forced,Beginner,8
+F5_8x8_12,8,8,F5,#...##.#.......#..##.......#....#..#....#....#.##.##..#####..###,#AAB##C#AABBBCC#DA##BECCDDD#EEEF#DG#EFFF#GGGH#F##G##HH#####HH###,edges,Medium,10
+F5_8x8_13,8,8,F5,....##..#......#..#....#....#..##......##...............#.....##,AABB##CC#AABBCC#DA#BEEC#DDDF#EE##DFFFEG##HFIJGGGHHIIJJJG#HHIIJ##,edges,Medium,12
+F5_8x8_14,8,8,F5,.#..#.##........#......###..#..##.....###.#...#.........#....#.#,A#BB#C##AAABBCCC#ADBEEC###DD#EE##DDFFE###G#HFF#IGGHHFIII#GGHH#I#,edges,Medium,14
+F5_8x8_15,8,8,F5,##...#..#......#.#.....#.......#..#...........###...############,##AAB#CC#AABBCC#D#AEBBC#DDDEEEF#GD#HEFFFGGGHHF###GHH############,edges,Medium,16
+F5_8x8_16,8,8,F5,.##.#..#.............#.#.......##.....##.......#........#.#....#,A##B#CC#AAABBBCCDAEEB#C#DDDEEFF##DGEFF##HGGGIFJ#HHHGIIJJ#H#IIJJ#,edges,Medium,18
+F5_8x8_17,8,8,F5,......###......#..#.#..#...#...##..............#........#.#....#,AABBCC###AABBCC#DA#B#CE#DDD#FEE##DGFFFEEHGGGIFJ#HHHGIIJJ#H#IIJJ#,edges,Medium,21
+F5_8x8_18,8,8,F5,.###.#.#.......##..#....#....####..#...#.......#........#.#....#,A###B#C#AAABBCC##AD#BBCC#DDDE####DF#EEE#GFFFHEI#GGGFHHII#G#HHII#,edges,Medium,23
+F5_8x8_19,8,8,F5,#.....##.......#....#..###.....#...#....#.....###.##...#####.###,#ABBCC##AAABBCC#ADDB#CE###DDFEE#GGD#FFEE#GGFFH###G##HHH#####H###,edges,Medium,25
+F5_8x8_20,8,8,F5,....#.###.......#....#.#.......##...#..........#........#.#....#,AABB#C###AABBCCC#ADBE#C#DDDEEEF##DGE#FFFHGGGIFJ#HHHGIIJJ#H#IIJJ#,edges,Medium,27
+F5_8x8_21,8,8,F5,#.#....##............#.##......#..##.#......#...#.......##.###.#,#A#BBCC##AAABBCCDDAEB#C##DDEEEF#GD##E#FFGGGH#FFI#GHHHIII##H###I#,edges,Medium,29
+F5_8x8_22,8,8,F5,.###.###...#...#..#.#..#.......##....#..#......#........#...#..#,A###B###AAA#BBB#CA#D#BE#CCCDDEE##CDDF#EE#GHFFFI#GGHHHFII#GGH#II#,edgesWide,Hard,30
+F5_8x8_23,8,8,F5,#.##.###..#....##.........##....#....#..#..#....#.......##.....#,#A##B###AA#BBBC##AABDCCCEE##DDFC#EEDD#FF#EG#HFFI#GGHHIII##GGHHI#,edgesWide,Hard,44
+F5_8x8_24,8,8,F5,#.#.#..##..........#...##.......#......#.......#........#.#....#,#A#B#CC##AABBBCCAAD#BEC##DDDFEEE#DGFFFE#HGGGIFJ#HHHGIIJJ#H#IIJJ#,lookahead3,Hard,60
+F5_8x8_25,8,8,F5,..#.##.##......##.......#.#..#.#........................#..#...#,AA#B##C##AABBCC##ABBDDCC#E#DD#F#EEEGDFFFEHGGGIJFHHGIIIJJ#HH#IJJ#,edgesWide,Hard,75
+F5_8x8_26,8,8,F5,#...#..#.....#..#......##....#.#..#.....#...............#..#...#,#ABB#CC#AAABB#CC#DABEEC##DDEE#F#DD#GEFFF#HGGGIJFHHGIIIJJ#HH#IJJ#,edgesWide,Hard,90
+F5_8x8_27,8,8,F5,#.#....#...............##......##..#.......#...#........#.#.#..#,#A#BBCC#AAADBBCCADDDBEC##FDEEEG##FF#EGGGFFH#IGJ#HHHIIIJJ#H#I#JJ#,lookahead3,Hard,105
+F5_8x8_28,8,8,F5,##.##..##.......#......#.......#.......##.##...####.....#####.##,##A##BB##AAACCBB#ADCCEB#FDDDCEE#FFFDEEG##F##HGG####HHHGG#####H##,chain,Expert,86
+F5_8x8_29,8,8,F5,##.#...##.......#...................#..#.......##....######..###,##A#BCC##AABBBCC#DAAEBCFDDEEEFFFGDDE#HF#GGGIHHH##GIIH######II###,chain,Expert,143
+F5_8x8_30,8,8,F5,##...####......##.........#....##.......#.......##......####...#,##AAB####AABBBC##DABECCCDD#EECF##DDGEEFF#GGGHFFI##GHHIII####HHI#,unsolved,Unsolved,388

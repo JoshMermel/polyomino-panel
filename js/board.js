@@ -1,0 +1,339 @@
+// SVG board renderer. One SVG unit = one cell, so all geometry below is in
+// cell units and the whole board scales via CSS (--cell-size).
+//
+// The board is "dumb": it draws what it's told and reports gestures through
+// callbacks. Game rules and history live in main.js.
+//
+// Input: pointer events on the whole SVG, decoded geometrically. Where a press
+// lands decides the kind of gesture:
+//   on an edge  -> an "edge" gesture: onEdgePress, then onEdgeEnter for every
+//                  other edge the pointer is dragged across
+//   on a cell   -> a "cell" gesture: onCellPress, then onCellEnter for every
+//                  other open cell dragged across
+// and then onRelease (or onCancel if the browser cancels the pointer).
+import {
+  EDGE_LINE, EDGE_CROSS, OPEN, isPlayableEdge, isOpen, getEdge,
+} from './logic.js';
+
+const NS = 'http://www.w3.org/2000/svg';
+
+
+function el(tag, attrs = {}, parent = null) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+// Endpoints of an edge in cell units.
+function edgeEnds(kind, r, c) {
+  return kind === 'h'
+    ? { x1: c, y1: r, x2: c + 1, y2: r }
+    : { x1: c, y1: r, x2: c, y2: r + 1 };
+}
+
+export class Board {
+  // callbacks: { onEdgePress(kind, r, c), onEdgeEnter(kind, r, c),
+  //              onCellPress(i), onCellEnter(i), onRelease(), onCancel(),
+  //              onEdgeContext(kind, r, c) }
+  constructor(container, callbacks) {
+    this.container = container;
+    this.cb = callbacks;
+    this.svg = null;
+  }
+
+  render(puzzle, edges) {
+    this.puzzle = puzzle;
+    const { rows, cols } = puzzle;
+    this.container.textContent = '';
+
+    const pad = 0.08;
+    const svg = el('svg', {
+      viewBox: `${-pad} ${-pad} ${cols + 2 * pad} ${rows + 2 * pad}`,
+      class: 'board-svg',
+      role: 'img',
+      'aria-label': `${rows} by ${cols} puzzle board`,
+    });
+    svg.style.setProperty('--grid-cols', cols);
+    svg.style.setProperty('--grid-rows', rows);
+
+    // Layers, bottom to top.
+    const cellLayer = el('g', { class: 'layer-cells' }, svg);
+    const dashLayer = el('g', { class: 'layer-dash' }, svg);
+    const segLayer = el('g', { class: 'layer-seg' }, svg);
+    const xLayer = el('g', { class: 'layer-x' }, svg);
+    this.hintLayer = el('g', { class: 'layer-hint' }, svg);   // ghost lines / cross for hints
+    el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
+
+    this.cellEls = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const open = puzzle.grid[r * cols + c] === OPEN;
+        this.cellEls.push(el('rect', {
+          class: open ? 'cell' : 'cell blocked',
+          x: c, y: r, width: 1, height: 1,
+        }, cellLayer));
+      }
+    }
+
+    // Per-edge elements, keyed "h:r:c" / "v:r:c".
+    this.segs = new Map();
+    this.xs = new Map();
+    for (const kind of ['h', 'v']) {
+      const rMax = kind === 'h' ? rows : rows - 1;
+      const cMax = kind === 'h' ? cols - 1 : cols;
+      for (let r = 0; r <= rMax; r++) {
+        for (let c = 0; c <= cMax; c++) {
+          if (!isPlayableEdge(puzzle, kind, r, c)) continue;
+          this._buildEdge(kind, r, c, { dashLayer, segLayer, xLayer });
+        }
+      }
+    }
+
+    // a single rectangle that follows the pointer over open cells (hover hint: cells can be dragged across)
+    this.cellHoverEl = el('rect', { class: 'cell-hover', width: 1, height: 1, visibility: 'hidden' }, cellLayer);
+    this.container.appendChild(svg);
+    this.svg = svg;
+    this._hoverKey = null;
+    this._bindPointer(svg);
+    this.setAllEdges(edges);
+  }
+
+  _buildEdge(kind, r, c, layers) {
+    const key = `${kind}:${r}:${c}`;
+    const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+    el('line', { class: 'dash', x1, y1, x2, y2 }, layers.dashLayer);
+
+    const seg = el('line', { class: 'seg', x1, y1, x2, y2 }, layers.segLayer);
+    this.segs.set(key, seg);
+
+    // Small X centred on the edge.
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, d = 0.11;
+    const x = el('g', { class: 'xmark', visibility: 'hidden' }, layers.xLayer);
+    el('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d }, x);
+    el('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d }, x);
+    this.xs.set(key, x);
+  }
+
+  // --- Pointer handling ------------------------------------------------------
+
+  // Pointer position in cell units (0..cols, 0..rows).
+  _point(e) {
+    const r = this.svg.getBoundingClientRect();
+    const vb = this.svg.viewBox.baseVal;
+    return [(e.clientX - r.left) / r.width * vb.width + vb.x,
+            (e.clientY - r.top) / r.height * vb.height + vb.y];
+  }
+
+  // The playable edge at a point, or null. An edge's target area is a thin
+  // strip along its middle, inset from the vertices so neighbours never overlap.
+  _edgeAt(x, y) {
+    const { rows, cols } = this.puzzle;
+    const half = 0.17, inset = 0.16;
+    const rr = Math.round(y), cc = Math.round(x);
+    if (Math.abs(y - rr) <= half && rr >= 0 && rr <= rows) {
+      const c = Math.floor(x), f = x - c;
+      if (c >= 0 && c < cols && f >= inset && f <= 1 - inset && isPlayableEdge(this.puzzle, 'h', rr, c)) {
+        return ['h', rr, c];
+      }
+    }
+    if (Math.abs(x - cc) <= half && cc >= 0 && cc <= cols) {
+      const r = Math.floor(y), f = y - r;
+      if (r >= 0 && r < rows && f >= inset && f <= 1 - inset && isPlayableEdge(this.puzzle, 'v', r, cc)) {
+        return ['v', r, cc];
+      }
+    }
+    return null;
+  }
+
+  // Index of the open cell at a point, or -1.
+  _cellAt(x, y) {
+    const { rows, cols } = this.puzzle;
+    const r = Math.floor(y), c = Math.floor(x);
+    return isOpen(this.puzzle, r, c) && r < rows && c < cols ? r * cols + c : -1;
+  }
+
+  _setHover(key) {
+    if (key === this._hoverKey) return;
+    if (this._hoverKey) this.segs.get(this._hoverKey)?.classList.remove('hover');
+    this._hoverKey = key;
+    if (key) this.segs.get(key)?.classList.add('hover');
+  }
+
+  // Show (or hide, for -1) the hover highlight over an open cell.
+  _setCellHover(cell) {
+    if (!this.cellHoverEl) return;
+    if (cell < 0) { this.cellHoverEl.setAttribute('visibility', 'hidden'); return; }
+    const { cols } = this.puzzle;
+    this.cellHoverEl.setAttribute('x', cell % cols);
+    this.cellHoverEl.setAttribute('y', Math.floor(cell / cols));
+    this.cellHoverEl.setAttribute('visibility', 'visible');
+  }
+
+  _bindPointer(svg) {
+    let mode = null;          // 'edge' | 'cell' while a gesture is in progress
+    let last = null;          // last pointer position (cell units)
+    let lastEdgeKey = null, lastCell = -1;
+
+    svg.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || mode) return;
+      this._setCellHover(-1);                      // the drag preview takes over
+      const [x, y] = this._point(e);
+      const edge = this._edgeAt(x, y);
+      if (edge) {
+        mode = 'edge';
+        lastEdgeKey = edge.join(':');
+        this.cb.onEdgePress(...edge);
+      } else {
+        const cell = this._cellAt(x, y);
+        if (cell < 0) return;
+        mode = 'cell';
+        lastCell = cell;
+        this.cb.onCellPress(cell);
+      }
+      last = [x, y];
+      e.preventDefault();
+      try { svg.setPointerCapture(e.pointerId); } catch { /* not an active pointer */ }
+    });
+
+    svg.addEventListener('pointermove', e => {
+      const [x, y] = this._point(e);
+      if (!mode) {
+        const edge = this._edgeAt(x, y);
+        this._setHover(edge ? edge.join(':') : null);
+        const cell = edge ? -1 : this._cellAt(x, y);
+        this._setCellHover(cell);
+        svg.style.cursor = edge ? 'pointer' : cell >= 0 ? 'cell' : '';
+        return;
+      }
+      // Sample along the segment from the last position, so a fast drag
+      // can't skip over edges or cells.
+      const steps = Math.max(1, Math.ceil(Math.hypot(x - last[0], y - last[1]) / 0.1));
+      for (let i = 1; i <= steps; i++) {
+        const px = last[0] + (x - last[0]) * i / steps, py = last[1] + (y - last[1]) * i / steps;
+        if (mode === 'edge') {
+          const edge = this._edgeAt(px, py);
+          const key = edge ? edge.join(':') : null;
+          if (key && key !== lastEdgeKey) { lastEdgeKey = key; this.cb.onEdgeEnter(...edge); }
+        } else {
+          const cell = this._cellAt(px, py);
+          if (cell >= 0 && cell !== lastCell) { lastCell = cell; this.cb.onCellEnter(cell); }
+        }
+      }
+      last = [x, y];
+    });
+
+    const finish = cancelled => e => {
+      if (!mode) return;
+      mode = null;
+      try { svg.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (cancelled) this.cb.onCancel(); else this.cb.onRelease();
+    };
+    svg.addEventListener('pointerup', finish(false));
+    svg.addEventListener('pointercancel', finish(true));
+    svg.addEventListener('pointerleave', () => { if (!mode) { this._setHover(null); this._setCellHover(-1); } });
+
+    // Right-click toggles a cross on the edge under the pointer.
+    svg.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const edge = this._edgeAt(...this._point(e));
+      if (edge) this.cb.onEdgeContext(...edge);
+    });
+  }
+
+  // Preview of a cell-drag: the cells dragged over so far, in green when they
+  // already form the tile (releasing now will draw its outline).
+  setDrag(cells, formsTile) {
+    this.cellEls.forEach((rect, i) => {
+      const on = cells.includes(i);
+      rect.classList.toggle('drag', on && !formsTile);
+      rect.classList.toggle('drag-ok', on && formsTile);
+    });
+  }
+
+  setAllEdges(edges) {
+    for (const key of this.segs.keys()) {
+      const [kind, r, c] = key.split(':');
+      this.setEdge(kind, +r, +c, getEdge(this.puzzle, edges, kind, +r, +c));
+    }
+  }
+
+  setEdge(kind, r, c, state) {
+    const key = `${kind}:${r}:${c}`;
+    const seg = this.segs.get(key);
+    if (!seg) return;
+    seg.classList.toggle('on', state === EDGE_LINE);
+    seg.classList.toggle('cross', state === EDGE_CROSS); // suppress hover ghost under an X
+    this.xs.get(key).setAttribute('visibility', state === EDGE_CROSS ? 'visible' : 'hidden');
+  }
+
+  // Highlight wrong marks ([{kind, r, c, state}] from logic.checkMarks).
+  showErrors(wrong) {
+    this.clearHint();
+    for (const { kind, r, c, state } of wrong) {
+      const key = `${kind}:${r}:${c}`;
+      (state === EDGE_LINE ? this.segs : this.xs).get(key)?.classList.add('bad');
+    }
+  }
+
+  // Show a hint without touching the board's marks. All parts are optional:
+  //   target  cell indices the hint is about (yellow)
+  //   tile    cell indices of a tile to place (blue)
+  //   lines   edges [[kind, r, c], ...] to draw, shown as dashed ghost lines
+  //   crosses edges [[kind, r, c], ...] that can take a cross, shown as ghost ✕ marks
+  //   marker  one cell index to label with a "!" badge (a cell the text refers to)
+  showHint({ target = [], tile = [], lines = [], crosses = [], marker = null }) {
+    this.clearHint();
+    const mark = (cells, cls) => cells.forEach(i => this.cellEls[i].classList.add(cls));
+    mark(tile, 'hint-tile');
+    mark(target, 'hint-target');
+    for (const [kind, r, c] of lines) {
+      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      el('line', { class: 'hint-line', x1, y1, x2, y2 }, this.hintLayer);
+    }
+    for (const [kind, r, c] of crosses) {
+      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, d = 0.15;
+      const g = el('g', { class: 'hint-x' }, this.hintLayer);
+      el('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d }, g);
+      el('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d }, g);
+    }
+    if (marker !== null) {
+      const { cols } = this.puzzle;
+      const cx = (marker % cols) + 0.5, cy = Math.floor(marker / cols) + 0.5;
+      const g = el('g', { class: 'hint-marker' }, this.hintLayer);
+      el('circle', { cx, cy, r: 0.26 }, g);
+      const t = el('text', {
+        x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 0.4,
+      }, g);
+      t.textContent = '!';
+    }
+  }
+
+  // Remove hint highlights and error marks.
+  clearHint() {
+    if (!this.svg) return;
+    this.svg.querySelectorAll('.bad').forEach(n => n.classList.remove('bad'));
+    for (const cls of ['hint-target', 'hint-tile']) {
+      this.svg.querySelectorAll(`.${cls}`).forEach(n => n.classList.remove(cls));
+    }
+    this.hintLayer.textContent = '';
+  }
+
+  // analysis: result of logic.analyze(). When showTiles is on, enclosed regions
+  // are tinted blue (valid tile) or red (wrong shape / too small to ever be one).
+  update(analysis, showTiles) {
+    const valid = new Set(), wrong = new Set();
+    if (showTiles) {
+      for (const reg of analysis.regions) {
+        if (reg.valid) reg.cells.forEach(i => valid.add(i));
+        else if (reg.wrong) reg.cells.forEach(i => wrong.add(i));
+      }
+    }
+    this.cellEls.forEach((rect, i) => {
+      rect.classList.toggle('tile-ok', valid.has(i));
+      rect.classList.toggle('tile-bad', wrong.has(i));
+    });
+    this.svg.classList.toggle('solved', analysis.solved);
+  }
+}

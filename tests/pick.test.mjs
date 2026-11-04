@@ -1,0 +1,110 @@
+// Run with: node --test tests/*.test.mjs
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { pickEven, hashString } from '../tools/lib/pick.mjs';
+
+const pool = scores => scores.map((score, i) => ({ name: `p${i}`, score }));
+
+test('picks are spread evenly over the score range, easiest first', () => {
+  const cands = pool(Array.from({ length: 1000 }, (_, i) => i));        // scores 0..999
+  const { picks, lo, hi, short } = pickEven(cands, { count: 10, low: 0, high: 1, seed: 1 });
+  assert.equal(picks.length, 10);
+  assert.equal(short, 0);
+  assert.equal(new Set(picks.map(p => p.name)).size, 10, 'no puzzle picked twice');
+  for (let i = 0; i < 10; i++) {
+    const centre = lo + (i + 0.5) * (hi - lo) / 10;
+    assert.ok(Math.abs(picks[i].score - centre) <= 1, `pick ${i}: ${picks[i].score} vs centre ${centre}`);
+  }
+  for (let i = 1; i < picks.length; i++) assert.ok(picks[i - 1].score <= picks[i].score);
+});
+
+test('a skewed pool still gives distinct picks covering the range as well as it can', () => {
+  // 95% of puzzles easy (0..99), a thin tail of hard ones
+  const scores = [...Array.from({ length: 380 }, (_, i) => i % 100), ...Array.from({ length: 20 }, (_, i) => 200 + i * 40)];
+  const { picks } = pickEven(pool(scores), { count: 30, low: 0, high: 1 });
+  assert.equal(picks.length, 30);
+  assert.equal(new Set(picks.map(p => p.name)).size, 30);
+  assert.ok(picks[picks.length - 1].score >= 600, 'reaches into the hard tail');
+  assert.ok(picks[0].score <= 25, 'starts at the easy end');
+});
+
+test('a pool smaller than the book returns everything and reports the shortfall', () => {
+  const { picks, short } = pickEven(pool([5, 1, 3]), { count: 5 });
+  assert.deepEqual(picks.map(p => p.score), [1, 3, 5]);
+  assert.equal(short, 2);
+  assert.deepEqual(pickEven([], { count: 3 }), { picks: [], lo: 0, hi: 0, short: 3 });
+});
+
+test('ties are broken deterministically by seed', () => {
+  const cands = pool(Array.from({ length: 100 }, () => 7));              // every score equal
+  const a = pickEven(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
+  const b = pickEven(cands, { count: 10, seed: 1 }).picks.map(p => p.name);
+  const c = pickEven(cands, { count: 10, seed: 2 }).picks.map(p => p.name);
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a, c);
+  assert.equal(new Set(a).size, 10);
+  // shuffling the pool does not change the choice
+  const shuffled = [...cands].reverse();
+  assert.deepEqual(pickEven(shuffled, { count: 10, seed: 1 }).picks.map(p => p.name), a);
+});
+
+test('percentile bounds ignore outliers; an absolute range overrides them', () => {
+  const cands = pool([...Array.from({ length: 98 }, (_, i) => i), 5000, 9000]);
+  const trimmed = pickEven(cands, { count: 5, low: 0.02, high: 0.98 });
+  assert.ok(trimmed.hi < 200, `outliers trimmed: hi=${trimmed.hi}`);
+  const abs = pickEven(cands, { count: 5, range: [0, 50] });
+  assert.equal(abs.lo, 0); assert.equal(abs.hi, 50);
+  assert.ok(abs.picks.every(p => p.score <= 60));
+});
+
+test('hashString is stable', () => {
+  assert.equal(hashString('abc'), hashString('abc'));
+  assert.notEqual(hashString('abc'), hashString('abd'));
+});
+
+import { tierQuotas, pickTiered } from '../tools/lib/pick.mjs';
+
+const TIERS = ['Beginner', 'Medium', 'Hard', 'Expert', 'Unsolved'];
+const SHARES = { Beginner: 0.2, Medium: 0.2, Hard: 0.3, Expert: 0.2, Unsolved: 0.1 };
+
+test('tierQuotas: shares, rounding, availability caps, and redistribution', () => {
+  const plenty = Object.fromEntries(TIERS.map(t => [t, 99]));
+  // plenty of everything: 30 splits by share
+  let r = tierQuotas(30, SHARES, plenty);
+  assert.deepEqual(r.quotas, { Beginner: 6, Medium: 6, Hard: 9, Expert: 6, Unsolved: 3 });
+  assert.equal(r.short, 0);
+  // rounding always sums to the count
+  for (const n of [7, 10, 29, 31, 50]) {
+    const q = tierQuotas(n, SHARES, Object.fromEntries(TIERS.map(t => [t, 999]))).quotas;
+    assert.equal(Object.values(q).reduce((a, b) => a + b, 0), n);
+  }
+  // no hard puzzles in the pool: their share moves to the other tiers (biggest share first)
+  r = tierQuotas(30, SHARES, { ...plenty, Hard: 0, Expert: 0, Unsolved: 0 });
+  assert.equal(r.quotas.Hard + r.quotas.Expert + r.quotas.Unsolved, 0);
+  assert.equal(r.quotas.Beginner + r.quotas.Medium, 30);
+  assert.equal(r.short, 0);
+  // a pool too small overall reports the shortfall
+  r = tierQuotas(30, SHARES, { Beginner: 3, Medium: 0, Hard: 0, Expert: 0, Unsolved: 0 });
+  assert.equal(r.quotas.Beginner, 3);
+  assert.equal(r.short, 27);
+});
+
+test('pickTiered: quotas per tier, spread within each tier, ordered easiest first', () => {
+  const cands = [];
+  TIERS.forEach((t, ti) => {
+    for (let i = 0; i < 80; i++) cands.push({ name: `${t}${i}`, tier: t, score: ti * 100 + i });   // tiers do not overlap in score here
+  });
+  const { picks, perTier, short } = pickTiered(cands, { count: 30, tiers: TIERS, shares: SHARES });
+  assert.equal(picks.length, 30);
+  assert.equal(short, 0);
+  assert.deepEqual(TIERS.map(t => perTier[t].got), [6, 6, 9, 6, 3]);
+  assert.equal(new Set(picks.map(p => p.name)).size, 30);
+  // inside the 'Hard' tier (scores 200..279) the 9 picks span it
+  const hard = picks.filter(p => p.tier === 'Hard').map(p => p.score);
+  assert.ok(Math.max(...hard) - Math.min(...hard) >= 60, `Hard picks span ${hard}`);
+  // a missing tier hands its share on
+  const noEasy = cands.filter(c => c.tier === 'Hard' || c.tier === 'Unsolved');
+  const r2 = pickTiered(noEasy, { count: 30, tiers: TIERS, shares: SHARES });
+  assert.equal(r2.picks.length, 30);
+  assert.equal(r2.perTier.Beginner.got + r2.perTier.Medium.got, 0);
+});

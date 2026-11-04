@@ -1,0 +1,390 @@
+{
+  "default": "L_6x6",
+  "books": [
+    {
+      "tile": "I2",
+      "rows": 6,
+      "cols": 6,
+      "file": "I2_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "I2",
+      "rows": 8,
+      "cols": 8,
+      "file": "I2_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "I2",
+      "rows": 10,
+      "cols": 10,
+      "file": "I2_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "I3",
+      "rows": 6,
+      "cols": 6,
+      "file": "I3_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "I3",
+      "rows": 8,
+      "cols": 8,
+      "file": "I3_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "I3",
+      "rows": 10,
+      "cols": 10,
+      "file": "I3_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "V3",
+      "rows": 6,
+      "cols": 6,
+      "file": "V3_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "V3",
+      "rows": 8,
+      "cols": 8,
+      "file": "V3_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "V3",
+      "rows": 10,
+      "cols": 10,
+      "file": "V3_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "L",
+      "rows": 6,
+      "cols": 6,
+      "file": "L_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "L",
+      "rows": 8,
+      "cols": 8,
+      "file": "L_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "L",
+      "rows": 10,
+      "cols": 10,
+      "file": "L_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "I",
+      "rows": 6,
+      "cols": 6,
+      "file": "I_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "I",
+      "rows": 8,
+      "cols": 8,
+      "file": "I_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "I",
+      "rows": 10,
+      "cols": 10,
+      "file": "I_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "T",
+      "rows": 6,
+      "cols": 6,
+      "file": "T_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "T",
+      "rows": 8,
+      "cols": 8,
+      "file": "T_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "T",
+      "rows": 10,
+      "cols": 10,
+      "file": "T_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "S",
+      "rows": 6,
+      "cols": 6,
+      "file": "S_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "S",
+      "rows": 8,
+      "cols": 8,
+      "file": "S_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "S",
+      "rows": 10,
+      "cols": 10,
+      "file": "S_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "F5",
+      "rows": 6,
+      "cols": 6,
+      "file": "F5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "F5",
+      "rows": 8,
+      "cols": 8,
+      "file": "F5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "F5",
+      "rows": 10,
+      "cols": 10,
+      "file": "F5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "I5",
+      "rows": 6,
+      "cols": 6,
+      "file": "I5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "I5",
+      "rows": 8,
+      "cols": 8,
+      "file": "I5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "I5",
+      "rows": 10,
+      "cols": 10,
+      "file": "I5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "L5",
+      "rows": 6,
+      "cols": 6,
+      "file": "L5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "L5",
+      "rows": 8,
+      "cols": 8,
+      "file": "L5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "L5",
+      "rows": 10,
+      "cols": 10,
+      "file": "L5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "N5",
+      "rows": 6,
+      "cols": 6,
+      "file": "N5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "N5",
+      "rows": 8,
+      "cols": 8,
+      "file": "N5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "N5",
+      "rows": 10,
+      "cols": 10,
+      "file": "N5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "P5",
+      "rows": 6,
+      "cols": 6,
+      "file": "P5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "P5",
+      "rows": 8,
+      "cols": 8,
+      "file": "P5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "P5",
+      "rows": 10,
+      "cols": 10,
+      "file": "P5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "T5",
+      "rows": 6,
+      "cols": 6,
+      "file": "T5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "T5",
+      "rows": 8,
+      "cols": 8,
+      "file": "T5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "T5",
+      "rows": 10,
+      "cols": 10,
+      "file": "T5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "U5",
+      "rows": 6,
+      "cols": 6,
+      "file": "U5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "U5",
+      "rows": 8,
+      "cols": 8,
+      "file": "U5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "U5",
+      "rows": 10,
+      "cols": 10,
+      "file": "U5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "V5",
+      "rows": 6,
+      "cols": 6,
+      "file": "V5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "V5",
+      "rows": 8,
+      "cols": 8,
+      "file": "V5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "V5",
+      "rows": 10,
+      "cols": 10,
+      "file": "V5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "W5",
+      "rows": 6,
+      "cols": 6,
+      "file": "W5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "W5",
+      "rows": 8,
+      "cols": 8,
+      "file": "W5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "W5",
+      "rows": 10,
+      "cols": 10,
+      "file": "W5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "X5",
+      "rows": 10,
+      "cols": 10,
+      "file": "X5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "Y5",
+      "rows": 6,
+      "cols": 6,
+      "file": "Y5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "Y5",
+      "rows": 8,
+      "cols": 8,
+      "file": "Y5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "Y5",
+      "rows": 10,
+      "cols": 10,
+      "file": "Y5_10x10.csv",
+      "count": 30
+    },
+    {
+      "tile": "Z5",
+      "rows": 6,
+      "cols": 6,
+      "file": "Z5_6x6.csv",
+      "count": 30
+    },
+    {
+      "tile": "Z5",
+      "rows": 8,
+      "cols": 8,
+      "file": "Z5_8x8.csv",
+      "count": 30
+    },
+    {
+      "tile": "Z5",
+      "rows": 10,
+      "cols": 10,
+      "file": "Z5_10x10.csv",
+      "count": 30
+    }
+  ]
+}

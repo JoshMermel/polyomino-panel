@@ -1,0 +1,3 @@
+# Big scratch pools of generated puzzles and staged books (see tools/build_books.mjs)
+tools/library/
+tools/books_staging/
