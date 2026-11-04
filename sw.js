@@ -24,6 +24,7 @@ const APP_SHELL = [
 ];
 
 const isDataRequest = url => url.pathname.includes('/data/');
+const SHELL_PATHS = new Set(APP_SHELL.map(u => new URL(u, self.location.href).pathname));
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -93,7 +94,8 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(caches.match(req, { ignoreSearch: true }).then(cached => cached || fetch(req).then(res => {
-    if (res && res.ok) { const copy = res.clone(); caches.open(SHELL_CACHE).then(c => c.put(req, copy)); }
+    // only the app's own files are kept; stray requests (favicon, ?v= variants) pass through uncached
+    if (res && res.ok && SHELL_PATHS.has(url.pathname)) { const copy = res.clone(); caches.open(SHELL_CACHE).then(c => c.put(req, copy)); }
     return res;
   })));
 });

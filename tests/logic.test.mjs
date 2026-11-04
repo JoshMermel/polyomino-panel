@@ -924,6 +924,7 @@ test('print: selection parsing and page planning', async () => {
   assert.deepEqual(parseSelection('1-3, 7', 50).ids, [1, 2, 3, 7]);
   assert.deepEqual(parseSelection('5 3 3, 4-5', 50).ids, [3, 4, 5]);          // sorted, no repeats, spaces ok
   assert.deepEqual(parseSelection('50', 50).ids, [50]);
+  assert.deepEqual(parseSelection('1 - 3 , 7 \u2013 8', 50).ids, [1, 2, 3, 7, 8]);   // spaces around dashes are fine
   for (const bad of ['', '  ', 'abc', '0', '51', '3-60', '9-4', '1-', '1--3']) {
     assert.ok(parseSelection(bad, 50).error, `"${bad}" should be rejected`);
   }

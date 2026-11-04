@@ -21,11 +21,12 @@ const svgEl = (tag, attrs, parent) => {
 
 // "1-10, 15, 20-22" -> { ids: [1..10, 15, 20, 21, 22] } (ascending, no repeats) or { error }.
 export function parseSelection(text, total) {
-  const parts = text.split(/[,\s]+/).filter(Boolean);
+  // "1 - 5" means 1-5: close up spaces around dashes before splitting on commas and spaces
+  const parts = text.replace(/\s*[-\u2013]\s*/g, '-').split(/[,\s]+/).filter(Boolean);
   if (!parts.length) return { error: 'Enter the puzzles to print, for example 1-10 or 3, 7, 12.' };
   const ids = new Set();
   for (const part of parts) {
-    const m = /^(\d+)(?:\s*[-–]\s*(\d+))?$/.exec(part);
+    const m = /^(\d+)(?:-(\d+))?$/.exec(part);
     if (!m) return { error: `"${part}" isn't a puzzle number or range.` };
     const a = Number(m[1]), b = m[2] === undefined ? a : Number(m[2]);
     if (a < 1 || b < 1 || a > total || b > total) return { error: `This book has puzzles 1 to ${total}.` };

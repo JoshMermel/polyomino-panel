@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://127.0.0.1:8765/';
 const source = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
@@ -57,7 +58,7 @@ function loadWorker() {
   const listeners = {};
   const caches = makeCaches();
   const self = {
-    location: { origin: new URL(BASE).origin },
+    location: { origin: new URL(BASE).origin, href: BASE + 'sw.js' },
     addEventListener: (type, fn) => { listeners[type] = fn; },
     skipWaiting: () => Promise.resolve(),
     clients: { claim: () => Promise.resolve() },
@@ -160,4 +161,33 @@ test('sw: activate drops old shell caches but keeps puzzle books; foreign and no
   assert.equal(post.handled, false);
   const foreign = await sw.dispatch('fetch', { request: { url: 'https://example.com/data/x.csv', method: 'GET', mode: 'cors' } });
   assert.equal(foreign.handled, false);
+});
+
+test('sw: stray same-origin requests pass through without being cached', async () => {
+  resetNetwork();
+  network.files.set(BASE + 'favicon.ico', 'icon');
+  const sw = loadWorker();
+  await sw.dispatch('install');
+  const before = (await (await sw.caches.open('pp-shell-v1')).keys()).length;
+  const icon = await sw.get('favicon.ico');
+  assert.equal(await body(icon.response), 'icon');
+  const withQuery = await sw.get('js/main.js?v=99');           // a known file with a query string: served from cache
+  assert.equal(await body(withQuery.response), 'js/main.js v1');
+  await new Promise(r => setTimeout(r, 10));                    // let any background cache.put land
+  assert.equal((await (await sw.caches.open('pp-shell-v1')).keys()).length, before);
+});
+
+test('sw: the app shell lists every module the page imports', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const listed = new Set([...source.match(/const APP_SHELL = \[([\s\S]*?)\];/)[1].matchAll(/'\.\/([^']*)'/g)].map(m => m[1]));
+  // walk the ES-module graph from js/main.js
+  const seen = new Set(), queue = ['js/main.js'];
+  while (queue.length) {
+    const file = queue.pop();
+    if (seen.has(file)) continue;
+    seen.add(file);
+    const code = readFileSync(root + file, 'utf8');
+    for (const m of code.matchAll(/from\s+'(\.[^']+)'/g)) queue.push(new URL(m[1], 'file:///' + file).pathname.slice(1));
+  }
+  for (const f of [...seen, 'index.html', 'style.css']) assert.ok(listed.has(f), `${f} is missing from APP_SHELL in sw.js`);
 });

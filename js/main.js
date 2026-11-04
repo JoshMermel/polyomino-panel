@@ -142,10 +142,13 @@ function showFatal(err) {
 }
 
 // --- Navigation -------------------------------------------------------------
+let navToken = 0;   // the latest goTo wins, whatever order their downloads finish in
 async function goTo(setIdx, puzIdx) {
+  const token = ++navToken;
   const set = state.sets[setIdx];
   let puzzles;
-  try { puzzles = await ensureLoaded(set); } catch (err) { showFatal(err); return; }
+  try { puzzles = await ensureLoaded(set); } catch (err) { if (token === navToken) showFatal(err); return; }
+  if (token !== navToken) return;
   if (!puzzles.length) { showFatal(new Error(`${set.title} has no puzzles`)); return; }
   puzIdx = Math.max(0, Math.min(puzzles.length - 1, puzIdx));
 
@@ -539,7 +542,8 @@ function refresh() {
   hideToast();
   const a = analyze(state.puzzle, state.edges);
   board.update(a, state.showTiles);
-  if (a.solved) store.set(solvedKey(state.puzzle), '1');
+  // remembered only once a move is finished: a drag that is cancelled with Esc must not count
+  if (a.solved && !gesture) store.set(solvedKey(state.puzzle), '1');
 
   const set = curSet();
   const hasMarks = state.edges.h.some(Boolean) || state.edges.v.some(Boolean);
@@ -573,6 +577,7 @@ function refresh() {
 // --- Browse puzzles -----------------------------------------------------------
 // A grid of the current book's puzzles, grouped under their difficulty tier and coloured
 // by status: solved (green), in progress (yellow, some marks saved), current (blue ring).
+let closeBrowse = () => {};   // set in bindControls
 function renderBrowse() {
   const set = curSet(), puzzles = set.puzzles ?? [];
   const grid = $('browse-grid');
@@ -607,7 +612,7 @@ function renderBrowse() {
     b.textContent = i + 1;
     b.setAttribute('aria-label', `Puzzle ${i + 1}${done ? ' (solved)' : started ? ' (in progress)' : ''}`);
     b.addEventListener('click', () => {
-      $('browse-modal').querySelector('[data-close]').click();
+      closeBrowse();
       goTo(state.setIdx, i);
     });
     grid.append(b);
@@ -619,7 +624,11 @@ function renderBrowse() {
 // --- Print puzzles ------------------------------------------------------------
 // Settings -> "Print puzzles" opens a modal to pick a range of the current book, then builds a
 // print-only page (js/print.js) and opens the browser's print dialog ("Save as PDF" there).
-function setupPrint(setupModal) {
+// The booklet styles apply only while a booklet is being printed, so a plain Ctrl+P prints the page.
+const endBookletPrint = () => document.body.classList.remove('printing-booklet');
+window.addEventListener('afterprint', endBookletPrint);
+matchMedia('print').addEventListener?.('change', e => { if (!e.matches) endBookletPrint(); });   // iOS skips afterprint
+function setupPrint(setupModal, hideSettings) {
   const sel = $('print-selection'), perPageSel = $('print-per-page'), keyBox = $('print-answer-key');
   const err = $('print-error'), summary = $('print-summary'), go = $('print-go-btn');
   const savedPer = store.get('pp_printPerPage');
@@ -643,7 +652,7 @@ function setupPrint(setupModal) {
   };
 
   setupModal('print-modal', 'print-btn', () => {
-    $('settings-modal').classList.add('modal-hidden');
+    hideSettings();
     const set = curSet(), total = (set.puzzles ?? []).length;
     $('print-book-name').textContent = set.custom ? set.title : `${shapeName(set.tile)}, ${set.rows}×${set.cols}`;
     $('print-book-total').textContent = total;
@@ -659,6 +668,7 @@ function setupPrint(setupModal) {
     const r = update();
     if (!r) return;
     buildPrintRoot({ book: curSet(), puzzles: r.puzzles, ids: r.ids, perPage: r.perPage, includeKey: keyBox.checked, solutionOf: solutionFor });
+    document.body.classList.add('printing-booklet');     // style.css prints only the booklet while this is set
     window.print();
   });
 }
@@ -759,13 +769,14 @@ function bindControls() {
     modals.push({ modal, close });
     return { open, close };
   };
-  setupModal('settings-modal', 'settings-btn');
-  setupModal('browse-modal', 'browse-btn', renderBrowse);
-  setupPrint(setupModal);
+  const settings = setupModal('settings-modal', 'settings-btn');
+  const browse = setupModal('browse-modal', 'browse-btn', renderBrowse);
+  closeBrowse = browse.close;
+  setupPrint(setupModal, settings.close);
   $('browse-jump-btn').addEventListener('click', () => {
     const i = (curSet().puzzles ?? []).findIndex(p => !isSolved(p));
     if (i < 0) { showToast("You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
-    $('browse-modal').querySelector('[data-close]').click();
+    browse.close();
     goTo(state.setIdx, i);
   });
   const help = setupModal('help-modal', 'help-btn');
@@ -811,6 +822,17 @@ function bindControls() {
       if (offline.checked) {
         await navigator.serviceWorker.register('sw.js');
         await navigator.serviceWorker.ready;
+        // The worker only caches what passes through it, so wait until it controls this page.
+        if (!navigator.serviceWorker.controller) {
+          await new Promise(resolve => {
+            const timer = setTimeout(resolve, 4000);
+            navigator.serviceWorker.addEventListener('controllerchange', () => { clearTimeout(timer); resolve(); }, { once: true });
+          });
+        }
+        if (!navigator.serviceWorker.controller) {
+          showToast('Offline play is on. Reload the page once to finish saving the books.', 'info', 5000);
+          return;
+        }
         const books = state.sets.filter(s => !s.custom);
         await fetchText('data/manifest.json');
         for (const b of books) await fetchText(`data/${b.file}`);          // the worker caches each as it passes
@@ -868,7 +890,9 @@ function bindControls() {
   });
 
   document.addEventListener('keydown', e => {
-    if (e.target instanceof HTMLInputElement && e.target.type === 'number') return;
+    // leave Ctrl+Z to text fields (the print range, puzzle number) and to open dialogs
+    if (e.target.closest?.('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable]')) return;
+    if (modals.some(({ modal }) => !modal.classList.contains('modal-hidden'))) return;
     const mod = e.ctrlKey || e.metaKey;
     if (!mod || e.altKey) return;
     const k = e.key.toLowerCase();

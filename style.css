@@ -478,7 +478,7 @@ select, input[type="number"] {
 #print-root .k6 { --board: 62mm; }
 @media print {
   @page { margin: 12mm; }
-  html, body { background: #fff !important; }
-  body > *:not(#print-root) { display: none !important; }
-  #print-root { display: block; }
+  body.printing-booklet { background: #fff !important; }
+  body.printing-booklet > *:not(#print-root) { display: none !important; }
+  body.printing-booklet #print-root { display: block; }
 }
