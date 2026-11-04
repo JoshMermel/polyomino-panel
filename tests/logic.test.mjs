@@ -756,7 +756,9 @@ test('the whole rule ladder is sound on every published puzzle, and solves almos
   const manifest = JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
   let puzzles = 0, solved = 0, chainSteps = 0, crossSteps = 0;
   for (const book of manifest.books) {
-    for (const q of data(book.file).slice(0, 12)) {            // a spread of the book (easiest first, so also sample the end below)
+    const all = data(book.file);
+    const spread = Array.from({ length: 12 }, (_, i) => all[Math.floor(i * all.length / 12)]);   // evenly across the book, easiest to hardest
+    for (const q of spread) {
       for (const pz of [q]) {
         puzzles++;
         const e = newEdges(pz);
@@ -781,7 +783,7 @@ test('the whole rule ladder is sound on every published puzzle, and solves almos
         for (const rule of RULES) { found = rule.find(pz, e); if (found) { which = rule.id; break; } }
         if (!found) break;
         for (const [k, r, c] of found.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
-        for (const [k, r, c] of found.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
+        for (const [k, r, c] of found.crosses ?? []) { setEdge(pz, e, k, r, c, EDGE_CROSS); crossSteps++; }
         if (which === 'chain') chainSteps++;
         assert.deepEqual(checkMarks(pz, e, pz.solution), [], `${book.file} ${pz.name}: rule ${which} was wrong`);
       }

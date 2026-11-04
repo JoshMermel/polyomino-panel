@@ -4,7 +4,7 @@
   "sizes": [6, 8, 10],
   "shapes": ["I2", "I3", "V3", "L", "I", "T", "S", "F5", "I5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5"],
   "defaults": {
-    "count": 50,
+    "count": 75,
     "minCount": 10,
     "low": 0.02,
     "high": 0.98,
