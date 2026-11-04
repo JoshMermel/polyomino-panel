@@ -94,8 +94,15 @@ async function init() {
   }
   renderPickers();
 
-  // Resume at the last puzzle, found by hash so renumbering doesn't matter.
+  // Start where the URL says (?book=L_8x8&puzzle=6, like star battle), else resume at the
+  // last puzzle, found by hash so renumbering doesn't matter.
   let setIdx = state.defaultSet ?? 0, puzIdx = 0;
+  const params = new URLSearchParams(location.search);
+  const bookIdx = state.sets.findIndex(s => s.id === params.get('book'));
+  if (bookIdx >= 0) {
+    await goTo(bookIdx, (parseInt(params.get('puzzle'), 10) || 1) - 1);
+    return;
+  }
   try {
     const last = JSON.parse(store.get('pp2_last') || 'null');
     const i = last ? state.sets.findIndex(s => s.id === last.set) : -1;
@@ -135,6 +142,7 @@ async function goTo(setIdx, puzIdx) {
   state.edges = saved || newEdges(state.puzzle);
 
   store.set('pp2_last', JSON.stringify({ set: set.id, hash: hashOf(state.puzzle) }));
+  updateUrlParams(set, puzIdx);
   syncPickers();
   $('puz-num').value = puzIdx + 1;
   $('puz-total').textContent = puzzles.length;
@@ -147,6 +155,15 @@ async function goTo(setIdx, puzIdx) {
   refresh();
 }
 
+// Keep the address bar at ?book=<id>&puzzle=<n> (1-based) so the page can be bookmarked or
+// shared, without adding history entries. Books loaded from a file have no stable id: no params.
+function updateUrlParams(set, puzIdx) {
+  try {
+    const q = set.custom ? '' : `?book=${encodeURIComponent(set.id)}&puzzle=${puzIdx + 1}`;
+    history.replaceState(null, '', location.pathname + q + location.hash);
+  } catch { /* e.g. sandboxed or file:// */ }
+}
+
 // The help modal's "Report a problem" link opens a GitHub issue that already names the puzzle.
 function updateFeedbackLink() {
   const link = $('feedback-link'), p = state.puzzle;
@@ -154,7 +171,7 @@ function updateFeedbackLink() {
   const id = p.name || hashOf(p);
   const url = new URL('https://github.com/JoshMermel/polyomino-panel/issues/new');
   url.searchParams.set('title', `Feedback on ${id}`);
-  url.searchParams.set('body', `Puzzle: ${id}\nTile: ${shapeName(p.tile)}, ${p.rows}x${p.cols}, tier ${p.tier ?? '?'}\nHash: ${hashOf(p)}\n\nWhat I noticed:\n`);
+  url.searchParams.set('body', `Puzzle: ${id}\nTile: ${shapeName(p.tile)}, ${p.rows}x${p.cols}, tier ${p.tier ?? '?'}\nHash: ${hashOf(p)}\nLink: ${location.href}\n\nWhat I noticed:\n`);
   link.href = url.href;
 }
 

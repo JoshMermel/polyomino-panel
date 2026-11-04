@@ -15,6 +15,8 @@ python3 -m http.server 8765
 
 then open <http://localhost:8765>. (Opening `index.html` via `file://` won't work: browsers block `fetch` and ES modules there.) It also works as-is on GitHub Pages.
 
+**Links:** the address bar tracks the current puzzle as `?book=<tile>_<n>x<n>&puzzle=<number>` (for example `?book=T_10x10&puzzle=7`; the number is 1-based), so a puzzle can be bookmarked or shared. A link overrides the saved "resume where you left off" position; an unknown book is ignored. Puzzle numbers follow the book's current order, so a link can point at a different puzzle after books are rebuilt.
+
 ## Controls
 
 The main view is deliberately sparse: a title bar (⚙ settings, **?** help), the book and puzzle picker, one info line (the tile shape on the left, progress or "Solved!" on the right), the action buttons and the board. The rules and controls are in the **?** "How to play" dialog. Summary:
