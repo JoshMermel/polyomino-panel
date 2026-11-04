@@ -1,4 +1,4 @@
-# L tetromino + T tetromino 6x6. Built by tools/build_books.mjs from a pool of 649 (seed 1).
+# L tetromino + T tetromino 6x6. Built by tools/build_books.mjs from a pool of 687 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
@@ -47,33 +47,33 @@ L+T_6x6_42,6,6,L+T,..#......#...#...#..................,AA#BBBACC#DBA#CDD#EECFDG
 L+T_6x6_43,6,6,L+T,#............#.....#......#.........,#AAABBCCCADBC#DDDBE#FFFGEE#HFGEHHHGG,lookahead3,Hard,60
 L+T_6x6_44,6,6,L+T,.#.#........................#......#,A#B#CCAABBBCADEEECFDEGGGFDDH#GFFHHH#,lookahead3,Hard,66
 L+T_6x6_45,6,6,L+T,..#.....#.......#..#................,AA#BBBAC#BDDACCC#DE#FFFDEGGGFHEEGHHH,lookahead3,Hard,69
-L+T_6x6_46,6,6,L+T,.......#.#.#.....##.#..##...########,AABBCCA#B#C#ADBEC##D#EE##DDE########,chain,Expert,36
-L+T_6x6_47,6,6,L+T,##....#..#..#.#.....#............#..,##AAAB#CA#BB#C#DDBCC#EDFGEEEDFGGG#FF,chain,Expert,43
-L+T_6x6_48,6,6,L+T,..........#.#...#......#.##.......##,AAABCCADBB#C#DEB#CDDEEE#F##GGGFFFG##,chain,Expert,50
+L+T_6x6_46,6,6,L+T,....##....##.#..#........####.######,ABBB##AABC##A#CC#DEEECDDE####D######,chain,Expert,39
+L+T_6x6_47,6,6,L+T,.....##..####........#........#.....,AABBB##AB####ACDDDCCC#DEFFFGEE#FGGGE,chain,Expert,44
+L+T_6x6_48,6,6,L+T,#.#.....##.##........#........#.....,#A#BBBAA##B##ACDDDCCC#DEFFFGEE#FGGGE,chain,Expert,50
 L+T_6x6_49,6,6,L+T,#.#........#....##..#....##.........,#A#BBBAAACB#DDDC##ED#CCFE##GFFEEGGGF,chain,Expert,52
-L+T_6x6_50,6,6,L+T,......#........#....#.#.............,AABCCC#ABBCDEAB#DDEE#F#DEGFFFHGGGHHH,chain,Expert,65
-L+T_6x6_51,6,6,L+T,#....#...#.#.....#......#.#...####.#,#AABB#CCA#B#CDAEB#CDDEEE#D#FFF####F#,chain,Expert,67
+L+T_6x6_50,6,6,L+T,.........#..#..##.............##..##,AAABBBACD#BE#CD##ECCDDEEFFFGGG##FG##,chain,Expert,60
+L+T_6x6_51,6,6,L+T,#.......##.....#........##.#.....#..,#ABBBCDA##BCDAA#CCDDEEEF##G#EFGGG#FF,chain,Expert,65
 L+T_6x6_52,6,6,L+T,.......#...#..##....................,AAABBBC#ABD#CC##DDCEEEDFGEHHHFGGGHFF,chain,Expert,70
 L+T_6x6_53,6,6,L+T,#.##.#........#......#..#..........#,#A##B#CAAABDCC#BBDCEF#DD#EFGGGEEFFG#,chain,Expert,74
-L+T_6x6_54,6,6,L+T,............#..#.###....#.........##,AAABBBACCCDB#CE#D###EEDD#FEGGGFFFG##,chain,Expert,80
+L+T_6x6_54,6,6,L+T,...#...#.....##.........#..#..##....,AAA#BBC#ADDBC##DEBCCFDEE#FF#EG##FGGG,chain,Expert,81
 L+T_6x6_55,6,6,L+T,#..#..................#........#....,#AB#CCAABBBCDAEEECDDDE#FGGGHFFG#HHHF,chain,Expert,86
-L+T_6x6_56,6,6,L+T,#......#...........#............#...,#AAABBC#ADDBCCCDEBF#GDEEFGGGEHFF#HHH,chain,Expert,88
-L+T_6x6_57,6,6,L+T,..#.#.....................#........#,AA#B#CABBBCCADDDECFFDEEEFG#HHHFGGGH#,chain,Expert,93
-L+T_6x6_58,6,6,L+T,........#...#.....##................,AAABBBAC#BDD#CCCED##FEEDGFFFEHGGGHHH,chain,Expert,100
-L+T_6x6_59,6,6,L+T,........#...#..#..#.................,AAABBBAC#BDD#CC#ED#CFEEDGFFFEHGGGHHH,chain,Expert,103
-L+T_6x6_60,6,6,L+T,.............##..##.................,AABCCCABBBDCA##DD##EEEDFGEHHHFGGGHFF,chain,Expert,114
-L+T_6x6_61,6,6,L+T,#..#...#...........#................,#AA#BBC#ADDBCCADEBC#FDEEGFFFEHGGGHHH,unsolved,Unsolved,254
+L+T_6x6_56,6,6,L+T,..#.#.....................#........#,AA#B#CABBBCCADDDECFFDEEEFG#HHHFGGGH#,chain,Expert,93
+L+T_6x6_57,6,6,L+T,........#...#.....##................,AAABBBAC#BDD#CCCED##FEEDGFFFEHGGGHHH,chain,Expert,100
+L+T_6x6_58,6,6,L+T,........#...#..#..#.................,AAABBBAC#BDD#CC#ED#CFEEDGFFFEHGGGHHH,chain,Expert,103
+L+T_6x6_59,6,6,L+T,.............##..##.................,AABCCCABBBDCA##DD##EEEDFGEHHHFGGGHFF,chain,Expert,114
+L+T_6x6_60,6,6,L+T,...#........##......#...............,AAA#BBACCCDB##CDDBEE#FDGEHFFFGEHHHGG,chain,Expert,115
+L+T_6x6_61,6,6,L+T,....###.#...##.......#........#.....,AAAB###A#BBB##CDDDCCC#DEFFFGEE#FGGGE,unsolved,Unsolved,262
 L+T_6x6_62,6,6,L+T,...#....#.....#...#.................,AAA#BBAC#DDBCC#DEB#CFDEEGFFFEHGGGHHH,unsolved,Unsolved,264
-L+T_6x6_63,6,6,L+T,........##......#.............#.....,AAABBBAC##BDECCF#DECGFDDEEGFFH#GGHHH,unsolved,Unsolved,269
-L+T_6x6_64,6,6,L+T,...#...#..............#....#........,AAB#CCA#BBBCADEEECFDDE#GFDH#GGFFHHHG,unsolved,Unsolved,286
-L+T_6x6_65,6,6,L+T,#........#...###..........#..#.....#,#ABBBCAAA#BCD###CCDDEEFFDG#EF#GGGEF#,unsolved,Unsolved,289
-L+T_6x6_66,6,6,L+T,#......#.....#...#..................,#AABBBC#ADDBC#ADE#CCFDEEGFFFEHGGGHHH,unsolved,Unsolved,296
-L+T_6x6_67,6,6,L+T,......#........#...........#......#.,AAABCC#ABBBCDDD#ECFDEEEGFFH#GGFHHH#G,unsolved,Unsolved,302
-L+T_6x6_68,6,6,L+T,#.........#......#....#.............,#AABBBCCAD#BCEADD#CEED#FGEHHHFGGGHFF,unsolved,Unsolved,306
-L+T_6x6_69,6,6,L+T,........#.........#...##............,ABBBCCAA#BDCAEDDDC#EEF##GEFFFHGGGHHH,unsolved,Unsolved,322
-L+T_6x6_70,6,6,L+T,........#....##.......#.............,AAABBBCA#DDBC##DEECCFD#EGFFFHEGGGHHH,unsolved,Unsolved,330
-L+T_6x6_71,6,6,L+T,.............#..#...#.....#.........,AAABBBACCCBDE#CF#DEE#FDDEG#FFHGGGHHH,unsolved,Unsolved,332
-L+T_6x6_72,6,6,L+T,#......#........#........#..........,#AABBBC#ABDDCCAE#DCEEEFDG#FFFHGGGHHH,unsolved,Unsolved,339
-L+T_6x6_73,6,6,L+T,.....#......##...#..................,AAABB#ACCBDD##CBD#EECFDGEHFFFGEHHHGG,unsolved,Unsolved,343
-L+T_6x6_74,6,6,L+T,#......#..............#.....#.......,#AABBBC#ADBECCADEECFDD#EGFFF#HGGGHHH,unsolved,Unsolved,343
-L+T_6x6_75,6,6,L+T,..#..#.........#..........#.........,AA#BC#ABBBCCADE#CFDDEEEFGD#HFFGGGHHH,unsolved,Unsolved,365
+L+T_6x6_63,6,6,L+T,........#....#.#...#................,ABBBCCAA#BDCA#E#DCF#EDDGFEEHGGFFHHHG,unsolved,Unsolved,275
+L+T_6x6_64,6,6,L+T,.........#..#..##...................,AAABBBACC#BD#EC##DEECFDDGEFFFHGGGHHH,unsolved,Unsolved,283
+L+T_6x6_65,6,6,L+T,...#...#..............#....#........,AAB#CCA#BBBCADEEECFDDE#GFDH#GGFFHHHG,unsolved,Unsolved,286
+L+T_6x6_66,6,6,L+T,#........#...###..........#..#.....#,#ABBBCAAA#BCD###CCDDEEFFDG#EF#GGGEF#,unsolved,Unsolved,289
+L+T_6x6_67,6,6,L+T,.....#...##...............#.........,AABBB#ACB##DACCDDDECFFFGEE#HFGEHHHGG,unsolved,Unsolved,294
+L+T_6x6_68,6,6,L+T,#..................#..#......#......,#ABCCCAABBCDEABFDDE#FF#DEEGFH#GGGHHH,unsolved,Unsolved,300
+L+T_6x6_69,6,6,L+T,#.........#......#....#.............,#AABBBCCAD#BCEADD#CEED#FGEHHHFGGGHFF,unsolved,Unsolved,306
+L+T_6x6_70,6,6,L+T,...#....#...#.................#.....,AAA#BBAC#DDB#CCCDBEEEFDGEHFFFG#HHHGG,unsolved,Unsolved,306
+L+T_6x6_71,6,6,L+T,........#.........#...##............,ABBBCCAA#BDCAEDDDC#EEF##GEFFFHGGGHHH,unsolved,Unsolved,322
+L+T_6x6_72,6,6,L+T,.....##............#...#............,AABBC##ABCCCDABEFFD#EEF#DDGEFHGGGHHH,unsolved,Unsolved,328
+L+T_6x6_73,6,6,L+T,........#....##.......#.............,AAABBBCA#DDBC##DEECCFD#EGFFFHEGGGHHH,unsolved,Unsolved,330
+L+T_6x6_74,6,6,L+T,..##.....#.........................#,AA##BBACC#DBACDDDBECFGGGEFFFHGEEHHH#,unsolved,Unsolved,334
+L+T_6x6_75,6,6,L+T,........#......#....#.........#.....,AABBBCAD#BCCADD#ECFD#EEGFFFHEG#HHHGG,unsolved,Unsolved,340
