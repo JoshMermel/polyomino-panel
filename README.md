@@ -23,7 +23,7 @@ The main view is deliberately sparse: a title bar (⚙ settings, **?** help), th
 
 - **Where a press lands decides the gesture** (all deterministic, nothing depends on timing, and it works with mouse, touch and pen):
   - **On an edge:** a tap cycles it empty → line → small ✕ → empty. Dragging from an edge does nothing (it used to paint along the stroke, but it only ever happened by accident), so a press that moves away from the edge is not a tap and changes nothing.
-  - **On a cell:** drag across cells to trace a tile. The cells you cover are previewed (green once they form exactly the tile, in any rotation or reflection); on release, all of that tile's outline lines are drawn and any lines already inside it are erased (✕ marks inside are kept), all as one undo step. Cells that don't form the tile are ignored with a short message.
+  - **On a cell:** drag across cells to trace a tile. The cells you cover are previewed (purple while they are not a tile yet; once they form exactly one of the shapes, in any rotation or reflection, in that shape's color); on release, all of that tile's outline lines are drawn and any lines already inside it are erased (✕ marks inside are kept), all as one undo step. Cells that don't form the tile are ignored with a short message.
   - **Right-click** an edge toggles a ✕ directly.
   - A whole gesture is one undo step; **Esc** cancels a drag in progress. Touch drags on the board don't scroll the page.
 - Edges next to a black cell or the outer border are implicit walls and aren't clickable.

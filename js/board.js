@@ -258,11 +258,14 @@ export class Board {
 
   // Preview of a cell-drag: the cells dragged over so far, in green when they
   // already form the tile (releasing now will draw its outline).
-  setDrag(cells, formsTile) {
+  // `shape` is which allowed shape the dragged cells form (index into the puzzle's shapes), or -1 if
+  // they don't form one yet; the preview then takes that shape's color (--shape-N-drag).
+  setDrag(cells, shape = -1) {
     this.cellEls.forEach((rect, i) => {
       const on = cells.includes(i);
-      rect.classList.toggle('drag', on && !formsTile);
-      rect.classList.toggle('drag-ok', on && formsTile);
+      rect.classList.toggle('drag', on && shape < 0);
+      rect.classList.toggle('drag-ok', on && shape >= 0);
+      for (let n = 0; n < SHAPE_COLORS; n++) rect.classList.toggle(`drag-shape-${n}`, on && shape === n);
     });
   }
 

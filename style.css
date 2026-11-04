@@ -34,6 +34,11 @@
   --shape-1: #ef6c00; --shape-1-bg: rgba(239, 108, 0, 0.22);
   --shape-2: #00897b; --shape-2-bg: rgba(0, 137, 123, 0.22);
   --shape-3: #c2185b; --shape-3-bg: rgba(194, 24, 91, 0.20);
+  /* the drag preview once the cells form that shape: the shape's color, stronger than the finished-tile fill */
+  --shape-0-drag: rgba(25, 118, 210, 0.38);
+  --shape-1-drag: rgba(239, 108, 0, 0.40);
+  --shape-2-drag: rgba(0, 137, 123, 0.40);
+  --shape-3-drag: rgba(194, 24, 91, 0.36);
 }
 
 :root[data-theme="dark"] {
@@ -68,6 +73,10 @@
   --shape-1: #ffa726; --shape-1-bg: rgba(255, 167, 38, 0.28);
   --shape-2: #4db6ac; --shape-2-bg: rgba(77, 182, 172, 0.28);
   --shape-3: #f48fb1; --shape-3-bg: rgba(244, 143, 177, 0.28);
+  --shape-0-drag: rgba(100, 181, 246, 0.45);
+  --shape-1-drag: rgba(255, 167, 38, 0.45);
+  --shape-2-drag: rgba(77, 182, 172, 0.45);
+  --shape-3-drag: rgba(244, 143, 177, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -226,7 +235,11 @@ select, input[type="number"] {
 /* Drag-to-draw preview (drag across cells to trace a tile) */
 .cell-hover { fill: var(--cell-hover); pointer-events: none; }
 .cell.drag { fill: var(--drag-bg); }
-.cell.drag-ok { fill: var(--drag-ok-bg); }
+.cell.drag-ok { fill: var(--drag-fill, var(--drag-ok-bg)); }   /* cells form a tile: that shape's color (--drag-fill, set below) */
+.cell.drag-shape-0 { --drag-fill: var(--shape-0-drag); }
+.cell.drag-shape-1 { --drag-fill: var(--shape-1-drag); }
+.cell.drag-shape-2 { --drag-fill: var(--shape-2-drag); }
+.cell.drag-shape-3 { --drag-fill: var(--shape-3-drag); }
 
 .cell.hint-tile { fill: var(--hint-blue); }
 .cell.hint-target { fill: var(--hint-yellow); }

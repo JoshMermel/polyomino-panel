@@ -4,7 +4,7 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints } from './rating.js';
@@ -277,7 +277,8 @@ function onEdgePress(kind, r, c) {
 }
 
 function showCellDrag() {
-  board.setDrag(gesture.cells, cellsFormTile(state.puzzle, gesture.cells));
+  const { tile, cols } = state.puzzle;
+  board.setDrag(gesture.cells, cellsFormTile(state.puzzle, gesture.cells) ? shapeIndexOf(tile, gesture.cells, cols) : -1);
 }
 
 function onCellPress(cell) {
@@ -294,7 +295,7 @@ function onCellEnter(cell) {
 function onRelease() {
   const g = gesture;
   gesture = null;
-  board.setDrag([], false);
+  board.setDrag([], -1);
   if (!g) return;
 
   // Cell drag.
@@ -321,7 +322,7 @@ function onRelease() {
 
 function onCancel() {
   gesture = null;
-  board.setDrag([], false);
+  board.setDrag([], -1);
 }
 
 function onEdgeContext(kind, r, c) {
