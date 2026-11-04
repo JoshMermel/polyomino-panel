@@ -6,7 +6,7 @@ import {
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
   cellsFormTile, tileOutline, tileInterior, tileSize, tileSizes, tileSpecs, minTileSize, shapeName, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
-import { renderTileInfo } from './tile-view.js';
+import { renderTileInfo, tileShapeSvg } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
@@ -109,8 +109,6 @@ async function init() {
     showFatal(err);
     return;
   }
-  renderPickers();
-
   // Start where the URL says (?book=L_8x8&puzzle=6, like star battle), else resume at the
   // last puzzle, found by hash so renumbering doesn't matter.
   let setIdx = state.defaultSet ?? 0, puzIdx = 0;
@@ -164,7 +162,7 @@ async function goTo(setIdx, puzIdx) {
 
   store.set('pp2_last', JSON.stringify({ set: set.id, hash: hashOf(state.puzzle) }));
   updateUrlParams(set, puzIdx);
-  syncPickers();
+  syncBookButton();
   $('puz-num').value = puzIdx + 1;
   $('puz-total').textContent = puzzles.length;
   board.render(state.puzzle, state.edges);
@@ -667,65 +665,98 @@ const compareShapes = (a, b) => {
   return 0;
 };
 
-// Two pickers: the shape (grouped by cell count; files loaded from disk get their
-// own group) and the board size for that shape. Only combinations that have a
-// book appear.
-function renderPickers() {
-  const sel = $('shape-select');
-  sel.textContent = '';
-  const groups = new Map();
-  const add = (groupName, value, label) => {
-    if (!groups.has(groupName)) {
-      const g = document.createElement('optgroup');
-      g.label = groupName;
-      groups.set(groupName, g);
-    }
-    const o = document.createElement('option');
-    o.value = value;
-    o.textContent = label;
-    groups.get(groupName).appendChild(o);
-  };
-  const tiles = [...new Set(state.sets.filter(s => !s.custom).map(s => s.tile))]
-    .sort(compareShapes);
-  tiles.forEach(t => add(shapeGroup(t), t, shapeName(t)));
-  state.sets.forEach((s, i) => { if (s.custom) add('Loaded from file', `custom:${i}`, s.title); });
-  for (const g of groups.values()) sel.appendChild(g);
+// The book picker: a button showing the current book (shape(s) and board size) opens a modal that
+// lists every book, shapes grouped by cell count and each with its sizes; files loaded from disk
+// get their own section. Only combinations that have a book appear.
+const bookTitle = set => (set.custom ? set.title : `${shapeName(set.tile)} · ${set.rows}×${set.cols}`);
+
+function syncBookButton() {
+  const btn = $('book-btn');
+  btn.textContent = '';
+  const name = document.createElement('span');
+  name.className = 'book-btn-name';
+  name.textContent = bookTitle(curSet());
+  btn.append(name);
 }
 
-// Show the current set in the pickers (and list the sizes available for its shape).
-function syncPickers() {
-  const set = curSet();
-  const shapeSel = $('shape-select'), sizeSel = $('size-select');
-  shapeSel.value = set.custom ? `custom:${state.setIdx}` : set.tile;
-  sizeSel.textContent = '';
-  const siblings = set.custom ? [state.setIdx]
-    : state.sets.map((s, i) => i).filter(i => !state.sets[i].custom && state.sets[i].tile === set.tile)
-        .sort((a, b) => state.sets[a].rows - state.sets[b].rows);
-  for (const i of siblings) {
-    const o = document.createElement('option');
-    o.value = String(i);
-    o.textContent = state.sets[i].custom ? 'all puzzles' : `${state.sets[i].rows}×${state.sets[i].cols}`;
-    sizeSel.appendChild(o);
-  }
-  sizeSel.value = String(state.setIdx);
-  sizeSel.disabled = siblings.length < 2;
-}
+let closeBookPicker = () => {};   // set in bindControls
+const chooseBook = idx => {
+  closeBookPicker();
+  if (idx !== state.setIdx) goTo(idx, 0);
+};
 
 // Switching shape keeps the board size if that shape has it, else the nearest.
-function pickShape(value) {
-  if (value.startsWith('custom:')) { goTo(+value.slice(7), 0); return; }
+function nearestSize(indices) {
+  const want = curSet().rows;
+  return [...indices].sort((a, b) => Math.abs(state.sets[a].rows - want) - Math.abs(state.sets[b].rows - want))[0];
+}
+
+function renderBookPicker() {
+  const body = $('bp-body');
+  body.textContent = '';
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const cur = curSet();
-  const options = state.sets.map((s, i) => i).filter(i => !state.sets[i].custom && state.sets[i].tile === value);
-  const want = cur.rows;
-  options.sort((a, b) => Math.abs(state.sets[a].rows - want) - Math.abs(state.sets[b].rows - want));
-  goTo(options[0], 0);
+
+  const sections = new Map();                    // section name -> [tile spec, ...]
+  const tiles = [...new Set(state.sets.filter(s => !s.custom).map(s => s.tile))].sort(compareShapes);
+  for (const t of tiles) {
+    const g = shapeGroup(t);
+    if (!sections.has(g)) sections.set(g, []);
+    sections.get(g).push(t);
+  }
+  const addSection = (name, build) => {
+    const sec = el('div', 'bp-section');
+    sec.append(el('h3', '', name));
+    build(sec);
+    body.append(sec);
+  };
+
+  for (const [name, list] of sections) {
+    addSection(name, sec => {
+      for (const tile of list) {
+        const idxs = state.sets.map((s, i) => i).filter(i => !state.sets[i].custom && state.sets[i].tile === tile)
+          .sort((a, b) => state.sets[a].rows - state.sets[b].rows);
+        const row = el('div', 'bp-row' + (cur.tile === tile ? ' bp-current' : ''));
+        const main = el('button', 'bp-main');
+        main.type = 'button';
+        const pics = el('span', 'bp-swatches');
+        tileSpecs(tile).forEach(sp => pics.append(tileShapeSvg(sp)));
+        main.append(pics, el('span', 'bp-name', shapeName(tile)));
+        main.addEventListener('click', () => chooseBook(nearestSize(idxs)));
+        const sizes = el('div', 'bp-sizes');
+        for (const i of idxs) {
+          const b = el('button', 'bp-size', `${state.sets[i].rows}×${state.sets[i].cols}`);
+          b.type = 'button';
+          b.setAttribute('aria-pressed', String(i === state.setIdx));
+          b.setAttribute('aria-label', `${shapeName(tile)}, ${state.sets[i].rows} by ${state.sets[i].cols}`);
+          b.addEventListener('click', () => chooseBook(i));
+          sizes.append(b);
+        }
+        row.append(main, sizes);
+        sec.append(row);
+      }
+    });
+  }
+  const custom = state.sets.map((s, i) => i).filter(i => state.sets[i].custom);
+  if (custom.length) {
+    addSection('Loaded from file', sec => {
+      for (const i of custom) {
+        const row = el('div', 'bp-row' + (i === state.setIdx ? ' bp-current' : ''));
+        const main = el('button', 'bp-main');
+        main.type = 'button';
+        main.append(el('span', 'bp-name', state.sets[i].title));
+        main.addEventListener('click', () => chooseBook(i));
+        row.append(main);
+        sec.append(row);
+      }
+    });
+  }
+  requestAnimationFrame(() => body.querySelector('.bp-current')?.scrollIntoView({ block: 'center' }));
 }
 
 function bindControls() {
   $('prev-puz').addEventListener('click', () => step(-1));
   $('next-puz').addEventListener('click', () => step(1));
-  $('shape-select').addEventListener('change', e => pickShape(e.target.value));
-  $('size-select').addEventListener('change', e => goTo(+e.target.value, 0));
   $('puz-num').addEventListener('change', e => goTo(state.setIdx, (parseInt(e.target.value, 10) || 1) - 1));
   $('undo-btn').addEventListener('click', undo);
   $('redo-btn').addEventListener('click', redo);
@@ -759,6 +790,7 @@ function bindControls() {
     return { open, close };
   };
   const settings = setupModal('settings-modal', 'settings-btn');
+  closeBookPicker = setupModal('book-modal', 'book-btn', renderBookPicker).close;
   const browse = setupModal('browse-modal', 'browse-btn', renderBrowse);
   closeBrowse = browse.close;
   setupPrint(setupModal, settings.close);
@@ -869,7 +901,6 @@ function bindControls() {
       const puzzles = parseCsv(await file.text());
       if (!puzzles.length) throw new Error('no puzzles found');
       state.sets.push({ id: `custom:${file.name}`, custom: true, title: `📄 ${file.name}`, tile: puzzles[0].tile, rows: puzzles[0].rows, cols: puzzles[0].cols, puzzles });
-      renderPickers();
       $('settings-modal').classList.add('modal-hidden');
       await goTo(state.sets.length - 1, 0);
     } catch (err) {

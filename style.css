@@ -119,8 +119,13 @@ select, input[type="number"] {
 /* Row 1: book + pager */
 .nav { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .nav select { min-width: 0; text-overflow: ellipsis; }
-#shape-select { flex: 1 1 9em; }
-#size-select { flex: 0 1 6.5em; }
+/* the book button shows the current book and opens the book picker (modal) */
+.book-btn {
+  flex: 1 1 100%; min-width: 0; display: flex; align-items: center; gap: 8px;   /* its own row: the board size must stay readable */
+  text-align: left; padding: 7px 12px; font-weight: 600;
+}
+.book-btn .book-btn-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-btn::after { content: '▾'; flex-shrink: 0; color: var(--text-secondary); }
 .pager { display: flex; align-items: center; gap: 4px; flex-shrink: 0; color: var(--text-secondary); }
 .pager input { width: 3.2em; text-align: center; padding: 6px 4px; }
 .step-btn { padding: 4px 10px; font-size: 1.2rem; line-height: 1.1; }
@@ -291,6 +296,11 @@ select, input[type="number"] {
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-subtle);
+  /* stays put while the box scrolls, so the close button is always reachable (long lists on phones) */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-white);
 }
 .modal-header h2 { margin: 0; font-size: 1.2rem; }
 .modal-header button {
@@ -483,3 +493,23 @@ select, input[type="number"] {
   body.printing-booklet > *:not(#print-root) { display: none !important; }
   body.printing-booklet #print-root { display: block; }
 }
+
+/* --- Book picker modal --------------------------------------------------------------- */
+.bp-body { padding: 8px 16px 20px; }
+.bp-section h3 {
+  margin: 14px 0 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text-secondary);
+}
+.bp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 6px 4px; border-radius: 8px; }
+.bp-row.bp-current { background: var(--primary-blue-hover-bg); }
+.bp-main {
+  flex: 1 1 12em; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 44px;
+  padding: 6px 8px; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 6px;
+}
+.bp-main:hover { border-color: var(--border-strong); }
+.bp-swatches { display: inline-flex; align-items: flex-end; gap: 8px; flex-shrink: 0; min-width: 24px; }
+.bp-swatches .tile-shape-svg { --unit: 9px; }
+.bp-name { font-weight: 600; font-size: 0.95rem; }
+.bp-sizes { display: flex; gap: 6px; flex-wrap: wrap; }
+.bp-size { min-width: 4.4em; min-height: 40px; padding: 6px 10px; }
+.bp-size[aria-pressed="true"] { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
