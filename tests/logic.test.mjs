@@ -10,7 +10,7 @@ import {
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
   edgeDeduction, allEdgeDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
-  tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts,
+  tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
 import {
   generatePuzzle, mulberry32, canonicalGrid, defaultHoles, stateFromPuzzle, puzzleFromState, neighborState,
@@ -1123,4 +1123,50 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
   const first = data(manifest.books.find(b => b.id === manifest.default).file);
   assert.equal(first[0].tile, 'I3');
   assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I3', 'V3', 'L']);
+});
+
+test('hints never target a cell that is already inside a finished tile', () => {
+  // 1x5 with tiles I2+I3. Lines after column 2 finish an I3 [0,1,2] and an I2 [3,4]. Cell 0 still has
+  // two placements that fit the marks (the I3, and an I2 inside it that would only strand cell 2), so
+  // the plain edge rule used to "deduce" a cross inside the finished I3.
+  const p = { rows: 1, cols: 5, tile: 'I2+I3', grid: '.....', solution: 'AAABB' };
+  const e = newEdges(p);
+  setEdge(p, e, 'v', 0, 3, EDGE_LINE);
+  assert.deepEqual([...finishedTileCells(p, e)], [1, 1, 1, 1, 1]);
+  assert.equal(consistentPlacements(p, e, 0).length, 2, 'the scenario: a finished cell with two fitting placements');
+  for (const rule of RULES) assert.deepEqual(rule.findAll(p, e), [], `${rule.id} must not fire inside finished tiles`);
+  // a cell that is NOT finished still gets its hints: with no lines drawn the same board has deductions
+  assert.ok(RULES.some(rule => rule.findAll(p, newEdges(p)).length > 0));
+  // the board's cells outside finished tiles are untouched by the skip
+  const half = newEdges(p);
+  assert.deepEqual([...finishedTileCells(p, half)], [0, 0, 0, 0, 0]);
+});
+
+test('over real puzzles and partial positions, no hint touches a finished tile', () => {
+  const rng = mulberry32(21);
+  let statesWithFinished = 0;
+  for (const file of ['two-6.csv', 'two-8.csv', 'one-6.csv']) {
+    const ps = data(file);
+    for (let k = 0; k < ps.length; k += 25) {
+      const p = ps[k], full = edgesFromSolution(p, p.solution);
+      for (const keep of [0.3, 0.6, 0.9]) {
+        const e = newEdges(p);                                          // a position consistent with the solution
+        for (const [kind, r, c] of playableEdges(p)) if (getEdge(p, full, kind, r, c) === EDGE_LINE && rng() < keep) setEdge(p, e, kind, r, c, EDGE_LINE);
+        const done = finishedTileCells(p, e);
+        if (!done.some(Boolean)) continue;
+        statesWithFinished++;
+        for (const rule of RULES) {
+          for (const item of rule.findAll(p, e)) {
+            assert.ok(!done[item.cell], `${file}#${k} ${rule.id}: origin cell ${item.cell} is in a finished tile`);
+            for (const c of item.cells ?? []) assert.ok(!done[c], `${file}#${k} ${rule.id}: proposes a tile over a finished one`);
+            for (const [kind, r, c] of [...(item.lines ?? []), ...(item.crosses ?? [])]) {
+              const [a, b] = edgeCells(p, kind, r, c);
+              assert.ok(!(done[a] && done[b]), `${file}#${k} ${rule.id}: marks an edge inside a finished tile`);
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.ok(statesWithFinished > 15, `only ${statesWithFinished} sampled positions had a finished tile`);
 });

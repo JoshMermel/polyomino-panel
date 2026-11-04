@@ -700,14 +700,26 @@ export function consistentPlacements(puzzle, edges, cell, firstOnly = false) {
   return out;
 }
 
+// Cells that are already inside a finished tile: a region walled in by lines (and blocked
+// cells) that is exactly one valid tile. Hints that reason about "every way to cover this
+// cell" skip them: nothing is left to deduce there. (With several allowed shapes a cell in a
+// finished big tile can still look as if a smaller tile might cover it, e.g. an L inside a
+// finished P, which would only strand the remaining cell.) Returns a 0/1 array per cell.
+export function finishedTileCells(puzzle, edges) {
+  const done = new Uint8Array(puzzle.rows * puzzle.cols);
+  for (const region of analyze(puzzle, edges).regions) if (region.valid) for (const i of region.cells) done[i] = 1;
+  return done;
+}
+
 // Rudimentary deduction: find an open cell that only one placement of the tile
 // can cover (given the marks so far) whose outline isn't fully drawn yet.
 // Returns { cell, cells, lines } where lines are the outline edges still
 // missing a line, or null. (Assumes the existing marks are correct.)
 export function* forcedTiles(puzzle, edges) {
   const seen = new Set();                     // several cells can be forced into one tile
+  const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
-    if (puzzle.grid[cell] !== OPEN) continue;
+    if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
     const options = consistentPlacements(puzzle, edges, cell);
     if (options.length !== 1) continue;
     const { cells, outline } = options[0];
@@ -862,8 +874,9 @@ export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = In
   const reach = maxTileSize(puzzle.tile);
   const { cols } = puzzle;
   const seen = new Set();                     // several origin cells can lead to one tile
+  const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
-    if (puzzle.grid[cell] !== OPEN) continue;
+    if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
     const options = consistentPlacements(puzzle, edges, cell);
     // (1 option is forcedTile's job)
     if (options.length < Math.max(2, minOptions) || options.length > maxOptions) continue;
@@ -932,8 +945,9 @@ export const LOOKAHEAD_PARITY = { minOptions: 2, mode: 'parity' };
 // edges that aren't marked that way yet, one item per distinct set of edges.
 export function* edgeDeductions(puzzle, edges, { minOptions = 2, maxOptions = Infinity } = {}) {
   const seen = new Set();
+  const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
-    if (puzzle.grid[cell] !== OPEN) continue;
+    if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
     const options = consistentPlacements(puzzle, edges, cell);
     // (one option is forcedTile's job)
     if (options.length < Math.max(2, minOptions) || options.length > maxOptions) continue;
@@ -1017,8 +1031,9 @@ function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
 // [{cells, steps, reason}] and maxSteps is the longest chain needed.
 export function* chainTiles(puzzle, edges, { mode = 'parity', maxSteps = 60 } = {}) {
   const seen = new Set();
+  const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
-    if (puzzle.grid[cell] !== OPEN) continue;
+    if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
     const options = consistentPlacements(puzzle, edges, cell);
     if (options.length < 2) continue;
     const survivors = [], failed = [];
