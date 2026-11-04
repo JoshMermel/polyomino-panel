@@ -144,3 +144,7 @@ The deduction rules are fast: rating all 1,650 published puzzles takes about 6 s
 ## Data
 
 `data/` holds the published books (`<shape>_<n>x<n>.csv`, e.g. `P5_8x8.csv`) and `manifest.json` (the book list and the default book). All of it is generated, so there is no third-party puzzle content. `tools/library/` and `tools/books_staging/` are scratch (gitignored).
+
+## License
+
+MIT, see [LICENSE](LICENSE). Planned work is in [TODO.md](TODO.md).
