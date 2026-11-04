@@ -1,24 +1,24 @@
-# I tromino 6x6. Built by tools/build_books.mjs from a pool of 401 (seed 1).
+# I tromino 6x6. Built by tools/build_books.mjs from a pool of 359 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
 I3_6x6_01,6,6,I3,..#.#.....#........#.#.#.###.#.#####,AB#C#DABEC#DABECFDG#E#F#G###F#G#####,forced,Beginner,4
-I3_6x6_02,6,6,I3,#..##.#..#.....#....##....###.#.###.,#AB##C#AB#DCEAB#DCEF##DGEF###G#F###G,forced,Beginner,4
-I3_6x6_03,6,6,I3,.....##.#...#........##..#.###.##...,AAABC##D#BCE#DFBCEGDF##EG#F###G##HHH,forced,Beginner,4
-I3_6x6_04,6,6,I3,..#............#.#.#.#.#.###.#.#####,AB#CCCABDEEEABD#F#G#D#F#G###F#G#####,forced,Beginner,4
-I3_6x6_05,6,6,I3,.........#..####...###......##.#####,AAABBBCCC#DE####DEF###DEFGGG##F#####,forced,Beginner,4
-I3_6x6_06,6,6,I3,....#.###.#.#........#.#...#.#.#####,AAAB#C###B#C#DEBFCGDE#F#GDE#F#G#####,forced,Beginner,4
-I3_6x6_07,6,6,I3,#.#.#...#..........#.#..##.##.#####.,#A#B#CDA#BECDAFBECD#F#EG##F##G#####G,forced,Beginner,4
+I3_6x6_02,6,6,I3,..#............#.#.#.#.#.###.#.#####,AB#CCCABDEEEABD#F#G#D#F#G###F#G#####,forced,Beginner,4
+I3_6x6_03,6,6,I3,#....#.#.....#.....#..#....#########,#AAAB#C#DEBFC#DEBFC#DE#FGGG#########,forced,Beginner,4
+I3_6x6_04,6,6,I3,....#.###.#.#........#.#...#.#.#####,AAAB#C###B#C#DEBFCGDE#F#GDE#F#G#####,forced,Beginner,4
+I3_6x6_05,6,6,I3,.........#.....#.....###.#####.#####,ABBBCDAEF#CDAEF#CDGEF###G#####G#####,forced,Beginner,4
+I3_6x6_06,6,6,I3,#.#.#...#..........#.#..##.##.#####.,#A#B#CDA#BECDAFBECD#F#EG##F##G#####G,forced,Beginner,4
+I3_6x6_07,6,6,I3,.......#..........#...###.##########,ABBBCDA#EFCDAGEFCD#GEF###G##########,forced,Beginner,4
 I3_6x6_08,6,6,I3,...###.......#........#..####.######,AAA###BBBCCCD#EEEFDGGG#FD####F######,forced,Beginner,5
 I3_6x6_09,6,6,I3,....#........#.....#.#.#.#.#########,AAAB#CDDDBECF#GBECF#G#E#F#G#########,forced,Beginner,5
 I3_6x6_10,6,6,I3,...##.#.....#.###........####..####.,AAA##B#CDDDB#C###BECFFFGE####GE####G,forced,Beginner,5
-I3_6x6_11,6,6,I3,#.................##..####.#####.###,#AAABCDDDEBCFFFEBC##GE####G#####G###,forced,Beginner,5
-I3_6x6_12,6,6,I3,.....#...#.....#..#...#.###.#####.##,ABBBC#ADE#CFADE#CF#DEG#F###G#####G##,forced,Beginner,5
-I3_6x6_13,6,6,I3,.#####.#.......#..........#....##.##,A#####A#BCCCADB#EFGDBHEFGD#HEFG##H##,forced,Beginner,5
-I3_6x6_14,6,6,I3,.....#.##..#.#...#.#..##.#.###.#...#,ABBBC#A##DC#A#EDC#F#ED##F#E###F#GGG#,forced,Beginner,5
-I3_6x6_15,6,6,I3,#........#..#..#..#..####........###,#AAABCDDD#BC#EF#BC#EF####EFGGGHHH###,forced,Beginner,5
-I3_6x6_16,6,6,I3,....###...#.....#....##.....########,AAAB###CDB#EFCDB#EFCD##EFGGG########,forced,Beginner,5
-I3_6x6_17,6,6,I3,....#.....#..#.##..#..#..#..#..##.#.,ABBB#CADDD#CA#E##CF#EG#HF#EG#HF##G#H,forced,Beginner,5
+I3_6x6_11,6,6,I3,......#..#.##.....#.....###.#.######,AAABBB#CD#E##CDFEG#CDFEG###F#G######,forced,Beginner,5
+I3_6x6_12,6,6,I3,#.................##..####.#####.###,#AAABCDDDEBCFFFEBC##GE####G#####G###,forced,Beginner,5
+I3_6x6_13,6,6,I3,.....#...#.....#..#...#.###.#####.##,ABBBC#ADE#CFADE#CF#DEG#F###G#####G##,forced,Beginner,5
+I3_6x6_14,6,6,I3,.#####.#.......#..........#....##.##,A#####A#BCCCADB#EFGDBHEFGD#HEFG##H##,forced,Beginner,5
+I3_6x6_15,6,6,I3,....##..###.........#.#..##.##.##.##,ABBB##AC###DACEEEDFC#G#DF##G##F##G##,forced,Beginner,5
+I3_6x6_16,6,6,I3,.....#.##..#.#...#.#..##.#.###.#...#,ABBBC#A##DC#A#EDC#F#ED##F#E###F#GGG#,forced,Beginner,5
+I3_6x6_17,6,6,I3,#........#..#..#..#..####........###,#AAABCDDD#BC#EF#BC#EF####EFGGGHHH###,forced,Beginner,5
 I3_6x6_18,6,6,I3,#...##..#.....##....##..#.....######,#AAA##BC#DDDBC##EFBC##EF#GGGEF######,forced,Beginner,5
 I3_6x6_19,6,6,I3,.........##....##.#...###.#.###.#.##,ABCCCDABE##DABE##D#FEG###F#G###F#G##,forced,Beginner,5
 I3_6x6_20,6,6,I3,...###...#..........##....#####.####,AAA###BBB#CDEFFFCDEG##CDEG#####G####,forced,Beginner,5

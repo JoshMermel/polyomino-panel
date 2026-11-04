@@ -1,14 +1,14 @@
-# N pentomino 6x6. Built by tools/build_books.mjs from a pool of 643 (seed 1).
+# N pentomino 6x6. Built by tools/build_books.mjs from a pool of 600 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
 N5_6x6_01,6,6,N5,....#...#...#..#..#..#.###..#####.##,ABBB#CAA#BBC#AD#CC#AD#C###DD#####D##,forced,Beginner,2
-N5_6x6_02,6,6,N5,##..##...#.####...###...#.......##.#,##AA##AAA#B####CBB###CCB#DDDCBDD##C#,forced,Beginner,2
-N5_6x6_03,6,6,N5,.#.#.#.....##.#...#.#.#.#...#####..#,A#B#C#AABBC##A#BCC#A#B#C#DDD#####DD#,forced,Beginner,2
+N5_6x6_02,6,6,N5,.#.#.#.....##.#...#.#.#.#...#####..#,A#B#C#AABBC##A#BCC#A#B#C#DDD#####DD#,forced,Beginner,2
+N5_6x6_03,6,6,N5,..####...##....##.#..#..##...####...,AB####ABB##CAAB##C#AB#CC##DDC####DDD,forced,Beginner,2
 N5_6x6_04,6,6,N5,...#.###...#...#..##..#....#####..##,AAA#B###AAB#CCC#BB##CC#BDDD#####DD##,forced,Beginner,2
-N5_6x6_05,6,6,N5,...##.##..#..#.#...#.#.#....###.#.##,AAA##B##AA#BC#D#BBC#D#B#CCDD###C#D##,forced,Beginner,2
-N5_6x6_06,6,6,N5,#....##..#...#..##.#..##....###..###,#ABBB##AA#BBC#AD##C#AD##CCDD###CD###,forced,Beginner,2
-N5_6x6_07,6,6,N5,...#.###...#...#......#.#...########,AAA#B###AAB#CCC#BBDDCC#B#DDD########,forced,Beginner,2
+N5_6x6_05,6,6,N5,#....##..#...#..##.#..##....###..###,#ABBB##AA#BBC#AD##C#AD##CCDD###CD###,forced,Beginner,2
+N5_6x6_06,6,6,N5,...#.###...#...#......#.#...########,AAA#B###AAB#CCC#BBDDCC#B#DDD########,forced,Beginner,2
+N5_6x6_07,6,6,N5,.##..#..#..##.....#..##.#...#####..#,A##BC#AA#BC##ABBCC#AB##C#DDD#####DD#,forced,Beginner,2
 N5_6x6_08,6,6,N5,...#.###...####...###.#......###...#,AAA#B###AAB####CBB###C#BDDDCC###DDC#,forced,Beginner,3
 N5_6x6_09,6,6,N5,#...##.....#...#.####..#..#.###...##,#AAA##AABBC#BBB#C####CC#DD#C###DDD##,forced,Beginner,3
 N5_6x6_10,6,6,N5,...#.###...##...........####..######,AAA#B###AAB##CCCBBCCDDDB####DD######,forced,Beginner,3
@@ -31,12 +31,12 @@ N5_6x6_26,6,6,N5,..#####...........#...#.##.......#.#,AA#####AAABBCCBBBD#CCC#D##
 N5_6x6_27,6,6,N5,.##..#.....##..#..#.....#.....##...#,A##BC#AABBC##AB#CC#ABDDC#DDDEE##EEE#,forced,Beginner,4
 N5_6x6_28,6,6,N5,.....#...........##..#.##....####..#,ABCCC#ABBDCCAABDD##AB#D##EEED####EE#,forced,Beginner,4
 N5_6x6_29,6,6,N5,....##..........###....#..##.##....#,ABCC##ABBCCCAABD###ABDD#EE##D##EEED#,forced,Beginner,4
-N5_6x6_30,6,6,N5,...##.....#....#.....#.##..#########,AAA##BCDAA#BCDD#BBCCD#B##CD#########,edges,Medium,5
+N5_6x6_30,6,6,N5,.....##.........##.##..#..#####.####,AABBB##AAABBCDDD##C##DD#CC#####C####,edges,Medium,5
 N5_6x6_31,6,6,N5,..#.##.....#.....##....###..####.###,AB#C##ABBCC#AABDC##ABDC###DD####D###,edges,Medium,6
 N5_6x6_32,6,6,N5,...####....##....###..##....###...##,AAA####BAAC##BBCC###BC##DDBC###DDD##,edges,Medium,6
 N5_6x6_33,6,6,N5,#...##.....#........#...##....##.#.#,#ABC##AABCC#ABBDCEAB#DCE##DDEE##D#E#,edges,Medium,7
 N5_6x6_34,6,6,N5,#.......#...#..........#...#.......#,#AAABCAA#BBC#DEBCCDDEBC#DEE#FFDEFFF#,edges,Medium,8
-N5_6x6_35,6,6,N5,..##.#...#.....##.#..##......##.....,AB##C#ABB#CCAAB##C#AB##CDDEEE##DDDEE,edges,Medium,8
+N5_6x6_35,6,6,N5,....##..........###...####..####.###,ABCC##ABBCCCAABD###ABD####DD####D###,edges,Medium,8
 N5_6x6_36,6,6,N5,...###.....#...#........#.....####.#,AAA###BCAAD#BCC#DEBBCDDE#BCDEE####E#,edges,Medium,9
 N5_6x6_37,6,6,N5,#....#...............####.##########,#ABBB#CADDBBCAADDDCCA####C##########,edges,Medium,9
 N5_6x6_38,6,6,N5,...###.#...#...#..#.....#.....#.#..#,ABB###A#BBB#AAC#DE#ACDDE#CCDEE#C#DE#,edges,Medium,10
@@ -55,8 +55,8 @@ N5_6x6_50,6,6,N5,.#................#..#.....#..#....#,A#BBBCABBDCCAADDCE#AD#CEFF
 N5_6x6_51,6,6,N5,##.#.##..#.##.....#...#....####...##,##A#B##CA#B##CAABB#CCA#BDDC####DDD##,edges,Medium,18
 N5_6x6_52,6,6,N5,##..###....#.....#.....#...####.####,##AB###CABB#DCAAB#DCCAB#DDC####D####,edges,Medium,18
 N5_6x6_53,6,6,N5,#....#..##......##.....##....#...#.#,#ABBB#CA##BBCAAD##CCADD##CEED#EEE#D#,edges,Medium,18
-N5_6x6_54,6,6,N5,...#.#.#..........#.....#....####.##,AAA#B#C#AABDCCEBBD#CEBDD#CEED####E##,edges,Medium,19
-N5_6x6_55,6,6,N5,#.###...###....#.....#.##...##...###,#A###BCA###BCAA#BBCCA#B##CDD##DDD###,edges,Medium,20
+N5_6x6_54,6,6,N5,#.#.###...##.........#..#........#.#,#A#B###ACB##AACBBDACC#BD#CEEDDEEE#D#,edges,Medium,19
+N5_6x6_55,6,6,N5,...#.#.#..........#.....#....####.##,AAA#B#C#AABDCCEBBD#CEBDD#CEED####E##,edges,Medium,19
 N5_6x6_56,6,6,N5,#.#.##..#.##.....#...#.##...##...###,#A#B##CA#B##CAABB#CCA#B##CDD##DDD###,edges,Medium,21
 N5_6x6_57,6,6,N5,##.#.##..#.##.....#...#.##....##..##,##A#B##CA#B##CAABB#CCA#B##CDDD##DD##,edges,Medium,21
 N5_6x6_58,6,6,N5,#...###...........#.....#....####..#,#AAA###BBAACDDBBBC#DDDCC#EEEC####EE#,edgesWide,Hard,15

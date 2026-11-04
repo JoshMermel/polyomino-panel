@@ -9,7 +9,7 @@ import {
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
   edgeDeduction, allEdgeDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
-  EDGES_NARROW, EDGES_WIDE, hasSwastika,
+  EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
 } from '../js/logic.js';
 import {
   generatePuzzle, mulberry32, canonicalGrid, defaultHoles, stateFromPuzzle, puzzleFromState, neighborState,
@@ -933,4 +933,33 @@ test('print: selection parsing and page planning', async () => {
   assert.ok(parseSelection(`1-${MAX_PRINT + 1}`, 1000).error);
   assert.deepEqual(planPrint({ count: 10, perPage: 4, includeKey: true }), { puzzlePages: 3, keyPages: 2 });
   assert.deepEqual(planPrint({ count: 1, perPage: 1, includeKey: false }), { puzzlePages: 1, keyPages: 0 });
+});
+
+test('openCellsConnected: one region of white cells, islands rejected', () => {
+  const mk = (rows, cols, grid) => ({ rows, cols, tile: 'I2', grid, solution: '' });
+  assert.equal(openCellsConnected(mk(2, 2, '....')), true);
+  assert.equal(openCellsConnected(mk(3, 3, '.#..#..#.')), false);             // three separate columns
+  assert.equal(openCellsConnected(mk(3, 3, '.#.' + '###' + '.#.')), false);   // four corner islands
+  assert.equal(openCellsConnected(mk(3, 3, '.#.' + '...' + '.#.')), true);    // a plus: connected through the middle
+  assert.equal(openCellsConnected(mk(3, 3, '#.#' + '###' + '#.#')), false);   // diagonal neighbours are not connected
+  assert.equal(openCellsConnected(mk(2, 2, '##' + '##')), false);             // no open cells at all
+});
+
+test('the generator keeps the open cells connected by default (and produces islands when allowed)', () => {
+  const rng = mulberry32(11), rng2 = mulberry32(11);
+  let islands = 0;
+  for (let i = 0; i < 25; i++) {
+    const a = generatePuzzle({ rows: 6, cols: 6, tile: 'V3', holes: 9, rng, maxMs: 5000 });
+    assert.ok(a && openCellsConnected(a.puzzle), 'default generation must never return islands');
+    const b = generatePuzzle({ rows: 6, cols: 6, tile: 'V3', holes: 9, rng: rng2, maxMs: 5000, allowDisconnected: true });
+    if (b && !openCellsConnected(b.puzzle)) islands++;
+  }
+  assert.ok(islands > 0, 'with allowDisconnected some V-tromino boards should have islands');
+});
+
+test('no published puzzle has its open cells split into islands', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
+  for (const book of manifest.books) {
+    for (const p of data(book.file)) assert.equal(openCellsConnected(p), true, `${book.file} ${p.name}`);
+  }
 });

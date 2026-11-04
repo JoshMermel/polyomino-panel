@@ -1,14 +1,14 @@
-# Y pentomino 6x6. Built by tools/build_books.mjs from a pool of 681 (seed 1).
+# Y pentomino 6x6. Built by tools/build_books.mjs from a pool of 604 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
 Y5_6x6_01,6,6,Y5,#......#.##....#.....##..#.#####.###,#AAAABC#A##BCCD#BBCDD##BC#D#####D###,forced,Beginner,2
-Y5_6x6_02,6,6,Y5,.....##.#..#.###...###....##...####.,AAAAB##A#BB#C###BDC###BDCC##DDC####D,forced,Beginner,2
-Y5_6x6_03,6,6,Y5,#......#.#...#.##....##..#..####.###,#AAAABC#A#BBC#D##BCCD##BC#DD####D###,forced,Beginner,2
-Y5_6x6_04,6,6,Y5,.....###.#.#.###....##.#.###.#.#....,AAAAB###A#B#C###BBCC##B#C###D#C#DDDD,forced,Beginner,2
-Y5_6x6_05,6,6,Y5,#......#..#...#....#..#..##.########,#AAAABC#AD#BCC#DBBC#DD#BC##D########,forced,Beginner,2
-Y5_6x6_06,6,6,Y5,....#.#..#..#.....#####.###.####....,AAAA#B#AC#BB#CCCCB#####B###D####DDDD,forced,Beginner,2
-Y5_6x6_07,6,6,Y5,....#..#.##..###....###..#....####.#,AAAA#BC#A##BC###BBCC###BC#DDDD####D#,forced,Beginner,2
+Y5_6x6_02,6,6,Y5,....##..#.##..#....##....##.#.#####.,AAAA##BA#C##BB#CCDB##CDDB##C#D#####D,forced,Beginner,2
+Y5_6x6_03,6,6,Y5,.......##.#....#...#..#.##.#####.###,ABBBBCA##B#CAAD#CCA#DD#C##D#####D###,forced,Beginner,2
+Y5_6x6_04,6,6,Y5,#......#.#...#.##....##..#..####.###,#AAAABC#A#BBC#D##BCCD##BC#DD####D###,forced,Beginner,2
+Y5_6x6_05,6,6,Y5,.......##.#....#...#.##.##..####.###,ABBBBCA##B#CAAD#CCA#D##C##DD####D###,forced,Beginner,2
+Y5_6x6_06,6,6,Y5,.....##..#..#.##.#..#..##.....######,AAAAB##CA#BB#C##B#CC#DB##CDDDD######,forced,Beginner,2
+Y5_6x6_07,6,6,Y5,.....#.#..##..#..#.#...####...####.#,ABBBB#A#BC##AA#CD#A#CCD####CDD####D#,forced,Beginner,2
 Y5_6x6_08,6,6,Y5,.....###.#.#.##........#.##.##.##.##,AAAAB###A#B#C##DBBCCDDB#C##D##C##D##,forced,Beginner,3
 Y5_6x6_09,6,6,Y5,##.#.#.....#.#.#.#.....#.....#######,##A#B#CAABB#C#A#B#CCADB#CDDDD#######,forced,Beginner,3
 Y5_6x6_10,6,6,Y5,.....##....#.#.#.#.#...#...###.#####,AAAAB##ACBB#D#C#B#D#CCB#DDC###D#####,forced,Beginner,3
@@ -31,7 +31,7 @@ Y5_6x6_26,6,6,Y5,#.....#.........#...#.....#.#..#####,#ABBBB#AACBDEACC#DEA#CDDEE
 Y5_6x6_27,6,6,Y5,.....#.#......#..#.#...#..#.##....##,AAAAB#C#ADBBCC#DB#C#DDB#CE#D##EEEE##,forced,Beginner,4
 Y5_6x6_28,6,6,Y5,.......#..#........##.#.#.#.##....##,ABBBBCA#BD#CAADDCCA##D#C#E#D##EEEE##,forced,Beginner,4
 Y5_6x6_29,6,6,Y5,....####..#..##.#........#..#......#,AAAA####AB#CD##B#CDDBBCCD#EB#CDEEEE#,forced,Beginner,4
-Y5_6x6_30,6,6,Y5,.....##......##.##.##..#..#.##.##.##,AAAAB##ABBBBC##D##C##DD#CC#D##C##D##,edges,Medium,5
+Y5_6x6_30,6,6,Y5,....###.#####..#.##..#.#......#..#.#,AAAA###A#####BC#D##BC#D#BBCCDD#BC#D#,edges,Medium,5
 Y5_6x6_31,6,6,Y5,.....#.............##.##.#....####.#,AAAAB#CABBBBCCDDDDC##D##C#EEEE####E#,edges,Medium,6
 Y5_6x6_32,6,6,Y5,.##.##.##.#........#....##..#.##.###,A##B##A##B#CAADBBCA#DBCC##DD#C##D###,edges,Medium,6
 Y5_6x6_33,6,6,Y5,#....###..##.##.#..##...............,#AAAA###AB##C##B#DC##BBDCCEBDDCEEEED,edges,Medium,7

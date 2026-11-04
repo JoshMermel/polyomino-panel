@@ -16,7 +16,8 @@
 //   exploit  take a hard puzzle found earlier, perturb it with the generator's window
 //            moves, keep neighbours that are still uniquely solvable, and rate them
 // Every puzzle is rated with the real rules, so nothing is stored that the solver
-// hasn't verified. Puzzles whose solution's tile boundaries contain a swastika pattern
+// hasn't verified. Puzzles whose open cells are not one connected region are rejected, and so
+// are puzzles whose solution's tile boundaries contain a swastika pattern
 // (see logic.hasSwastika) are rejected. Rotated/mirrored duplicates are skipped, and so are near-duplicates
 // (a perturbed puzzle that differs from a stored one in fewer than --min-distance
 // cells), so the pool doesn't fill up with siblings of a few puzzles.
@@ -25,7 +26,7 @@
 // up for --stall-minutes. If nothing hard has turned up after --probe-minutes the
 // combination is written off (rigid shapes that never get past the easy rules).
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'node:fs';
-import { parseCsv, toCsv, puzzleHash, countSolutions, shapeName, hasSwastika } from '../js/logic.js';
+import { parseCsv, toCsv, puzzleHash, countSolutions, shapeName, hasSwastika, openCellsConnected } from '../js/logic.js';
 import {
   generatePuzzle, mulberry32, canonicalGrid, stateFromPuzzle, puzzleFromState, neighborState,
 } from '../js/generator.js';
@@ -115,6 +116,7 @@ function consider(puzzle, mode, arm) {
   const key = canonicalGrid(puzzle.grid, rows, cols);
   if (seen.has(key)) return 0;
   seen.add(key);
+  if (!openCellsConnected(puzzle)) return 0;                      // islands of open cells: reject
   if (hasSwastika(puzzle, puzzle.solution)) return 0;            // a swastika in the tile boundaries: reject
   const r = ratePuzzle(puzzle);
   if (!want.has(r.tier) || counts[r.tier] >= cap(r.tier)) return 0;

@@ -1,4 +1,4 @@
-# T pentomino 10x10. Built by tools/build_books.mjs from a pool of 391 (seed 1).
+# T pentomino 10x10. Built by tools/build_books.mjs from a pool of 379 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
@@ -8,14 +8,14 @@ T5_10x10_03,10,10,T5,.#...#.###....##...#.#...#..##...#.##.##.#.......#....#...#
 T5_10x10_04,10,10,T5,#.#.##.####.#......#.....#.##..###..............#...#.....###.#..#............#####..#######...#####,#A#B##C####A#BBBCCC#AAABD#C##EF###DDDEEEFFFGDHHH#EFI#GGGHJ###I#GK#HJJJIIILKKKJ#####LK#######LLL#####,forced,Beginner,10
 T5_10x10_05,10,10,T5,.#......#......#......#..#..#.#.#...#.##...#.#...###.#....#.##........#....#.##.####...#######.#####,A#BBBCCC#DAAABE#CDDDAF#BE#CG#D#F#EEE#G##FFF#H#GGG###I#HJJJ#K##IHHHJKKK#IIIL#J##K####LLL#######L#####,forced,Beginner,10
 T5_10x10_06,10,10,T5,#.#.##.####.#............#....#.......#.##......##.#.##...##...##......#.#.........######.##.#######,#A#B##C####A#BBBCCCDAAABE#CDDD#FFFEGGG#D##FEEEGH##I#F##JGH##III##JHHHKI#L#JJJKKKLLL######K##L#######,forced,Beginner,10
-T5_10x10_07,10,10,T5,.......####..#.....##..#....###.......##....#....##.#.#....##......#.#.###.........###.###.#########,AAABBBC####AD#BECCC##AD#BECF###DDDEEEF##GGGH#IFFF##G#H#IIIJ##GHHHIK#J#L###KKKJJJLLL###K###L#########,forced,Beginner,10
-T5_10x10_08,10,10,T5,......##.##.#......##.#.......#.........#...##.##.#..##....##........##.....##.#...##.##############,AAABBB##C##A#DBECCC##A#DBEEECF#GDDDEHFFF#GGG##H##F#GI##HHHJ##KIIILJJJ##KILLL##J#KKK##L##############,forced,Beginner,10
-T5_10x10_09,10,10,T5,..........#.#.#..#.##......#.#.#......##....###.##..#.....###....#..##.....#.#.####.#....###...##...,AAABCCCDDD#A#B#CE#D##ABBBCE#D#F#GGGEEE##FFFG###H##FI#GJHHH###IJJJ#KH##IIILJ#K#M####L#KKKM###LLL##MMM,forced,Beginner,10
+T5_10x10_07,10,10,T5,......##.##.#......##.#.......#.........#...##.##.#..##....##........##.....##.#...##.##############,AAABBB##C##A#DBECCC##A#DBEEECF#GDDDEHFFF#GGG##H##F#GI##HHHJ##KIIILJJJ##KILLL##J#KKK##L##############,forced,Beginner,10
+T5_10x10_08,10,10,T5,..........#.#.#..#.##......#.#.#......##....###.##..#.....###....#..##.....#.#.####.#....###...##...,AAABCCCDDD#A#B#CE#D##ABBBCE#D#F#GGGEEE##FFFG###H##FI#GJHHH###IJJJ#KH##IIILJ#K#M####L#KKKM###LLL##MMM,forced,Beginner,10
+T5_10x10_09,10,10,T5,##.##...####........##.......##...#.#..###..##.....#................#..#####..########...###########,##A##BBB####AAACBDDD##ACCCBED##FFF#C#ED###FG##EEEHI#FGGGJHHHIIIGJJJK#HI#####JK########KKK###########,forced,Beginner,10
 T5_10x10_10,10,10,T5,.#...##.##.........#..#..##..##.#...........##.#.##........#.....#....#.#....####.###...############,A#BBB##C##AAABDCCCE#AF#BD##CE##F#DDDGEEEFFFH##G#I##HHHJGGGI#KKKHJ#LIII#K#JJJL####K###LLL############,forced,Beginner,11
-T5_10x10_11,10,10,T5,...#.#...##.#.....###.#..#..##.#...#.......#.....#.....#.#.##.##.#.............##......#.####..#####,AAA#B#CCC##A#DBBBC###A#DB#EC##F#DDD#EGGGFFF#HEEEG#FIHHH#J#G##I##H#JKKKIIILMJJJK##LLLMMM#K####LM#####,forced,Beginner,11
+T5_10x10_11,10,10,T5,........###.#.#.#...#.......##.##.....##....#...........#.###.#..............#.###....##.######.####,AAABCCCD###A#B#C#DDD#ABBBCED##F##GEEEH##FFFG#IEHHHFJGGGI#H###J#KIIILLLJJJKMMM#L###KKKM##L######M####,forced,Beginner,11
 T5_10x10_12,10,10,T5,........###.#.#.#.##.........#.......###.#.#......##.#..............#.....###....##.###.####...#####,AAABCCCD###A#B#C#D##EABBBCDDD#EEEFFFG###E#H#FIGGGJ##H#FIGJJJKHHHIIIL#JKKKM###LLLK##M###L####MMM#####,forced,Beginner,11
 T5_10x10_13,10,10,T5,.##.....##....#.#.##.#.......###.#.#...#...#....##.#....#.##....#....#.......#.##.##.........###.###,A##BCCCD##AAAB#C#D##A#BBBCDDD###E#F#GGG#EEE#FFFG##H#EIFJ#G##HHHI#JJJK#HLIIIJM#K##L##MMMKKKLLL###M###,forced,Beginner,11
-T5_10x10_14,10,10,T5,#.##.##.###....##.###.............##....##.....##..##......#...#...#.#..##......#.#......#...##..###,#A##B##C###AAAB##C###ADBBBCCCEDDDF##GEEE##DFFFG##EH##FIGGGJ#HHH#III#J#HK##ILMJJJ#K#LLLMMM#KKK##LM###,forced,Beginner,11
+T5_10x10_14,10,10,T5,#.#......##....##.###....#..##.........#.#..##.........###.#.........#.........##.#####..##.#####...,#A#BBBCCC##AAAB##C###ADEB#FC##DDDEEEFFF#G#DE##FHHHGGGIJ###H#GIIIJJJKH#LLLIJKKKM##L#####KM##L#####MMM,forced,Beginner,11
 T5_10x10_15,10,10,T5,#.##.#...##.##.#..##.........#...#.....##.....#.....#...#............#.#...##..#######...###########,#A##B#CCC##A##B#DC##AAABBBDCE#FFF#GDDDE##FGGGH#EEEIF#JGH#KKKIIIJHHHLK#I#JJJ##LK#######LLL###########,forced,Beginner,11
 T5_10x10_16,10,10,T5,#.#....####....#...#..##............##.#.#.#..#..###.#......#....#..###....#.#.###.#.....###....#...,#A#BBBC####AAAB#CCC#DA##BECFFFDDDEEE##F#D#G#HE#IF###G#HHHIII#GGGH#JI###KKKL#J#M###K#LJJJM###KLLL#MMM,forced,Beginner,11
 T5_10x10_17,10,10,T5,#......##.##.#..#....#.#..............##.#.#.....##....#.#.##...###..........##.###.##....#####...#.,#AAABBB##C##A#DB#CCCE#A#DBFFFCEEEDDDGF##E#H#GGGFI##JHHH#G#I##JHK###IIIJJJKKKL##M###K##LMMM#####LLL#M,forced,Beginner,12

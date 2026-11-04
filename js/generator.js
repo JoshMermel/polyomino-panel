@@ -12,7 +12,7 @@
 //
 // Difficulty is not considered at all; only uniqueness.
 import {
-  BLOCKED, OPEN, tileSize, getOrientations, countSolutions, labelString, solve, hasSwastika,
+  BLOCKED, OPEN, tileSize, getOrientations, countSolutions, labelString, solve, hasSwastika, openCellsConnected,
 } from './logic.js';
 
 // Small seedable PRNG (mulberry32) so runs are reproducible.
@@ -206,10 +206,12 @@ function proposeMove(state, rows, cols, tile, rng) {
 //   cap, budget        solution-count cap and node budget per evaluation
 //   allowSwastika      keep puzzles whose solution's tile boundaries contain a
 //                      swastika pattern (see logic.hasSwastika). Default: reject.
+//   allowDisconnected  keep puzzles whose open cells are not one connected region
+//                      (see logic.openCellsConnected). Default: reject.
 // Returns { puzzle, stats: {moves, restarts, ms} } or null on timeout.
 export function generatePuzzle({
   rows, cols, tile = 'L', holes, rng = mulberry32(1),
-  maxMs = 20000, cap = 40, budget = 200000, restartAfter = 4000, allowSwastika = false,
+  maxMs = 20000, cap = 40, budget = 200000, restartAfter = 4000, allowSwastika = false, allowDisconnected = false,
 }) {
   const size = tileSize(tile);
   holes = holes ?? defaultHoles(rows, cols, tile);
@@ -229,14 +231,15 @@ export function generatePuzzle({
     let cost = count(state.mask);
 
     for (let it = 0; it < restartAfter && timeLeft(); it++) {
-      const candidate = () => { const q = makePuzzle(rows, cols, tile, state.mask); q.solution = labelString(state.assign); return q; };
-      if (cost === 1 && (allowSwastika || !hasSwastika(candidate(), candidate().solution))) {
+      if (cost === 1) {
         const puzzle = makePuzzle(rows, cols, tile, state.mask);
         puzzle.solution = labelString(state.assign);
-        // Independent final check with the plain solver.
-        if (solve(puzzle, 2).length !== 1) throw new Error('internal error: not unique');
-        stats.ms = Date.now() - start;
-        return { puzzle, stats };
+        if ((allowDisconnected || openCellsConnected(puzzle)) && (allowSwastika || !hasSwastika(puzzle, puzzle.solution))) {
+          // Independent final check with the plain solver.
+          if (solve(puzzle, 2).length !== 1) throw new Error('internal error: not unique');
+          stats.ms = Date.now() - start;
+          return { puzzle, stats };
+        }
       }
       const next = proposeMove(state, rows, cols, tile, rng);
       if (!next) continue;

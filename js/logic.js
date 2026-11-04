@@ -1021,6 +1021,25 @@ export function tileInterior(puzzle, cells) {
   return out;
 }
 
+// True when the open (white) cells form one orthogonally connected region, i.e. the board has no
+// islands cut off from the rest by blocked cells. Puzzles that fail this are not generated or published.
+export function openCellsConnected(puzzle) {
+  const { rows, cols } = puzzle;
+  let first = -1, total = 0;
+  for (let i = 0; i < rows * cols; i++) if (puzzle.grid[i] === OPEN) { total++; if (first < 0) first = i; }
+  if (total === 0) return false;
+  const seen = new Set([first]), stack = [first];
+  while (stack.length) {
+    const a = stack.pop(), r = Math.floor(a / cols), c = a % cols;
+    for (const [nr, nc] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
+      if (!isOpen(puzzle, nr, nc)) continue;
+      const b = nr * cols + nc;
+      if (!seen.has(b)) { seen.add(b); stack.push(b); }
+    }
+  }
+  return seen.size === total;
+}
+
 // --- Swastikas ---------------------------------------------------------------------
 // A "swastika" is a pinwheel pattern in the drawn tile boundaries of a solution (the
 // lines between different tiles): the 8 segments of a central cross with four hooks

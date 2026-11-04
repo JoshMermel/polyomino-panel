@@ -15,8 +15,8 @@
 // A book id is <shape>_<size>x<size>, e.g. P5_8x8. Nothing touches data/ until
 // --promote. Builds are deterministic for a given --seed (default 1).
 //
-// Puzzles whose solution's tile boundaries contain a swastika pattern (see
-// logic.hasSwastika) are skipped.
+// Puzzles whose open cells are not one connected region (logic.openCellsConnected), and puzzles
+// whose solution's tile boundaries contain a swastika pattern (logic.hasSwastika), are skipped.
 //
 // A recipe is the defaults in recipes.json plus any entry in "overrides", keyed
 // by book id: { count, minCount, low, high, tiers }. A book with fewer than
@@ -26,7 +26,7 @@
 import {
   readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync,
 } from 'node:fs';
-import { parseCsv, toCsv, solve, shapeName, hasSwastika } from '../js/logic.js';
+import { parseCsv, toCsv, solve, shapeName, hasSwastika, openCellsConnected } from '../js/logic.js';
 import { TIERS } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
 import { pickTiered } from './lib/pick.mjs';
@@ -70,8 +70,9 @@ for (const b of selected) {
   const allPuzzles = poolOf(b.id);
   const r = recipeFor(b.id);
   if (!allPuzzles.length) { console.log(`[${b.id}] no pool (run tools/fill_library.mjs)`); continue; }
-  // swastika patterns in a solution's tile boundaries are never published
-  const pool = allPuzzles.filter(p => !hasSwastika(p, p.solution));
+  // never published: boards whose open cells are split into islands, and swastika patterns
+  // in a solution's tile boundaries
+  const pool = allPuzzles.filter(p => openCellsConnected(p) && !hasSwastika(p, p.solution));
   const { picks, perTier, short } = pickTiered(pool, { count: r.count, tiers: TIERS, tierKey: 'tier', shares: r.tiers, low: r.low, high: r.high, seed });
 
   if (picks.length < (r.minCount ?? 1)) {

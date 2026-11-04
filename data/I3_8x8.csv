@@ -1,18 +1,18 @@
-# I tromino 8x8. Built by tools/build_books.mjs from a pool of 1578 (seed 1).
+# I tromino 8x8. Built by tools/build_books.mjs from a pool of 1492 (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked.
 # rules: hardest deduction rule needed; tier: its difficulty tier (Beginner/Medium/Hard/Expert/Unsolved); score: finer difficulty. Sorted easiest first.
 name,rows,cols,tile,grid,solution,rules,tier,score
-I3_8x8_01,8,8,I3,...#...#.......##.#.#..##.......#..#.....#.#.##..#######.#######,AAA#BBB#CCCDEEE##F#D#GH##FIDJGHK#FI#JGHKL#I#J##KL#######L#######,forced,Beginner,8
-I3_8x8_02,8,8,I3,#....#.#.......#..###..#.##.#...#...##......##.....#####.#######,#ABBB#C#DAEEEFC#DA###FC#D##G#FHI#JKG##HILJKG##HILJK#####L#######,forced,Beginner,8
+I3_8x8_01,8,8,I3,.......#..#.............#..#....##.#...###.#.#.#######.#########,ABBBCCC#AD#EEEFGADHHHIFG#DJ#KIFG##J#KIL###J#K#L#######L#########,forced,Beginner,8
+I3_8x8_02,8,8,I3,....##.##....#..#..........#..#...#...##..#..####.#..###########,AAAB##C##DEBF#CG#DEBFHCGIDE#FH#GIJ#KLH##IJ#KL####J#KL###########,forced,Beginner,8
 I3_8x8_03,8,8,I3,....#.....#....#.....#.....#.....#.#.....####.##.###############,AAAB#CCCDE#BFFF#DEGBH#IJDEG#HKIJL#G#HKIJL####K##L###############,forced,Beginner,9
 I3_8x8_04,8,8,I3,#...................##...#..#....#.##..#.#.##.##.#.#############,#ABBBCCCDAEFGGGHDAEF##IHD#EF#JIHK#L##JI#K#L##J##K#L#############,forced,Beginner,9
 I3_8x8_05,8,8,I3,.........###.....###..#.....#.#.....#.#...#.####..######..######,ABBBCDDDA###CEEEA###CF#GHHHI#F#GJJJI#F#GKL#I####KL######KL######,forced,Beginner,9
 I3_8x8_06,8,8,I3,##....###......##....###..#...##..##..##.......##.####.####....#,##ABBB###CADEEE##CADF###GC#DFH##GI##FH##GIJJJHK##I####K####LLLK#,forced,Beginner,10
 I3_8x8_07,8,8,I3,##.....#.......#.#.....#...............#..####.#.#####.#.#######,##AAABC#DDDEFBC#G#HEFBC#GIHEFJJJGIHKKKL#MI####L#M#####L#M#######,forced,Beginner,10
 I3_8x8_08,8,8,I3,##.#####.#.#####.#.##..........#.#..........#..#....#..######..#,##A#####B#A#####B#A##CCCBDDDEEE#F#GGGHHHFIII#JK#FLLL#JK######JK#,forced,Beginner,10
-I3_8x8_09,8,8,I3,......#####.#...#.#.....#.............#..#...#.#.##..#.####..#.#,AAABBB#####C#DDD#E#CFFFG#EHCIIIGJEHKKK#GJ#HLM#N#J##LM#N####LM#N#,forced,Beginner,11
-I3_8x8_10,8,8,I3,##......####........#.#...###...........#..........##.#.#####.##,##AAABBB####CCCDEFFF#G#DEH###GIDEHJJJGIK#HLLLMIKNNN##M#K#####M##,forced,Beginner,11
-I3_8x8_11,8,8,I3,.##...#..###..............#...##.....##......##.#######.......##,A##BBB#CA###DDDCAEEEFFFCGH#III##GHJJJ##KGHLLL##K#######KMMMNNN##,forced,Beginner,11
+I3_8x8_09,8,8,I3,##......####........#.#...###...........#..........##.#.#####.##,##AAABBB####CCCDEFFF#G#DEH###GIDEHJJJGIK#HLLLMIKNNN##M#K#####M##,forced,Beginner,11
+I3_8x8_10,8,8,I3,.....#...#...#...#...#..##...............####.#..####.#######.##,ABBBC#DEA#FGC#DEA#FGC#DE##FGHHHIJKKKLLLIJ####M#IJ####M#######M##,forced,Beginner,11
+I3_8x8_11,8,8,I3,.........#..#.......#...........#.##.#..####.#..################,AAABBBCDE#FG#HCDEIFG#HCDEIFGJHKL#I##J#KL####J#KL################,forced,Beginner,11
 I3_8x8_12,8,8,I3,......##...###.#..................##..#...##.#....##.#...###.#..,AAABBB##CCC###D#EFFFGHDIEJJJGHDIEK##GH#ILK##M#NOLK##M#NOL###M#NO,forced,Beginner,12
 I3_8x8_13,8,8,I3,................##...#.....#.#............#...#####.#.##########,AAABCDDDEEEBCFFF##GBC#HIJKG#L#HIJKGMLNHIJK#MLN#####M#N##########,forced,Beginner,12
 I3_8x8_14,8,8,I3,#.................#....#....#...#......##.....##################,#ABBBCCCDAEEEFFFDA#GHHH#DIJG#KKK#IJGLLL##IJMMM##################,forced,Beginner,12
@@ -36,8 +36,8 @@ I3_8x8_31,8,8,I3,............#.....#............#...............#...............
 I3_8x8_32,8,8,I3,............#.....##.......#.............#.............#...#....,ABBBCCCDAEEE#FGDAH##IFGDJHK#IFGLJHKMINOLJ#KMPNOLQQQMPNO#RRR#PSSS,forced,Beginner,18
 I3_8x8_33,8,8,I3,......##.###..#...##..#.....................#...#.......####...#,ABBBCD##A###CD#EAF##CD#EGFHHHIJEGFKKKIJLGMMM#IJL#NNNOOOL####PPP#,edges,Medium,16
 I3_8x8_34,8,8,I3,#...#...#........#..........##......#.....##..........#.........,#AAA#BBB#CCCDDDEF#GHIIIEFJGH##KEFJGH#LKMNJ##OLKMNPPPOL#MNQQQORRR,edges,Medium,19
-I3_8x8_35,8,8,I3,...#.........##...##..................###....##....#.##.####.##.,AAA#BBBCDEFFF##CDE##GGGCDEHHHIIIJJJKKK###LLLM##NOOO#M##N####M##N,edges,Medium,19
-I3_8x8_36,8,8,I3,#.....##..............#............##......................#....,#ABCCC##DABEFGGGDABEFH#IDJKEFHLIMJK##HLIMJKNNNLOMPPPQQQORRR#SSSO,edges,Medium,20
+I3_8x8_35,8,8,I3,#.....##..............#............##......................#....,#ABCCC##DABEFGGGDABEFH#IDJKEFHLIMJK##HLIMJKNNNLOMPPPQQQORRR#SSSO,edges,Medium,20
+I3_8x8_36,8,8,I3,.....#...#...#..............#............##..#..................,ABBBC#DEA#FGC#DEAHFGCIDEJHFG#IKLJHMMMIKLJ##NO#KLPPPNOQQQRRRNOSSS,edges,Medium,20
 I3_8x8_37,8,8,I3,........#...........#............#...#..###..#.........#.......#,AAABBBCD#EFFFGCDHEIJ#GCDHEIJKGLMH#IJK#LM###NK#LMOOONPPP#QQQNRRR#,edges,Medium,20
 I3_8x8_38,8,8,I3,..##.................#...#.....#................#....#..........,AB##CCCDABEFFFGDABEHI#GDJ#EHIKG#JLMHIKNOJLMPQKNO#LMPQ#NORRRPQSSS,edges,Medium,21
 I3_8x8_39,8,8,I3,...............#.....#...#...............#......................,ABCCCDDDABEFGGG#ABEFH#IJK#EFHLIJKMMMHLIJK#NNNLOPQQQRRROPSSSTTTOP,edges,Medium,21
