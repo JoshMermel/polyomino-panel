@@ -1,7 +1,7 @@
 // Shows the tile shape a puzzle must be cut into: a small picture plus its
 // name. The picture uses one canonical orientation; the rules text explains
 // that rotations and reflections are allowed.
-import { resolveShape, shapeName, tileSize } from './logic.js';
+import { resolveShape, shapeName, tileSizes, tileSpecs } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -28,14 +28,21 @@ export function tileShapeSvg(spec) {
   return svg;
 }
 
-// Fill `container` with the shape picture and its name, e.g. "L tetromino".
-// The tooltip has the details.
+// Fill `container` with the shape picture(s) and the name(s), e.g. "L tetromino", or
+// "L tetromino + T tetromino" when several shapes are allowed. The tooltip has the details.
 export function renderTileInfo(container, spec) {
   container.textContent = '';
+  const specs = tileSpecs(spec);
+  const pictures = document.createElement('span');
+  pictures.className = 'tile-swatches';
+  specs.forEach(sp => pictures.append(tileShapeSvg(sp)));
   const name = document.createElement('span');
   name.className = 'tile-info-name';
   name.textContent = shapeName(spec);
-  container.append(tileShapeSvg(spec), name);
-  container.title = `Cut the white cells into tiles of this shape: ${shapeName(spec)}, ${tileSize(spec)} cells. ` +
-    'Rotations and reflections are allowed.';
+  container.append(pictures, name);
+  const cells = tileSizes(spec).join(' or ');
+  container.title = specs.length === 1
+    ? `Cut the white cells into tiles of this shape: ${shapeName(spec)}, ${cells} cells. Rotations and reflections are allowed.`
+    : `Cut the white cells into tiles, each one of these shapes (${cells} cells): ${shapeName(spec)}. ` +
+      'Any of them can be used any number of times. Rotations and reflections are allowed.';
 }

@@ -133,6 +133,75 @@ export function tileSize(spec) {
   return resolveShape(spec).length;
 }
 
+// --- Several allowed tiles ----------------------------------------------------
+// A puzzle's `tile` is one shape spec ("L", "XX/X.") or several joined with '+' ("L+T"):
+// every tile of the solution is then one of those shapes (rotations and reflections
+// allowed; each may be used any number of times). One shape is just the special case N=1.
+const specsCache = new Map();
+
+// The shape specs of a (possibly multi-shape) tile spec, validated and pairwise different.
+export function tileSpecs(spec) {
+  if (specsCache.has(spec)) return specsCache.get(spec);
+  const specs = spec.split('+');
+  const keys = new Set();
+  for (const sp of specs) {
+    resolveShape(sp);
+    keys.add(canonicalKey(sp));
+  }
+  if (keys.size !== specs.length) throw new Error(`Tile "${spec}" lists the same shape twice`);
+  specsCache.set(spec, specs);
+  return specs;
+}
+
+// Every orientation of every allowed shape (the placements a tile can take).
+const allOrientationsCache = new Map();
+export function allOrientations(spec) {
+  if (!allOrientationsCache.has(spec)) allOrientationsCache.set(spec, tileSpecs(spec).flatMap(getOrientations));
+  return allOrientationsCache.get(spec);
+}
+
+// The distinct tile sizes (cell counts), ascending.
+export function tileSizes(spec) {
+  return [...new Set(tileSpecs(spec).map(tileSize))].sort((a, b) => a - b);
+}
+export const minTileSize = spec => tileSizes(spec)[0];
+export const maxTileSize = spec => tileSizes(spec).at(-1);
+
+// Can n cells be made of whole tiles, i.e. is n a sum of allowed tile sizes?
+const feasibleCache = new Map();
+export function sizeFeasible(spec, n) {
+  let ok = feasibleCache.get(spec);
+  if (!ok) { ok = [true]; feasibleCache.set(spec, ok); }
+  const sizes = tileSizes(spec);
+  while (ok.length <= n) {
+    const k = ok.length;
+    ok.push(sizes.some(z => z <= k && ok[k - z]));
+  }
+  return ok[n];
+}
+
+// Which allowed shape (index into tileSpecs) is this set of cells, or -1.
+export function shapeIndexOf(spec, cells, cols) {
+  const key = cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols])));
+  return tileSpecs(spec).findIndex(sp => getOrientations(sp).some(o => cellsKey(o) === key));
+}
+
+// How many tiles of each allowed shape the solution uses: [count of shape 0, count of shape 1, ...].
+export function solutionShapeCounts(puzzle, solution) {
+  const counts = new Array(tileSpecs(puzzle.tile).length).fill(0);
+  const byLabel = new Map();
+  for (let i = 0; i < solution.length; i++) {
+    if (solution[i] === BLOCKED) continue;
+    if (!byLabel.has(solution[i])) byLabel.set(solution[i], []);
+    byLabel.get(solution[i]).push(i);
+  }
+  for (const cells of byLabel.values()) {
+    const k = shapeIndexOf(puzzle.tile, cells, puzzle.cols);
+    if (k >= 0) counts[k]++;
+  }
+  return counts;
+}
+
 // Orientation-independent identity of a shape (same for all rotations/reflections).
 function canonicalKey(spec) {
   return getOrientations(spec).map(cellsKey).sort()[0];
@@ -143,6 +212,7 @@ let labelByCanonical = null;
 // Display name for a tile spec: a name from the library if the shape matches
 // one (in any orientation), else "N-cell shape".
 export function shapeName(spec) {
+  if (spec.includes('+')) return tileSpecs(spec).map(shapeName).join(' + ');
   if (!labelByCanonical) {
     labelByCanonical = new Map(Object.keys(SHAPE_LABELS).map(n => [canonicalKey(n), SHAPE_LABELS[n]]));
   }
@@ -176,7 +246,7 @@ export function parseCsv(text) {
     }
     if (/[^.#]/.test(grid)) throw new Error(`Puzzle "${rec.name}": grid may only contain '.' and '#'`);
     const tile = rec.tile || 'L';
-    try { resolveShape(tile); } catch (err) { throw new Error(`Puzzle "${rec.name}": ${err.message}`); }
+    try { tileSpecs(tile); } catch (err) { throw new Error(`Puzzle "${rec.name}": ${err.message}`); }
     const solution = rec.solution && rec.solution.length === grid.length ? rec.solution : '';
     puzzles.push({
       name: rec.name, rows, cols: ncols, tile, grid, solution,
@@ -262,11 +332,13 @@ export function setEdge(puzzle, edges, kind, r, c, state) {
 // (crosses are just reminders and don't separate anything), and test each
 // region against the puzzle's tile shape.
 // Returns { regions: [{cells: [idx...], valid, wrong}], validCount, total, solved }
-// where total = number of open cells / tile size (the tiles a solution needs).
+// where total = number of tiles a solution needs: open cells / tile size when every allowed
+// shape has the same size, else the number in the stored solution (null if there is none).
 export function analyze(puzzle, edges) {
   const { rows, cols, tile } = puzzle;
-  const size = tileSize(tile);
-  const keys = new Set(getOrientations(tile).map(cellsKey));
+  const sizes = tileSizes(tile);
+  const minSize = sizes[0];
+  const keys = new Set(allOrientations(tile).map(cellsKey));
   const seen = new Uint8Array(rows * cols);
   const regions = [];
   let openCount = 0;
@@ -296,18 +368,19 @@ export function analyze(puzzle, edges) {
       visit(r - 1, c, 'h', r, c);
     }
     let valid = false;
-    if (cells.length === size) {
+    if (sizes.includes(cells.length)) {
       const norm = normalize(cells.map(i => [Math.floor(i / cols), i % cols]));
       valid = keys.has(cellsKey(norm));
     }
     // A region that is already too small, or exactly tile-sized but the wrong
     // shape, can never become a tile: it's walled in by lines/blocked cells.
     // (Bigger regions might still be cut up later, so they aren't "wrong".)
-    regions.push({ cells, valid, wrong: !valid && cells.length <= size });
+    regions.push({ cells, valid, wrong: !valid && cells.length <= minSize });
   }
 
   const validCount = regions.filter(r => r.valid).length;
-  const total = Math.floor(openCount / size);
+  const total = sizes.length === 1 ? Math.floor(openCount / minSize)
+    : puzzle.solution ? new Set(puzzle.solution.replaceAll(BLOCKED, '')).size : null;
   const solved = regions.length > 0 && validCount === regions.length;
   return { regions, validCount, total, solved };
 }
@@ -363,18 +436,17 @@ export function labelString(assign) {
 // Returns { count, aborted, tilings, nodes }.
 export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity, keep = true } = {}) {
   const { rows, cols, grid, tile } = puzzle;
-  const size = tileSize(tile);
   const n = rows * cols;
   const result = { count: 0, aborted: false, tilings: [], nodes: 0 };
 
   const itemOf = new Int32Array(n).fill(-1);
   let m = 0;
   for (let i = 0; i < n; i++) if (grid[i] === OPEN) itemOf[i] = ++m;   // items 1..m
-  if (m % size !== 0) return result;
+  if (!sizeFeasible(tile, m)) return result;
 
   // All placements of the tile, as lists of item numbers.
   const pls = [];
-  for (const o of getOrientations(tile)) {
+  for (const o of allOrientations(tile)) {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const cells = [];
@@ -383,7 +455,7 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
           if (nr >= rows || nc < 0 || nc >= cols || itemOf[nr * cols + nc] < 0) break;
           cells.push(nr * cols + nc);
         }
-        if (cells.length === size) pls.push(cells);
+        if (cells.length === o.length) pls.push(cells);
       }
     }
   }
@@ -395,7 +467,7 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
   }
 
   // Dancing-links matrix. Node 0 is the root, 1..m are column headers.
-  const total = m + 1 + pls.length * size;
+  const total = m + 1 + pls.reduce((sum, cells) => sum + cells.length, 0);
   const L = new Int32Array(total), R = new Int32Array(total), U = new Int32Array(total),
         D = new Int32Array(total), C = new Int32Array(total), S = new Int32Array(m + 1),
         rowOf = new Int32Array(total);   // node -> placement index
@@ -525,7 +597,7 @@ export function edgeCells(puzzle, kind, r, c) {
 // cross there tells the player nothing. Returns [[kind, r, c], ...].
 export function crossHints(puzzle, edges, solution) {
   const expected = edgesFromSolution(puzzle, solution);
-  const size = tileSize(puzzle.tile);
+  const size = maxTileSize(puzzle.tile);
   // region id per cell, for regions that are closed (tile-sized or smaller)
   const closed = new Map();
   analyze(puzzle, edges).regions.forEach((reg, id) => {
@@ -565,7 +637,7 @@ function buildPlacements(puzzle, cell) {
   const r0 = Math.floor(cell / cols), c0 = cell % cols;
   const seen = new Set();
   const out = [];
-  for (const o of getOrientations(tile)) {
+  for (const o of allOrientations(tile)) {
     for (const [ar, ac] of o) {            // which tile cell lands on `cell`
       const cells = [];
       let ok = true;
@@ -682,26 +754,27 @@ function tileImbalances(spec) {
   return imbalanceCache.get(spec);
 }
 
-// Imbalances that n tiles can add up to.
+// Imbalances that tiles with n cells in total can add up to (any mix of the allowed
+// shapes): reach[k] is the set for k cells.
 const reachableCache = new Map();
 function reachableImbalances(spec, n) {
-  const key = `${spec}|${n}`;
-  if (!reachableCache.has(key)) {
-    let cur = new Set([0]);
-    for (let k = 0; k < n; k++) {
-      const next = new Set();
-      for (const s0 of cur) for (const d of tileImbalances(spec)) next.add(s0 + d);
-      cur = next;
+  let reach = reachableCache.get(spec);
+  if (!reach) { reach = [new Set([0])]; reachableCache.set(spec, reach); }
+  const shapes = tileSpecs(spec).map(sp => ({ size: tileSize(sp), d: tileImbalances(sp) }));
+  while (reach.length <= n) {
+    const k = reach.length, set = new Set();
+    for (const { size, d } of shapes) {
+      if (size > k) continue;
+      for (const s0 of reach[k - size]) for (const x of d) set.add(s0 + x);
     }
-    reachableCache.set(key, cur);
+    reach.push(set);
   }
-  return reachableCache.get(key);
+  return reach[n];
 }
 
 // The first region (see above) that cannot be tiled, as {kind, cells}, or null.
 export function findPocketContradiction(puzzle, edges, mode = 'size') {
   const { rows, cols, tile } = puzzle;
-  const size = tileSize(tile);
   const { h, v } = edges;
   const seen = new Uint8Array(rows * cols);
   const stack = [];
@@ -720,8 +793,8 @@ export function findPocketContradiction(puzzle, edges, mode = 'size') {
       if (r + 1 < rows && puzzle.grid[i + cols] === OPEN && !seen[i + cols] && h[(r + 1) * cols + c] !== EDGE_LINE) { seen[i + cols] = 1; stack.push(i + cols); }
       if (r > 0 && puzzle.grid[i - cols] === OPEN && !seen[i - cols] && h[r * cols + c] !== EDGE_LINE) { seen[i - cols] = 1; stack.push(i - cols); }
     }
-    if (cells.length % size !== 0) return { kind: 'size', cells };
-    if (mode === 'parity' && !reachableImbalances(tile, cells.length / size).has(balance)) {
+    if (!sizeFeasible(tile, cells.length)) return { kind: 'size', cells };
+    if (mode === 'parity' && !reachableImbalances(tile, cells.length).has(balance)) {
       return { kind: 'parity', cells };
     }
   }
@@ -733,7 +806,7 @@ export function findPocketContradiction(puzzle, edges, mode = 'size') {
 // for modes beyond 'cell', for an untileable region anywhere. Returns
 // {kind, cells} or null.
 export function findContradiction(puzzle, edges, nearCells, mode = 'size') {
-  const dead = findDeadCellNear(puzzle, edges, nearCells, tileSize(puzzle.tile));
+  const dead = findDeadCellNear(puzzle, edges, nearCells, maxTileSize(puzzle.tile));
   if (dead !== -1) return { kind: 'cell', cells: [dead] };
   return mode === 'cell' ? null : findPocketContradiction(puzzle, edges, mode);
 }
@@ -786,7 +859,7 @@ function findDeadCellsNear(puzzle, edges, cells, reach) {
 // their number of consistent placements (see LOOKAHEAD_2 / LOOKAHEAD_3).
 // (Assumes the existing marks are correct.)
 export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = Infinity, mode = 'size' } = {}) {
-  const reach = tileSize(puzzle.tile);
+  const reach = maxTileSize(puzzle.tile);
   const { cols } = puzzle;
   const seen = new Set();                     // several origin cells can lead to one tile
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
@@ -905,7 +978,7 @@ export const EDGES_WIDE = { minOptions: 4 };
 // contradiction is {kind, cells} if the assumption leads to an impossible position
 // (within maxSteps forced steps), else null.
 function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
-  const reach = tileSize(puzzle.tile);
+  const reach = maxTileSize(puzzle.tile);
   const { rows, cols } = puzzle;
   const trial = cloneEdges(edges);
   for (const [kind, r, c] of option.outline) setEdge(puzzle, trial, kind, r, c, EDGE_LINE);
@@ -982,8 +1055,8 @@ export function allChainTiles(puzzle, edges, options) {
 // rotation or reflection?
 export function cellsFormTile(puzzle, cells) {
   const { cols, tile } = puzzle;
-  if (new Set(cells).size !== tileSize(tile) || cells.length !== tileSize(tile)) return false;
-  const keys = new Set(getOrientations(tile).map(cellsKey));
+  if (new Set(cells).size !== cells.length || !tileSizes(tile).includes(cells.length)) return false;
+  const keys = new Set(allOrientations(tile).map(cellsKey));
   return keys.has(cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols]))));
 }
 

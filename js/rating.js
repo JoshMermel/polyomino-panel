@@ -99,7 +99,7 @@ export function ratePuzzle(puzzle) {
     hardest = Math.max(hardest, which);
   }
   const a = analyze(puzzle, edges);
-  const remaining = a.total - a.validCount;
+  const remaining = (a.total ?? a.validCount) - a.validCount;
   const rules = !a.solved ? 'unsolved' : hardest < 0 ? RULES[0].id : RULES[hardest].id;
   let score = RULES.reduce((sum, r) => sum + counts[r.id] * r.weight, 0) + remaining * UNDETERMINED_WEIGHT;
   if (remaining > 0) {

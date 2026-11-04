@@ -137,6 +137,7 @@ select, input[type="number"] {
 }
 .tile-info { display: inline-flex; align-items: center; gap: 8px; }
 .tile-info-name { font-size: 0.95rem; font-weight: 600; }
+.tile-swatches { display: inline-flex; align-items: flex-end; gap: 10px; flex-shrink: 0; }
 .status { font-size: 0.9rem; color: var(--text-secondary); text-align: right; }
 .status.solved { color: var(--color-solved); font-weight: 600; }
 .status.error { flex: 1 1 100%; color: var(--color-error); text-align: left; }

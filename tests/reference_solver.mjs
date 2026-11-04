@@ -2,20 +2,19 @@
 // tiling search (always fill the first empty cell). Slow but obviously
 // correct; used to cross-check the DLX search in js/logic.js and as the
 // "current" baseline in tools/bench_solvers.mjs.
-import { getOrientations, tileSize, OPEN } from '../js/logic.js';
+import { allOrientations, sizeFeasible, OPEN } from '../js/logic.js';
 
 // Returns { count, aborted, nodes }; stops after `limit` tilings.
 export function referenceSearch(puzzle, { limit = 2, budget = Infinity } = {}) {
   const { rows, cols, grid, tile } = puzzle;
-  const size = tileSize(tile);
-  const orients = getOrientations(tile);
+  const orients = allOrientations(tile);
   const assign = new Int16Array(rows * cols);
   let openCount = 0;
   for (let i = 0; i < grid.length; i++) {
     if (grid[i] === OPEN) { assign[i] = -2; openCount++; } else assign[i] = -1;
   }
   const result = { count: 0, aborted: false, nodes: 0 };
-  if (openCount % size !== 0) return result;
+  if (!sizeFeasible(tile, openCount)) return result;
 
   function rec(from) {
     if (result.aborted || result.count >= limit) return;

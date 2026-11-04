@@ -3,13 +3,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  getOrientations, resolveShape, tileSize, parseCsv, solve, searchTilings, countSolutions,
+  getOrientations, resolveShape, tileSize, parseCsv, toCsv, solve, searchTilings, countSolutions,
   analyze, edgesFromSolution, setEdge, getEdge, isPlayableEdge, EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
   edgeDeduction, allEdgeDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
+  tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts,
 } from '../js/logic.js';
 import {
   generatePuzzle, mulberry32, canonicalGrid, defaultHoles, stateFromPuzzle, puzzleFromState, neighborState,
@@ -961,5 +962,108 @@ test('no published puzzle has its open cells split into islands', () => {
   const manifest = JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
   for (const book of manifest.books) {
     for (const p of data(book.file)) assert.equal(openCellsConnected(p), true, `${book.file} ${p.name}`);
+  }
+});
+
+// --- Several allowed tile shapes (N >= 2) ---------------------------------------------------
+test('multi-shape tiles: specs, orientations, sizes, names, CSV', () => {
+  assert.deepEqual(tileSpecs('L'), ['L']);
+  assert.deepEqual(tileSpecs('L+T'), ['L', 'T']);
+  assert.equal(allOrientations('L+T').length, getOrientations('L').length + getOrientations('T').length);
+  assert.deepEqual(tileSizes('I2+V3+L'), [2, 3, 4]);
+  assert.deepEqual(tileSizes('L+T'), [4]);
+  assert.equal(shapeName('L+T'), 'L tetromino + T tetromino');
+  assert.throws(() => tileSpecs('L+L'), /twice/);
+  assert.throws(() => tileSpecs('L+X./X./XX'), /twice/);                // the same shape spelled as a pattern
+  assert.throws(() => tileSpecs('L+Q9'), /Unknown tile shape/);
+  // sums of tile sizes
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7].map(n => sizeFeasible('I2+I3', n)), [true, false, true, true, true, true, true, true]);
+  assert.deepEqual([0, 3, 4, 5, 7, 8, 9, 10, 11].map(n => sizeFeasible('V3+L', n)), [true, true, true, false, true, true, true, true, true]);
+  assert.equal(sizeFeasible('L', 8) && !sizeFeasible('L', 10), true);   // one shape: multiples only
+  // CSV keeps the combined spec; the hash tells combinations apart
+  const p = { name: 'a', rows: 2, cols: 3, tile: 'I2+I3', grid: '......', solution: 'AABBBB' };
+  const back = parseCsv(toCsv([p]))[0];
+  assert.equal(back.tile, 'I2+I3');
+  assert.notEqual(puzzleHash(p), puzzleHash({ ...p, tile: 'I2' }));
+});
+
+test('multi-shape tiles: DLX agrees with the reference backtracker on random boards', () => {
+  const rng = mulberry32(7);
+  let compared = 0, withSolutions = 0;
+  for (const tile of ['I2+I3', 'V3+L', 'I2+V3+L', 'L+T']) {
+    for (let k = 0; k < 40; k++) {
+      const rows = 4 + Math.floor(rng() * 3), cols = 4 + Math.floor(rng() * 3);
+      const grid = Array.from({ length: rows * cols }, () => (rng() < 0.2 ? '#' : '.')).join('');
+      const pz = { rows, cols, tile, grid, solution: '' };
+      const a = searchTilings(pz, { limit: 5000, keep: false }).count;
+      const b = referenceSearch(pz, { limit: 5000 }).count;
+      assert.equal(a, b, `${tile} ${grid}`);
+      compared++; if (a > 0) withSolutions++;
+    }
+  }
+  assert.ok(withSolutions > 20, `only ${withSolutions}/${compared} boards had any tiling`);
+});
+
+test('multi-shape tiles: generated puzzles are unique, connected and use every shape', () => {
+  const rng = mulberry32(3);
+  // pairs whose shapes differ in size need more blocked cells before a puzzle can be unique
+  const holesFor = { 'L+T': undefined, 'I2+I3': 12, 'V3+I3': 12, 'I2+V3': 14 };
+  for (const tile of ['L+T', 'I2+I3', 'V3+I3']) {
+    for (let i = 0; i < 4; i++) {
+      const res = generatePuzzle({ rows: 6, cols: 6, tile, holes: holesFor[tile], rng, maxMs: 20000 });
+      assert.ok(res, `${tile}: no puzzle`);
+      const p = res.puzzle;
+      assert.equal(solve(p, 3).length, 1, `${tile}: not unique`);
+      assert.equal(openCellsConnected(p), true);
+      assert.ok(solutionShapeCounts(p, p.solution).every(k => k > 0), `${tile}: a shape is unused`);
+      // the stored solution's edges solve it, tile by tile, with either shape
+      const a = analyze(p, edgesFromSolution(p, p.solution));
+      assert.equal(a.solved, true);
+      assert.equal(a.total, new Set(p.solution.replaceAll('#', '')).size);
+      for (const reg of a.regions) assert.equal(cellsFormTile(p, reg.cells), true);
+    }
+  }
+});
+
+test('multi-shape tiles: cellsFormTile accepts either shape and nothing else', () => {
+  const p = { rows: 4, cols: 4, tile: 'I2+V3', grid: '.'.repeat(16), solution: '' };
+  assert.equal(cellsFormTile(p, [0, 1]), true);             // the domino
+  assert.equal(cellsFormTile(p, [0, 4]), true);
+  assert.equal(cellsFormTile(p, [0, 1, 4]), true);          // the V tromino
+  assert.equal(cellsFormTile(p, [0, 1, 2]), false);         // a straight tromino is not allowed here
+  assert.equal(cellsFormTile(p, [0, 5]), false);            // diagonal
+  assert.equal(cellsFormTile(p, [0, 1, 4, 5]), false);      // the square is neither
+});
+
+test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks never reject the true solution', () => {
+  const rng = mulberry32(9);
+  const holesFor = { 'L+T': undefined, 'I2+V3': 14, 'V3+I3': 12 };
+  for (const tile of ['L+T', 'I2+V3', 'V3+I3']) {
+    for (let i = 0; i < 3; i++) {
+      const res = generatePuzzle({ rows: 6, cols: 6, tile, holes: holesFor[tile], rng, maxMs: 20000 });
+      assert.ok(res, tile);
+      const pz = res.puzzle;
+      // every rule step is consistent with the solution
+      const e = newEdges(pz);
+      for (let guard = 0; guard < 500; guard++) {
+        let found = null, which = null;
+        for (const rule of RULES) { found = rule.find(pz, e); if (found) { which = rule.id; break; } }
+        if (!found) break;
+        for (const [k, r, c] of found.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
+        for (const [k, r, c] of found.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
+        assert.deepEqual(checkMarks(pz, e, pz.solution), [], `${tile}: rule ${which} was wrong`);
+      }
+      // a position consistent with the solution (some of its lines) is never a contradiction
+      const full = edgesFromSolution(pz, pz.solution);
+      for (let trial = 0; trial < 30; trial++) {
+        const part = newEdges(pz);
+        for (const [k, r, c] of playableEdges(pz)) {
+          if (getEdge(pz, full, k, r, c) === EDGE_LINE && rng() < 0.6) setEdge(pz, part, k, r, c, EDGE_LINE);
+        }
+        assert.equal(findPocketContradiction(pz, part, 'parity'), null, `${tile}: a true position was called impossible`);
+      }
+      const r = ratePuzzle(pz);
+      assert.ok(TIERS.includes(r.tier));
+    }
   }
 });

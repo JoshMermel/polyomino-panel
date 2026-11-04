@@ -8,6 +8,8 @@
 //                                    I2, I3, V3; pentominoes F5 I5 L5 N5 P5 T5
 //                                    U5 V5 W5 X5 Y5 Z5) or a pattern like
 //                                    "X./X./XX"                            [L]
+//                                    Join several with + (e.g. "L+T") to allow
+//                                    each tile to be any one of them.
 //   --count N                        how many puzzles                     [10]
 //   --holes K                        blocked cells. Default: automatic. Starts at
 //                                    ~15% of the board and adds a tile's worth
@@ -19,7 +21,7 @@
 //   --max-seconds N                  give up on a puzzle after N seconds  [60]
 //   --out FILE                       output CSV (default: stdout)
 import { writeFileSync } from 'node:fs';
-import { toCsv, resolveShape, shapeName } from '../js/logic.js';
+import { toCsv, tileSpecs, shapeName } from '../js/logic.js';
 import { generatePuzzleAuto, generatePuzzle, mulberry32, canonicalGrid, defaultHoles } from '../js/generator.js';
 import { sortByRules } from '../js/rating.js';
 
@@ -53,7 +55,7 @@ const seed = o.seed !== undefined ? int(o.seed, 'seed') : Math.floor(Math.random
 const prefix = o.prefix ?? 'gen';
 const maxMs = Number(o['max-seconds'] ?? 60) * 1000;
 
-try { resolveShape(tile); } catch (err) { console.error(err.message); process.exit(2); }
+try { tileSpecs(tile); } catch (err) { console.error(err.message); process.exit(2); }
 const fixedHoles = o.holes !== undefined ? int(o.holes, 'holes') : null;
 let holes = fixedHoles ?? defaultHoles(rows, cols, tile);
 

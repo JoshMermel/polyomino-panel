@@ -12,7 +12,8 @@
 //
 // Difficulty is not considered at all; only uniqueness.
 import {
-  BLOCKED, OPEN, tileSize, getOrientations, countSolutions, labelString, solve, hasSwastika, openCellsConnected,
+  BLOCKED, OPEN, minTileSize, allOrientations, sizeFeasible, solutionShapeCounts, countSolutions, labelString, solve,
+  hasSwastika, openCellsConnected,
 } from './logic.js';
 
 // Small seedable PRNG (mulberry32) so runs are reproducible.
@@ -27,13 +28,20 @@ export function mulberry32(seed) {
   };
 }
 
-// Number of blocked cells that makes the open cells divisible by the tile
-// size, closest to `ratio` of the board (real L-panel puzzles use ~15%).
+// Is `holes` a number of blocked cells that leaves open cells made of whole tiles?
+const holesFit = (rows, cols, tile, holes) => {
+  const open = rows * cols - holes;
+  return holes >= 0 && open >= minTileSize(tile) && sizeFeasible(tile, open);
+};
+
+// Number of blocked cells that makes the open cells divisible into tiles,
+// closest to `ratio` of the board (real L-panel puzzles use ~15%).
 export function defaultHoles(rows, cols, tile, ratio = 0.15) {
-  const cells = rows * cols, size = tileSize(tile);
+  const cells = rows * cols;
   const target = cells * ratio;
   let best = null;
-  for (let k = cells % size; k <= cells - size; k += size) {
+  for (let k = 0; k <= cells - minTileSize(tile); k++) {
+    if (!holesFit(rows, cols, tile, k)) continue;
     if (best === null || Math.abs(k - target) < Math.abs(best - target)) best = k;
   }
   return best;
@@ -83,9 +91,9 @@ function shuffle(arr, rng) {
 // Returns a per-cell array (tile id, or -1 for blocked / uncovered cells), or
 // null if none was found within the node budget.
 function randomPacking(rows, cols, tile, preBlocked, holes, rng, budget) {
-  const orients = getOrientations(tile);
+  const orients = allOrientations(tile);
   const n = rows * cols;
-  const assign = new Int16Array(n);
+  const assign = new Int32Array(n);
   for (let i = 0; i < n; i++) assign[i] = preBlocked[i] ? -1 : -2;
   let nodes = 0;
 
@@ -167,9 +175,11 @@ function proposeMove(state, rows, cols, tile, rng) {
   for (let i = 0; i < n; i++) if (!mask[i] && tileIds.has(assign[i])) window.push(i);
   const holeCount = holesIn.size;
 
-  // The new tiles reuse the old tiles' ids (same number of tiles: the window
-  // has the same number of open cells as before).
+  // The new tiles reuse the old tiles' ids; with one tile size the window holds the same
+  // number of tiles as before, with several sizes it may hold more (fresh ids) or fewer.
   const ids = [...tileIds];
+  let fresh = 0;
+  for (let i = 0; i < n; i++) if (assign[i] >= fresh) fresh = assign[i] + 1;
 
   // Everything outside the window stays blocked for this sub-problem; inside,
   // re-pack with the same number of blocked cells.
@@ -179,7 +189,7 @@ function proposeMove(state, rows, cols, tile, rng) {
     const t = randomPacking(rows, cols, tile, outside, holeCount, rng, 4000);
     if (!t) continue;
 
-    // Map the new tiles' ids onto the old ids (same number of tiles).
+    // Map the new tiles' ids onto the old ids.
     const remap = new Map();
     const newMask = mask.slice(), newAssign = assign.slice();
     let changed = false;
@@ -188,7 +198,7 @@ function proposeMove(state, rows, cols, tile, rng) {
         newMask[i] = 1; newAssign[i] = -1;
         if (!mask[i]) changed = true;
       } else {
-        if (!remap.has(t[i])) remap.set(t[i], ids[remap.size]);
+        if (!remap.has(t[i])) remap.set(t[i], remap.size < ids.length ? ids[remap.size] : fresh++);
         newMask[i] = 0; newAssign[i] = remap.get(t[i]);
         if (mask[i] || newAssign[i] !== assign[i]) changed = true;
       }
@@ -213,11 +223,10 @@ export function generatePuzzle({
   rows, cols, tile = 'L', holes, rng = mulberry32(1),
   maxMs = 20000, cap = 40, budget = 200000, restartAfter = 4000, allowSwastika = false, allowDisconnected = false,
 }) {
-  const size = tileSize(tile);
   holes = holes ?? defaultHoles(rows, cols, tile);
-  if ((rows * cols - holes) % size !== 0 || holes < 0 || holes > rows * cols - size) {
+  if (!holesFit(rows, cols, tile, holes)) {
     throw new Error(`${holes} blocked cells leaves ${rows * cols - holes} open cells, ` +
-      `which can't be tiled by size-${size} tiles`);
+      `which can't be tiled by whole tiles of ${tile}`);
   }
   const start = Date.now();
   const timeLeft = () => Date.now() - start < maxMs;
@@ -234,7 +243,9 @@ export function generatePuzzle({
       if (cost === 1) {
         const puzzle = makePuzzle(rows, cols, tile, state.mask);
         puzzle.solution = labelString(state.assign);
-        if ((allowDisconnected || openCellsConnected(puzzle)) && (allowSwastika || !hasSwastika(puzzle, puzzle.solution))) {
+        // with several allowed shapes, the intended solution must use every one of them
+        const usesAll = solutionShapeCounts(puzzle, puzzle.solution).every(k => k > 0);
+        if (usesAll && (allowDisconnected || openCellsConnected(puzzle)) && (allowSwastika || !hasSwastika(puzzle, puzzle.solution))) {
           // Independent final check with the plain solver.
           if (solve(puzzle, 2).length !== 1) throw new Error('internal error: not unique');
           stats.ms = Date.now() - start;
@@ -256,27 +267,29 @@ export function generatePuzzle({
 }
 
 // Like generatePuzzle, but picks the number of blocked cells itself: starts at
-// `holes` (default ~15% of the board) and adds one tile's worth of blocked
-// cells whenever a level takes longer than `levelMs` (some shapes can't pack
-// a board with few holes, or only rarely). Returns { puzzle, stats, holes }
+// `holes` (default ~15% of the board) and adds blocked cells (the next count that
+// still leaves whole tiles) whenever a level takes longer than `levelMs` (some shapes
+// can't pack a board with few holes, or only rarely). Returns { puzzle, stats, holes }
 // or null if no level worked.
 export function generatePuzzleAuto({ rows, cols, tile = 'L', holes, levelMs = 5000, ...rest }) {
-  const size = tileSize(tile);
   let h = holes ?? defaultHoles(rows, cols, tile);
-  while (h <= rows * cols - size) {
-    const res = generatePuzzle({ ...rest, rows, cols, tile, holes: h, maxMs: levelMs });
-    if (res) return { ...res, holes: h };
-    h += size;
+  while (h <= rows * cols - minTileSize(tile)) {
+    if (holesFit(rows, cols, tile, h)) {
+      const res = generatePuzzle({ ...rest, rows, cols, tile, holes: h, maxMs: levelMs });
+      if (res) return { ...res, holes: h };
+    }
+    h++;
   }
   return null;
 }
 
 // The blocked-cell counts that leave a tileable number of open cells, from the
-// smallest up to `maxFraction` of the board: [k0, k0 + size, k0 + 2*size, ...].
+// smallest up to `maxFraction` of the board: [k0, k0 + size, k0 + 2*size, ...] for one
+// tile size, every count that fits for several.
 export function holeLadder(rows, cols, tile, maxFraction = 0.45) {
-  const cells = rows * cols, size = tileSize(tile);
+  const cells = rows * cols;
   const out = [];
-  for (let k = cells % size; k <= cells * maxFraction && cells - k >= size; k += size) out.push(k);
+  for (let k = 0; k <= cells * maxFraction; k++) if (holesFit(rows, cols, tile, k)) out.push(k);
   return out;
 }
 
@@ -287,7 +300,7 @@ export function holeLadder(rows, cols, tile, maxFraction = 0.45) {
 export function stateFromPuzzle(puzzle) {
   const n = puzzle.rows * puzzle.cols;
   const mask = new Uint8Array(n);
-  const assign = new Int16Array(n).fill(-1);
+  const assign = new Int32Array(n).fill(-1);
   const ids = new Map();
   for (let i = 0; i < n; i++) {
     if (puzzle.grid[i] === BLOCKED) { mask[i] = 1; continue; }

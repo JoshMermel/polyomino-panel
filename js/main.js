@@ -4,7 +4,7 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileInterior, tileSize, shapeName, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, tileOutline, tileInterior, tileSize, tileSizes, tileSpecs, minTileSize, shapeName, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO } from './rating.js';
@@ -115,7 +115,8 @@ async function init() {
   // last puzzle, found by hash so renumbering doesn't matter.
   let setIdx = state.defaultSet ?? 0, puzIdx = 0;
   const params = new URLSearchParams(location.search);
-  const bookIdx = state.sets.findIndex(s => s.id === params.get('book'));
+  // (a hand-typed '+' in ?book=L+T_8x8 arrives as a space)
+  const bookIdx = state.sets.findIndex(s => s.id === params.get('book')?.replaceAll(' ', '+'));
   if (bookIdx >= 0) {
     await goTo(bookIdx, (parseInt(params.get('puzzle'), 10) || 1) - 1);
     return;
@@ -290,9 +291,11 @@ function onRelease() {
 
   // Cell drag.
   const { puzzle } = state;
-  if (g.cells.length === 1 && tileSize(puzzle.tile) > 1) return;      // just a click on a cell
+  if (g.cells.length === 1 && minTileSize(puzzle.tile) > 1) return;   // just a click on a cell
   if (!cellsFormTile(puzzle, g.cells)) {
-    showToast(`Those cells aren't the tile shape (${shapeName(puzzle.tile)}).`, 'info', 2500);
+    showToast(tileSpecs(puzzle.tile).length > 1
+      ? `Those cells aren't one of the tile shapes (${shapeName(puzzle.tile)}).`
+      : `Those cells aren't the tile shape (${shapeName(puzzle.tile)}).`, 'info', 2500);
     return;
   }
   const changes = [];
@@ -450,11 +453,14 @@ function findHints() {
 // ruled-out tiles: a stranded cell (marked "!" when every tile strands the same
 // one), or a region that can't be tiled.
 function failureText(item) {
-  const size = tileSize(state.puzzle.tile);
+  const sizes = tileSizes(state.puzzle.tile);
   const kinds = new Set(item.alternatives.map(a => a.reason?.kind));
   const stranded = item.sharedDead?.length ? item.sharedDead[0] : null;
   if (stranded !== null && kinds.size === 1 && kinds.has('cell')) return { text: 'the cell marked ! with nowhere to go', marker: stranded };
-  if (kinds.size === 1 && kinds.has('size')) return { text: `a walled-off pocket whose size is not a multiple of ${size}`, marker: null };
+  if (kinds.size === 1 && kinds.has('size')) {
+    return { text: sizes.length === 1 ? `a walled-off pocket whose size is not a multiple of ${sizes[0]}`
+      : `a walled-off pocket whose size can't be made from tiles of ${sizes.join(' and ')} cells`, marker: null };
+  }
   if (kinds.size === 1 && kinds.has('parity')) return { text: 'a walled-off pocket whose black and white squares (as on a chessboard) can\'t be tiled', marker: null };
   return { text: 'some cell with nowhere to go, or a pocket that can\'t be tiled', marker: null };
 }
@@ -542,7 +548,7 @@ function refresh() {
     }
   } else {
     st.className = 'status';
-    st.textContent = `${a.validCount} / ${a.total} tiles`;
+    st.textContent = a.total === null ? `${a.validCount} tiles` : `${a.validCount} / ${a.total} tiles`;
   }
 }
 
@@ -648,7 +654,18 @@ function setupPrint(setupModal, hideSettings) {
 // --- Controls ---------------------------------------------------------------
 // Cell-count groups for the shape menu.
 const SHAPE_GROUPS = [[3, 'Trominoes'], [4, 'Tetrominoes'], [5, 'Pentominoes']];
-const shapeGroup = tile => SHAPE_GROUPS.find(([max]) => tileSize(tile) <= max)[1];
+const MIXED_GROUP = 'Two or more shapes';
+const shapeGroup = tile => (tileSpecs(tile).length > 1 ? MIXED_GROUP : SHAPE_GROUPS.find(([max]) => tileSize(tile) <= max)[1]);
+// Menu order: single shapes in the library's order, then combinations (by their parts' order).
+const shapeRank = tile => {
+  const parts = tileSpecs(tile).map(sp => { const i = SHAPE_ORDER.indexOf(sp); return i < 0 ? 999 : i; });
+  return [parts.length > 1 ? 1 : 0, ...parts];
+};
+const compareShapes = (a, b) => {
+  const x = shapeRank(a), y = shapeRank(b);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? -1) !== (y[i] ?? -1)) return (x[i] ?? -1) - (y[i] ?? -1);
+  return 0;
+};
 
 // Two pickers: the shape (grouped by cell count; files loaded from disk get their
 // own group) and the board size for that shape. Only combinations that have a
@@ -669,7 +686,7 @@ function renderPickers() {
     groups.get(groupName).appendChild(o);
   };
   const tiles = [...new Set(state.sets.filter(s => !s.custom).map(s => s.tile))]
-    .sort((a, b) => SHAPE_ORDER.indexOf(a) - SHAPE_ORDER.indexOf(b));
+    .sort(compareShapes);
   tiles.forEach(t => add(shapeGroup(t), t, shapeName(t)));
   state.sets.forEach((s, i) => { if (s.custom) add('Loaded from file', `custom:${i}`, s.title); });
   for (const g of groups.values()) sel.appendChild(g);

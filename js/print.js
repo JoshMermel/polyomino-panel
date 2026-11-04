@@ -4,7 +4,7 @@
 //
 // buildPrintRoot() fills the hidden #print-root element; style.css shows only that element
 // when printing (see "Printing" there).
-import { resolveShape, shapeName, edgesFromSolution, playableEdges, getEdge, EDGE_LINE } from './logic.js';
+import { resolveShape, shapeName, tileSpecs, edgesFromSolution, playableEdges, getEdge, EDGE_LINE } from './logic.js';
 import { TIER_INFO } from './rating.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -69,8 +69,8 @@ function boardSvg(puzzle, solution) {
   return svg;
 }
 
-function swatchSvg(tile) {
-  const cells = resolveShape(tile);
+function swatchSvg(spec) {
+  const cells = resolveShape(spec);
   const rows = Math.max(...cells.map(([r]) => r)) + 1, cols = Math.max(...cells.map(([, c]) => c)) + 1;
   const svg = svgEl('svg', { viewBox: `-0.05 -0.05 ${cols + 0.1} ${rows + 0.1}`, class: 'print-swatch' });
   svg.style.height = `${Math.min(9, 4 + 1.4 * rows)}mm`;
@@ -103,7 +103,7 @@ export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, soluti
       const page = div(`print-page k${k}`, root);
       const head = div('print-head', page);
       div('print-brand', head, 'Polyomino Panel');
-      head.append(swatchSvg(book.tile));
+      for (const sp of tileSpecs(book.tile)) head.append(swatchSvg(sp));
       div('print-book', head, `${bookName}${heading ? ` · ${heading}` : ''}`);
       const grid = div('print-grid', page);
       for (const id of list.slice(i, i + k)) {
