@@ -18,6 +18,6 @@
     "book": "one-6",
     "tier": "Beginner",
     "perShape": 2,
-    "shapes": ["I3", "V3", "L", "T", "S", "P5", "F5", "N5", "W5", "Y5", "L5", "U5"]
+    "shapes": ["I2", "I3", "V3", "L", "T", "S", "P5", "F5", "N5", "W5", "Y5", "L5", "U5"]
   }
 }

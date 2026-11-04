@@ -1119,10 +1119,16 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
   // the L tetromino is an ordinary shape now
   const oneBooks = manifest.books.filter(b => b.id.startsWith('one-'));
   assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the one-shape books');
-  // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the straight tromino
+  // every one of the 19 single shapes is in every one-shape book, including the line pieces
+  for (const b of oneBooks) {
+    const shapes = new Set(data(b.file).map(p => p.tile));
+    for (const s of ['I2', 'I3', 'I', 'I5', 'L', 'T', 'P5', 'X5']) assert.ok(shapes.has(s), `${b.id} has ${s}`);
+    assert.equal(shapes.size, 19, `${b.id}: all 19 single shapes`);
+  }
+  // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the domino
   const first = data(manifest.books.find(b => b.id === manifest.default).file);
-  assert.equal(first[0].tile, 'I3');
-  assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I3', 'V3', 'L']);
+  assert.equal(first[0].tile, 'I2');
+  assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I2', 'I3', 'V3']);
 });
 
 test('hints never target a cell that is already inside a finished tile', () => {

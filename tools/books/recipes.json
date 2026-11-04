@@ -1,17 +1,20 @@
 {
-  "_comment": "Which shapes (single shapes, and pairs joined with +) and board sizes have pools in tools/library/. Used by tools/fill_all.mjs, tools/hunt_all.mjs and tools/build_books.mjs. The books themselves are listed in collections.json.",
+  "_comment": "Which shapes (single shapes, and pairs joined with +) and board sizes have pools in tools/library/. Used by tools/fill_all.mjs, tools/hunt_all.mjs and tools/build_books.mjs. The books themselves are listed in collections.json. All 19 single shapes are in use (the line pieces I2, I and I5 were briefly cut and are back).",
   "sizes": [
     6,
     8,
     10
   ],
   "shapes": [
+    "I2",
     "I3",
     "V3",
     "L",
+    "I",
     "T",
     "S",
     "F5",
+    "I5",
     "L5",
     "N5",
     "P5",

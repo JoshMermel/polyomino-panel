@@ -1,7 +1,7 @@
 // Run with: node --test tests/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickQuantiles, hashString } from '../tools/lib/pick.mjs';
+import { pickQuantiles, pickStable, hashString } from '../tools/lib/pick.mjs';
 
 const pool = scores => scores.map((score, i) => ({ name: `p${i}`, score }));
 
@@ -63,4 +63,27 @@ test('evenAllocation: equal shares, small cells give up what they cannot fill', 
     assert.equal(a.reduce((x, y) => x + y, 0), Math.min(n, caps.reduce((x, y) => x + y, 0)));
     a.forEach((v, i) => assert.ok(v <= caps[i]));
   }
+});
+
+test('pickStable keeps what is already published and fills the rest at quantiles', () => {
+  const cands = pool(Array.from({ length: 100 }, (_, i) => i));
+  const kept = new Set(['p3', 'p50', 'p97']);
+  const isKept = c => kept.has(c.name);
+  // asking for more than are kept: all kept ones are in, plus quantile picks from the others
+  const r = pickStable(cands, { count: 10, isKept });
+  assert.equal(r.picks.length, 10);
+  for (const name of kept) assert.ok(r.picks.some(p => p.name === name), `${name} kept`);
+  assert.equal(new Set(r.picks.map(p => p.name)).size, 10);
+  for (let i = 1; i < r.picks.length; i++) assert.ok(r.picks[i - 1].score <= r.picks[i].score);
+  // asking for fewer than are kept: a quantile subset of the kept ones, or all of them with keepAll
+  const few = pickStable(cands, { count: 2, isKept });
+  assert.deepEqual(few.picks.map(p => p.name), ['p3', 'p97']);
+  assert.deepEqual(pickStable(cands, { count: 2, isKept, keepAll: true }).picks.map(p => p.name), ['p3', 'p50', 'p97']);
+  // nothing kept: identical to pickQuantiles
+  assert.deepEqual(pickStable(cands, { count: 7 }).picks, pickQuantiles(cands, { count: 7 }).picks);
+  // a shortfall is reported
+  assert.equal(pickStable(pool([1, 2, 3]), { count: 5, isKept: () => false }).short, 2);
+  // growing a book never drops a published puzzle: picks for a bigger count still contain every kept puzzle
+  const grown = pickStable(cands, { count: 40, isKept });
+  for (const name of kept) assert.ok(grown.picks.some(p => p.name === name));
 });

@@ -27,6 +27,19 @@ export function pickQuantiles(cands, { count, seed = 1 }) {
   return { picks, short: 0 };
 }
 
+// Like pickQuantiles, but PREFERS candidates for which isKept(c) is true (puzzles already published in
+// the book), so a rebuild changes as little as possible: every kept puzzle is included and quantile
+// picks from the rest make up the number. If more than `count` are kept, `keepAll` decides: true keeps
+// them all (a rebuild only ever adds puzzles), false trims them to a quantile subset. With nothing
+// kept it is exactly pickQuantiles.
+export function pickStable(cands, { count, seed = 1, isKept = () => false, keepAll = false }) {
+  const kept = cands.filter(isKept);
+  const byScore = (a, b) => a.score - b.score || (a.name < b.name ? -1 : 1);
+  if (kept.length >= count) return keepAll ? { picks: kept.sort(byScore), short: 0 } : pickQuantiles(kept, { count, seed });
+  const more = pickQuantiles(cands.filter(c => !isKept(c)), { count: count - kept.length, seed });
+  return { picks: [...kept, ...more.picks].sort(byScore), short: more.short };
+}
+
 // Split `count` slots across cells as evenly as their capacities allow: every cell gets the
 // same number, except that a cell with fewer candidates than that gives up what it can't fill
 // and the others share the difference (water-filling). `caps` is the number of candidates in
