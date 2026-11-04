@@ -42,6 +42,7 @@ The main view is deliberately sparse: a title bar (⚙ settings, **?** help), th
 - ⚙ **Settings**: dark mode (defaults to your system theme) and tinting of closed tiles (blue = valid tile, red = enclosed but can't become one).
 - Ctrl/⌘-Z undo, Ctrl/⌘-Shift-Z (or Ctrl-Y) redo. Progress is saved in `localStorage`, keyed by a hash of the puzzle (tile, size, grid), so it survives renumbering or reordering a set.
 - Settings ⚙ → "Load puzzles from a file" opens any puzzle CSV for the session without touching `data/`.
+- Settings ⚙ → "Clear saves" erases your saved progress on every puzzle (two clicks: it asks "Are you sure?" first). Dark mode and tint settings are kept.
 
 Solved = every region of open cells (cells connected through edges without a line) is a valid tile. Any valid tiling counts, not only the stored solution.
 
