@@ -9,19 +9,7 @@
     "minCount": 10,
     "low": 0.02,
     "high": 0.98,
-    "tiers": { "Beginner": 0.35, "Medium": 0.35, "Hard": 0.2, "Expert": 0.07, "Unsolved": 0.03 }
+    "tiers": { "Beginner": 0.2, "Medium": 0.2, "Hard": 0.2, "Expert": 0.2, "Unsolved": 0.2 }
   },
-  "overrides": {
-    "V3+I3_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "L+T_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "L+S_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "T+S_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "I3+T_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "I3+T_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "V3+L_6x6": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "V3+L_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "L+P5_6x6": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "L+P5_8x8": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} },
-    "L+P5_10x10": { "tiers": {"Beginner": 0, "Medium": 0.6, "Hard": 0.28, "Expert": 0.09, "Unsolved": 0.03} }
-  }
+  "overrides": {}
 }
