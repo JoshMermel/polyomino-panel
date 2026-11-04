@@ -4,7 +4,7 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileSize, shapeName, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, tileOutline, tileInterior, tileSize, shapeName, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO } from './rating.js';
@@ -322,7 +322,12 @@ function onRelease() {
     const cur = getEdge(puzzle, state.edges, kind, r, c);
     if (cur !== EDGE_LINE) changes.push({ kind, r, c, from: cur, to: EDGE_LINE });
   }
-  commit(changes);                       // no-op if the outline was already drawn
+  // Lines already inside the shape would cut the tile apart, so erase them too (a ✕ inside
+  // just means "same tile" and stays).
+  for (const [kind, r, c] of tileInterior(puzzle, g.cells)) {
+    if (getEdge(puzzle, state.edges, kind, r, c) === EDGE_LINE) changes.push({ kind, r, c, from: EDGE_LINE, to: EDGE_EMPTY });
+  }
+  commit(changes);                       // one undo step; no-op if nothing needs to change
 }
 
 function onCancel() {

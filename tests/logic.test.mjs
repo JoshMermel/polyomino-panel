@@ -7,7 +7,7 @@ import {
   analyze, edgesFromSolution, setEdge, getEdge, isPlayableEdge, EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
-  cellsFormTile, tileOutline, allForcedTiles, allLookaheadTiles, findPocketContradiction,
+  cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
   edgeDeduction, allEdgeDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika,
 } from '../js/logic.js';
@@ -572,6 +572,28 @@ test('tileOutline: the edges around a tile, skipping walls; solutions decompose 
       assert.deepEqual([...union].sort(), [...want].sort(), pz.name);
     }
   }
+});
+
+test('tileInterior: the edges between two cells of the tile; with the outline it covers every edge touching the tile', () => {
+  const p = { rows: 4, cols: 4, tile: 'L', grid: '.'.repeat(16), solution: '' };
+  const cells = [5, 9, 13, 14];                                         // L: (1,1) (2,1) (3,1) (3,2)
+  const inner = tileInterior(p, cells);
+  assert.equal(inner.length, 3);                                        // 5-9, 9-13, 13-14
+  assert.equal(new Set(inner.map(e => e.join())).size, inner.length);  // each pair once
+  for (const [k, r, c] of inner) {
+    const [a, b] = edgeCells(p, k, r, c);
+    assert.ok(cells.includes(a) && cells.includes(b));
+  }
+  // no overlap with the outline, and together they are every playable edge at a tile cell
+  const outline = tileOutline(p, cells).map(e => e.join());
+  assert.ok(inner.every(e => !outline.includes(e.join())));
+  const touching = playableEdges(p).filter(([k, r, c]) => edgeCells(p, k, r, c).some(i => cells.includes(i)));
+  assert.equal(inner.length + outline.length, touching.length);
+  // a blocked neighbour (cell 5) never adds an interior edge
+  const blocked = { ...p, grid: '.'.repeat(5) + '#' + '.'.repeat(10) };
+  const inner2 = tileInterior(blocked, [0, 1, 4]);
+  assert.equal(inner2.length, 2);                                       // 0-1 and 0-4 only
+  assert.ok(inner2.every(([k, r, c]) => isPlayableEdge(blocked, k, r, c)));
 });
 
 test('allForcedTiles / allLookaheadTiles list every hint: distinct, independently sound, first matches the single-hint call', () => {

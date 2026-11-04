@@ -1004,6 +1004,23 @@ export function tileOutline(puzzle, cells) {
   return out;
 }
 
+// Every playable edge between two of `cells`, i.e. the edges inside the shape. A line
+// here would cut the tile in two. Returns [[kind, r, c], ...].
+export function tileInterior(puzzle, cells) {
+  const { cols } = puzzle;
+  const inside = new Set(cells);
+  const out = [];
+  for (const a of cells) {
+    const ra = Math.floor(a / cols), ca = a % cols;
+    for (const [nr, nc] of [[ra + 1, ca], [ra, ca + 1]]) {   // down and right only: each pair once
+      if (!isOpen(puzzle, nr, nc)) continue;
+      const b = nr * cols + nc;
+      if (inside.has(b)) out.push(edgeBetween(puzzle, a, b));
+    }
+  }
+  return out;
+}
+
 // --- Swastikas ---------------------------------------------------------------------
 // A "swastika" is a pinwheel pattern in the drawn tile boundaries of a solution (the
 // lines between different tiles): the 8 segments of a central cross with four hooks
