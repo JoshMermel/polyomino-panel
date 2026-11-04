@@ -50,7 +50,7 @@ How a hint decides what fits: a placement of the tile covering a cell is *consis
 
 ## Books
 
-Pick a **shape** and a **board size** (6×6, 8×8 or 10×10) and you get a book of 30 puzzles for that combination, easiest first. The shape menu is grouped by cell count (domino & trominoes, tetrominoes, pentominoes; the O tetromino is deliberately left out), and only combinations that have a book are offered. Every puzzle has exactly one solution.
+Pick a **shape** and a **board size** (6×6, 8×8 or 10×10) and you get a book of 50 puzzles for that combination, easiest first. The shape menu is grouped by cell count (domino & trominoes, tetrominoes, pentominoes; the O tetromino is deliberately left out), and only combinations that have a book are offered. Every puzzle has exactly one solution.
 
 Books are **built, not hand-made**: huge pools of generated, scored puzzles live in `tools/library/` (not published), and `tools/build_books.mjs` picks each book from its pool following `tools/books/recipes.json`. That lets us balance each book's difficulty curve and rebuild everything after a change to the rules or scoring (see "Building books" below).
 
