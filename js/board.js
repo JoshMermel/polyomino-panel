@@ -16,6 +16,7 @@ import {
 } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
+const BAD_DELAY_MS = 300; // how long a wrong-shape (red) tint waits, so a double-click can finish first
 
 
 function el(tag, attrs = {}, parent = null) {
@@ -43,6 +44,7 @@ export class Board {
   }
 
   render(puzzle, edges) {
+    clearTimeout(this._badTimer);
     this.puzzle = puzzle;
     const { rows, cols } = puzzle;
     this.container.textContent = '';
@@ -330,10 +332,19 @@ export class Board {
         else if (reg.wrong) reg.cells.forEach(i => wrong.add(i));
       }
     }
+    // Red is the only tint that scolds, and a line that closes a wrong shape may just be the
+    // first click of a double-click (line -> x), so newly red cells wait BAD_DELAY_MS before
+    // showing; any further change to the board cancels the wait. Clearing red is immediate.
+    clearTimeout(this._badTimer);
+    const newlyBad = [];
     this.cellEls.forEach((rect, i) => {
       rect.classList.toggle('tile-ok', valid.has(i));
-      rect.classList.toggle('tile-bad', wrong.has(i));
+      if (!wrong.has(i)) rect.classList.remove('tile-bad');
+      else if (!rect.classList.contains('tile-bad')) newlyBad.push(rect);
     });
+    if (newlyBad.length) {
+      this._badTimer = setTimeout(() => newlyBad.forEach(rect => rect.classList.add('tile-bad')), BAD_DELAY_MS);
+    }
     this.svg.classList.toggle('solved', analysis.solved);
   }
 }
