@@ -20,7 +20,7 @@
 // stored solution. A puzzle's `rules` value is the hardest rule it needed
 // ('unsolved' if the rules got stuck), and its `tier` is that rule's tier.
 import {
-  forcedTile, allForcedTiles, edgeDeduction, allEdgeDeductions, lookaheadTile, allLookaheadTiles,
+  forcedTile, allForcedTiles, edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, lookaheadTile, allLookaheadTiles,
   chainTile, allChainTiles, newEdges, setEdge, analyze, searchTilings,
   EDGE_LINE, EDGE_CROSS, LOOKAHEAD_2, LOOKAHEAD_3, EDGES_NARROW, EDGES_WIDE,
 } from './logic.js';
@@ -33,7 +33,7 @@ export const TIERS = ['Beginner', 'Medium', 'Hard'];
 // How the app presents each tier: its name and what it means.
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
-  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, or trying one of two tiles and seeing it fail' },
+  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell, or trying one of two tiles and seeing it fail' },
   Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, or chains of consequences (a few need more than the hint rules can do)' },
 };
 
@@ -55,6 +55,9 @@ export const RULES = [
   { id: 'edges', tier: 'Medium', weight: 3, hintKind: 'edges',
     find: (p, e) => edgeDeduction(p, e, EDGES_NARROW), findAll: (p, e) => allEdgeDeductions(p, e, EDGES_NARROW),
     label: 'an edge that every one of two or three possible tiles agrees on' },
+  { id: 'tryLine', tier: 'Medium', weight: 4, hintKind: 'tryLine',
+    find: crossDeduction, findAll: allCrossDeductions,
+    label: 'a line on an edge would leave a cell with no tile' },
   { id: 'lookahead2', tier: 'Medium', weight: 6, hintKind: 'lookahead2',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_2), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_2),
     label: 'two possible tiles, one fails' },

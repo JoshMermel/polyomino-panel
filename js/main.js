@@ -493,6 +493,9 @@ function displayHint(h) {
     if (item.lines.length) parts.push(`every possible tile for the yellow cell has a boundary along the dashed ${item.lines.length === 1 ? 'line' : 'lines'}, so draw ${item.lines.length === 1 ? 'it' : 'them'}`);
     if (item.crosses.length) parts.push(`every possible tile contains both cells beside the ✕, so there is no line there: mark ${item.crosses.length === 1 ? 'it' : 'them'}`);
     text = `${parts.join('; and ')}.`;
+  } else if (h.tier === 'tryLine') {
+    board.showHint({ target: [item.cell], crosses: item.crosses });
+    text = `a line along the ✕ ${item.crosses.length === 1 ? 'edge' : 'edges'} would leave the yellow cell with no possible tile (every tile that could cover it contains both cells beside the ✕). So there is no line there: mark ${item.crosses.length === 1 ? 'it' : 'them'}.`;
   } else if (h.tier === 'lookahead2' || h.tier === 'lookahead3') {
     const why = failureText(item);
     board.showHint({ target: [item.cell], lines: item.lines, marker: why.marker });

@@ -1024,6 +1024,31 @@ export function allEdgeDeductions(puzzle, edges, range) {
   return [...edgeDeductions(puzzle, edges, range)];
 }
 
+// "Try a line": the crosses among the edge deductions, over cells with any number of possible tiles.
+// Suppose a line were drawn on the edge: some cell (anywhere on the board) would be left with no
+// possible tile, because every tile that could cover it contains both cells beside the edge. So the
+// edge takes a cross. (This is the cross half of the edge rule, here without a limit on how many tiles
+// the cell has: a player doesn't compare the tiles, they just see that a line there strands the cell.)
+// Yields { cell, lines: [], crosses, options }, where `cell` is the cell the line would strand.
+export function* crossDeductions(puzzle, edges) {
+  const seen = new Set();
+  for (const d of edgeDeductions(puzzle, edges, { minOptions: 2 })) {
+    if (!d.crosses.length) continue;
+    const key = d.crosses.map(e => e.join(':')).sort().join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    yield { cell: d.cell, lines: [], crosses: d.crosses, options: d.options };
+  }
+}
+
+export function crossDeduction(puzzle, edges) {
+  return crossDeductions(puzzle, edges).next().value ?? null;
+}
+
+export function allCrossDeductions(puzzle, edges) {
+  return [...crossDeductions(puzzle, edges)];
+}
+
 // Edge intersection splits by how many candidate tiles have to be compared:
 //   EDGES_NARROW  two or three (easy to keep in your head)
 //   EDGES_WIDE    four or more

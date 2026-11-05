@@ -8,7 +8,7 @@ import {
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
-  edgeDeduction, allEdgeDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
+  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
   tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
@@ -490,11 +490,11 @@ test('ratePuzzle uses only the deduction rules and classifies correctly', () => 
   // the rule table: easiest first, tiers never decrease down the list
   const tierRank = id => TIERS.indexOf(RULES.find(x => x.id === id).tier);
   for (let i = 1; i < RULES.length; i++) assert.ok(tierRank(RULES[i].id) >= tierRank(RULES[i - 1].id));
-  // the bins: forced steps are Beginner; edges and two-way lookahead are Medium; wide edges, three-way
+  // the bins: forced steps are Beginner; edges, try-a-line and two-way lookahead are Medium; wide edges, three-way
   // lookahead, chains and puzzles beyond the rules are Hard
   assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard']);
   assert.deepEqual(RULES.map(x => [x.id, x.tier]), [
-    ['forced', 'Beginner'], ['edges', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['chain', 'Hard'],
+    ['forced', 'Beginner'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['chain', 'Hard'],
   ]);
   assert.equal(tierOfRule('unsolved'), 'Hard');
   assert.equal(beyondHints({ rules: 'unsolved' }), true);
@@ -835,7 +835,7 @@ test('chains: all-but-one tiles fail after forced steps; first chain matches the
       // walk the ladder until only chains apply, then look at the chain hints
       const e = newEdges(pz);
       for (let guard = 0; guard < 500; guard++) {
-        const f = RULES.slice(0, 4).map(r => r.find(pz, e)).find(Boolean);
+        const f = RULES.filter(r => r.id !== 'lookahead3' && r.id !== 'chain').map(r => r.find(pz, e)).find(Boolean);
         if (!f) break;
         for (const [k, r, c] of f.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
         for (const [k, r, c] of f.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
@@ -1185,4 +1185,20 @@ test('over real puzzles and partial positions, no hint touches a finished tile',
     }
   }
   assert.ok(statesWithFinished > 15, `only ${statesWithFinished} sampled positions had a finished tile`);
+});
+
+test('tryLine: a cell whose every possible tile contains an edge makes that edge a cross, whatever the number of tiles', () => {
+  // 1x5 with tiles I2+I3: cell 0 can be covered by the domino [0,1] or the I3 [0,1,2]; both contain the edge
+  // between cells 0 and 1, so a line there would strand cell 0
+  const p = { rows: 1, cols: 5, tile: 'I2+I3', grid: '.....', solution: 'AABBB' };
+  const e = newEdges(p);
+  const all = allCrossDeductions(p, e);
+  // (cell 0 and, mirrored, cell 4 each strand with a line beside them)
+  assert.deepEqual(all.flatMap(d => d.crosses).map(x => x.join(':')).sort(), ['v:0:1', 'v:0:4']);
+  assert.ok(all.every(d => d.options === 2 && d.lines.length === 0));
+  assert.ok(crossDeduction(p, e));
+  // already marked: nothing left to say
+  setEdge(p, e, 'v', 0, 1, EDGE_CROSS);
+  setEdge(p, e, 'v', 0, 4, EDGE_CROSS);
+  assert.equal(crossDeduction(p, e), null);
 });
