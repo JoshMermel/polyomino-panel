@@ -1,7 +1,7 @@
 // Run with: node --test tests/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickQuantiles, pickStable, hashString, weightedAllocation, evenAllocation } from '../tools/lib/pick.mjs';
+import { pickQuantiles, pickStable, hashString, weightedAllocation, evenAllocation, spreadOut, spreadByTier, SPREAD_WINDOW } from '../tools/lib/pick.mjs';
 
 const pool = scores => scores.map((score, i) => ({ name: `p${i}`, score }));
 
@@ -111,4 +111,30 @@ test('weightedAllocation: shares follow the weights, capacities redistribute, ze
   for (const [n, caps] of [[30, [99, 99, 99]], [30, [4, 99, 99]], [10, [3, 3, 3]], [2, [5, 5, 5]], [101, [10, 20, 30, 40]]]) {
     assert.deepEqual(weightedAllocation(n, caps, caps.map(() => 1)), evenAllocation(n, caps));
   }
+});
+
+test('spreadOut: breaks up runs of one key, moves puzzles only a little, and is deterministic', () => {
+  // sorted by score, but every key comes in a long block (like ties broken by name)
+  const items = [];
+  for (const k of 'abcdefghijklmnopqrst') for (let i = 0; i < 5; i++) items.push({ k, score: items.length });
+  const out = spreadOut(items, { key: x => x.k });
+  assert.equal(out.length, items.length);
+  assert.deepEqual(out.map(x => x.score).sort((a, b) => a - b), items.map(x => x.score), 'same puzzles');
+  let run = 1, maxRun = 1;
+  for (let i = 1; i < out.length; i++) { run = out[i].k === out[i - 1].k ? run + 1 : 1; maxRun = Math.max(maxRun, run); }
+  assert.ok(maxRun <= 3, `longest run ${maxRun}`);
+  out.forEach((x, i) => assert.ok(Math.abs(x.score - i) <= 3 * SPREAD_WINDOW, 'a puzzle stays near its sorted place'));
+  assert.deepEqual(spreadOut(items, { key: x => x.k }), out);
+  // a single key can't be spread: order is untouched
+  assert.deepEqual(spreadOut(items, { key: () => 'x' }), items);
+  assert.deepEqual(spreadOut([], {}), []);
+});
+
+test('spreadByTier keeps the tiers in order and continues from the keys before the first tier', () => {
+  const mk = (tier, tile, score) => ({ tier, tile, score });
+  const sorted = [mk('Beginner', 'a', 1), mk('Beginner', 'a', 2), mk('Beginner', 'b', 3), mk('Medium', 'b', 4), mk('Medium', 'b', 5), mk('Medium', 'c', 6)];
+  const out = spreadByTier(sorted, { recent: ['a'] });
+  assert.deepEqual(out.map(p => p.tier), sorted.map(p => p.tier));
+  assert.equal(out[0].tile, 'b', 'avoids the shape the tour ended on');
+  assert.notEqual(out[3].tile, out[2].tile, 'and across the tier boundary when it can');
 });

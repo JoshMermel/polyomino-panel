@@ -68,3 +68,42 @@ export function weightedAllocation(count, caps, weights = caps.map(() => 1)) {
 
 // The even split: every cell the same, as far as capacities allow.
 export const evenAllocation = (count, caps) => weightedAllocation(count, caps);
+
+// Local, deterministic reshuffle of a list already sorted by difficulty, so the same key (a puzzle's
+// shape or pair of shapes) doesn't come up again and again. Walk the list; at each step look at the next
+// `window` puzzles not yet placed and take the first one whose key hasn't appeared among the last `gap`
+// placed (or simply the first if every one has). So a puzzle moves only a little from its sorted
+// position (a book stays easy to hard), nothing is random, and the same input gives the same order.
+// `recent` seeds the history (the keys just before this list), so it can continue another list.
+// (For spreadByTier, `recent` is the keys of whatever comes before the book's first tier, e.g. a tour.)
+export const SPREAD_WINDOW = 40;
+export const SPREAD_GAP = 4;
+export function spreadOut(items, { key = x => x, window = SPREAD_WINDOW, gap = SPREAD_GAP, recent = [] } = {}) {
+  const left = [...items];
+  const out = [];
+  const hist = [...recent];
+  while (left.length) {
+    const last = new Set(hist.slice(-gap));
+    let pick = 0;
+    for (let i = 0; i < Math.min(window, left.length); i++) {
+      if (!last.has(key(left[i]))) { pick = i; break; }
+    }
+    const [item] = left.splice(pick, 1);
+    out.push(item);
+    hist.push(key(item));
+  }
+  return out;
+}
+
+// Spread a book's puzzles (sorted by tier, then score) tier by tier, so the tiers stay in order and
+// puzzles only trade places inside their own tier. `tierOf` and `key` read a puzzle's tier and shape key.
+export function spreadByTier(sorted, { tierOf = p => p.tier, key = p => p.tile, recent = [], ...opts } = {}) {
+  const out = [];
+  for (let i = 0; i < sorted.length;) {
+    let j = i;
+    while (j < sorted.length && tierOf(sorted[j]) === tierOf(sorted[i])) j++;
+    out.push(...spreadOut(sorted.slice(i, j), { key, ...opts, recent: [...recent, ...out.map(key)] }));
+    i = j;
+  }
+  return out;
+}

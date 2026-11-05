@@ -16,6 +16,7 @@ import {
   generatePuzzle, mulberry32, canonicalGrid, defaultHoles, stateFromPuzzle, puzzleFromState, neighborState,
 } from '../js/generator.js';
 import { referenceSearch } from './reference_solver.mjs';
+import { SPREAD_WINDOW } from '../tools/lib/pick.mjs';
 import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule, beyondHints } from '../js/rating.js';
 import { LOOKAHEAD_2, LOOKAHEAD_3 } from '../js/logic.js';
 
@@ -527,9 +528,16 @@ test('sortByRules renumbers and sorts; every shipped book is sorted and its stor
     // a book runs through the tiers in order, and within a tier by score; a book can open with a
     // shape-by-shape "tour" of easy puzzles (its CSV header says how many), which is exempt
     const tour = Number(/The first (\d+) puzzles are a shape-by-shape tour/.exec(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'))?.[1] ?? 0);
+    // (the builder then reshuffles locally so one shape doesn't repeat: a puzzle may sit a little before
+    // or after its sorted place, so scores are only in order between puzzles far enough apart)
+    const far = 3 * SPREAD_WINDOW;
     for (let i = 1; i < rs.length; i++) {
       assert.ok(TIERS.indexOf(rs[i - 1].tier) <= TIERS.indexOf(rs[i].tier), `${book.file}: tiers out of order at ${i}`);
-      if (i - 1 >= tour && rs[i - 1].tier === rs[i].tier) assert.ok(rs[i - 1].score <= rs[i].score, `${book.file} not sorted by score at ${i}`);
+    }
+    for (let i = tour; i < rs.length; i++) {
+      for (let j = i + far; j < rs.length && rs[j].tier === rs[i].tier; j++) {
+        assert.ok(rs[i].score <= rs[j].score, `${book.file}: puzzle ${i + 1} scores above puzzle ${j + 1}, ${far}+ places later`);
+      }
     }
   }
 });

@@ -21,7 +21,8 @@
 //      again with the shortfall passed on; each such shape gets at least one.
 //   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
 //      book follows the pool's own spread of difficulty from its easy end to its hard end.
-//   4. The book is sorted by tier, then score. One book can start with a shape-by-shape "tour" of
+//   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
+//      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
 //      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
 // A rebuild is STABLE: every puzzle already published in data/ stays (pickStable with keepAll), and only
 // the gaps in the shares are filled, so adding a shape or growing a book never reshuffles it and
@@ -37,7 +38,7 @@ import {
 import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickStable, weightedAllocation } from './lib/pick.mjs';
+import { pickStable, weightedAllocation, spreadByTier } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -155,7 +156,8 @@ for (const spec of specs) {
   const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i], isKept));
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
-  books.push({ meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...rest], target: spec.count, tourCount: tour.length, before });
+  const spread = spreadByTier(rest, { recent: tour.map(p => p.tile) });       // no long runs of one shape
+  books.push({ meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
 }
 
 // --- Checks, files, report ---------------------------------------------------------------------
@@ -173,7 +175,7 @@ for (const b of books) {
   const book = b.puzzles.map((p, i) => ({ ...p, name: `${b.meta.id}_${String(i + 1).padStart(pad, '0')}` }));
   const header = `# ${b.meta.title}. Built by tools/build_books.mjs from a pool of ${pool.length} puzzles (seed ${seed}).\n` +
     '# grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).\n' +
-    `# rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. ${b.tourCount ? `The first ${b.tourCount} puzzles are a shape-by-shape tour; the rest are ` : 'Sorted '}by tier, then score.\n`;
+    `# rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. ${b.tourCount ? `The first ${b.tourCount} puzzles are a shape-by-shape tour; the rest are ` : 'Sorted '}by tier, then (roughly) score; shapes are mixed locally so they don't repeat.\n`;
   writeFileSync(new URL(`${b.meta.id}.csv`, stageDir), header + toCsv(book));
   b.meta.file = `${b.meta.id}.csv`;
   b.meta.count = book.length;
