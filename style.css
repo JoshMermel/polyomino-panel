@@ -220,6 +220,7 @@ select, input[type="number"] {
 .seg.on { opacity: 1; }
 .seg.cross { opacity: 0; }
 .seg.bad { stroke: var(--color-error); opacity: 1; }
+.seg.given { stroke: var(--blocked-bg); stroke-width: 0.13; }          /* pre-drawn edges look like the blocked cells */
 
 .xmark line {
   stroke: var(--text-secondary);
@@ -228,6 +229,7 @@ select, input[type="number"] {
   pointer-events: none;
 }
 
+.xmark.given line { stroke: var(--blocked-bg); stroke-width: 0.09; }
 .xmark.bad line { stroke: var(--color-error); stroke-width: 0.075; }
 
 /* Hint highlights (the board's marks are never changed by a hint). Later

@@ -228,10 +228,14 @@ function proposeMove(state, rows, cols, tile, rng, delta = 0) {
 //                      swastika pattern (see logic.hasSwastika). Default: reject.
 //   allowDisconnected  keep puzzles whose open cells are not one connected region
 //                      (see logic.openCellsConnected). Default: reject.
+//   minSolutions, maxSolutions  accept a layout with this many solutions instead of exactly one
+//                      (default 1 and 1). With more than one the puzzle isn't unique: the caller
+//                      has to fix that (see tools/make_given_puzzles.mjs, which adds given edges).
 // Returns { puzzle, stats: {moves, restarts, ms} } or null on timeout.
 export function generatePuzzle({
   rows, cols, tile = 'L', holes, rng = mulberry32(1),
   maxMs = 20000, cap = 40, budget = 200000, restartAfter = 4000, allowSwastika = false, allowDisconnected = false,
+  minSolutions = 1, maxSolutions = 1,
 }) {
   holes = holes ?? defaultHoles(rows, cols, tile);
   if (!holesFit(rows, cols, tile, holes)) {
@@ -250,14 +254,14 @@ export function generatePuzzle({
     let cost = count(state.mask);
 
     for (let it = 0; it < restartAfter && timeLeft(); it++) {
-      if (cost === 1) {
+      if (cost >= minSolutions && cost <= maxSolutions) {
         const puzzle = makePuzzle(rows, cols, tile, state.mask);
         puzzle.solution = labelString(state.assign);
         // with several allowed shapes, the intended solution must use every one of them
         const usesAll = solutionShapeCounts(puzzle, puzzle.solution).every(k => k > 0);
         if (usesAll && (allowDisconnected || openCellsConnected(puzzle)) && (allowSwastika || !hasSwastika(puzzle, puzzle.solution))) {
           // Independent final check with the plain solver.
-          if (solve(puzzle, 2).length !== 1) throw new Error('internal error: not unique');
+          if (maxSolutions === 1 && solve(puzzle, 2).length !== 1) throw new Error('internal error: not unique');
           stats.ms = Date.now() - start;
           return { puzzle, stats };
         }

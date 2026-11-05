@@ -1,4 +1,4 @@
-# One shape · 6×6. Built by tools/build_books.mjs from a pool of 189478 puzzles (seed 1).
+# One shape · 6×6. Built by tools/build_books.mjs from a pool of 190676 puzzles (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).
 # rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. Sorted by tier, then (roughly) score; shapes are mixed locally so they don't repeat.
 name,rows,cols,tile,grid,solution,rules,tier,score
@@ -13,34 +13,34 @@ one-6_008,6,6,U5,....#..#........#..#........#..#....,AAAB#BA#ABBBCCCD#DC#CDDDEE
 one-6_009,6,6,V5,.......###................###.......,AAABBBA###CBADDDCBEDCCCFED###FEEEFFF,forced,Beginner,5
 one-6_010,6,6,P5,.....#....#.#...............##.....#,AABBB#AABB#C#ADDCCEDDDCCEEFF##EEFFF#,forced,Beginner,5
 one-6_011,6,6,W5,..#..#...#.....#..............#....#,AA#BB#CAA#BBCCA#DBECCDDFEEDDFF#EEFF#,forced,Beginner,5
-one-6_012,6,6,L5,....#.......#....#....#.......#....#,AAAA#BACBBBB#CCCC#DDDD#EDFEEEE#FFFF#,forced,Beginner,5
+one-6_012,6,6,L5,..#....##..#.##.....................,AA#BCCA##BC#A##BCDAEBBCDFEEEEDFFFFDD,forced,Beginner,5
 one-6_013,6,6,I3,...#.....#..#......###..............,AAA#BCDDD#BC#EEEBCF###GHFIIIGHFJJJGH,forced,Beginner,7
 one-6_014,6,6,V5,.......#.......##....##.....#.......,AAABBBA#CCCBADC##BEDC##FEDDD#FEEEFFF,forced,Beginner,5
 one-6_015,6,6,P5,..#......#...#...#....#.......#.....,AA#BBBAAA#BBC#DDD#CCDD#ECCFFEE#FFFEE,forced,Beginner,5
-one-6_016,6,6,W5,.....#......#...#.#...#............#,ABBCC#AABBCC#AAB#C#DDE#FDDEEFFDEEFF#,forced,Beginner,5
-one-6_017,6,6,L5,..#....##..#.##.....................,AA#BCCA##BC#A##BCDAEBBCDFEEEEDFFFFDD,forced,Beginner,5
+one-6_016,6,6,W5,.#...#......#..........#......#...#.,A#BCC#AABBCC#AABBCDEEFF#DDEEFF#DDE#F,forced,Beginner,5
+one-6_017,6,6,L5,..##..#......................#..##..,AA##BB#ACDDBEACDFBEACDFBECCDF#EE##FF,forced,Beginner,5
 one-6_018,6,6,I,#.....##.....................#......,#AAAAB##CDEBFGCDEBFGCDEBFGCDE#FGHHHH,forced,Beginner,7
-one-6_019,6,6,I3,......##.......#.#........#.......#.,AAABBB##CDDDEFC#G#EFCHGIEF#HGIJJJH#I,forced,Beginner,8
-one-6_020,6,6,P5,..#..#.......#...............#.##...,AA#BB#AABBBCA#DDCCEEDDCCEEDFF#E##FFF,forced,Beginner,5
-one-6_021,6,6,W5,.#...#......#..........#......#...#.,A#BCC#AABBCC#AABBCDEEFF#DDEEFF#DDE#F,forced,Beginner,5
-one-6_022,6,6,L5,..##..#......................#..##..,AA##BB#ACDDBEACDFBEACDFBECCDF#EE##FF,forced,Beginner,5
+one-6_019,6,6,I3,#.....#.....#.#.#.............#.....,#ABBBC#ADDDC#A#E#CFFFEGHIIIEGH#JJJGH,forced,Beginner,8
+one-6_020,6,6,P5,.#.............#.#..#..........#..#.,A#BBCCAABBCCAAB#C#DD#EFFDDEEFFD#EE#F,forced,Beginner,5
+one-6_021,6,6,W5,.#...#......#.....#............#...#,A#BCC#AABBCC#AABBC#DDEEFDDEEFFD#EFF#,forced,Beginner,5
+one-6_022,6,6,L5,.#..........#......#........#.##....,A#BBBBAAAACB#CCCCDE#DDDDEEEE#F##FFFF,forced,Beginner,5
 one-6_023,6,6,I,..........#.............#....#.....#,ABBBBCADEF#CADEFGCADEFGC#DEFG#HHHHG#,forced,Beginner,7
-one-6_024,6,6,I3,.#...#.....#.#..............#......#,A#BBB#ACCCD#A#EFDGHIEFDGHIEF#GHIJJJ#,forced,Beginner,8
-one-6_025,6,6,P5,.#.............#.#..#..........#..#.,A#BBCCAABBCCAAB#C#DD#EFFDDEEFFD#EE#F,forced,Beginner,5
-one-6_026,6,6,W5,.#...#......#.....#............#...#,A#BCC#AABBCC#AABBC#DDEEFDDEEFFD#EFF#,forced,Beginner,5
-one-6_027,6,6,L5,.#..........#......#........#.##....,A#BBBBAAAACB#CCCCDE#DDDDEEEE#F##FFFF,forced,Beginner,5
-one-6_028,6,6,I2,.#...#....#....................#.#.#,A#BCC#ADBE#FGDHEIFGJHKILMJNKOLM#N#O#,forced,Beginner,12
-one-6_029,6,6,I3,....##............#.###.............,ABBB##ACDDDEACFFFE#C###EGGGHHHIIIJJJ,forced,Beginner,8
-one-6_030,6,6,L5,.....#...#....##....#......#........,AAAAB#ACC#BDEC##BDEC#BBDECF#DDEEFFFF,forced,Beginner,5
-one-6_031,6,6,L5,.#.....#.....#...........##..#......,A#BBCCA#BDDCA#BDECAABDECF##DE#FFFFEE,forced,Beginner,5
-one-6_032,6,6,L5,.#........#.....#..#.....#........#.,A#BBBBAAAA#BCCCC#DC#DDDDE#FFFFEEEE#F,forced,Beginner,5
-one-6_033,6,6,I2,.##......#...#...........#..#.......,A##BBCADD#ECF#GGEHFIIJJHK#LL#MKNNOOM,forced,Beginner,14
-one-6_034,6,6,I3,.#........#................###.#....,A#BBBCADDD#CAEFFFCGEHIIIGEH###G#HJJJ,forced,Beginner,9
-one-6_035,6,6,I3,..........#...#............#.###....,AAABBBCCCD#EFG#DHEFGIDHEFGI#H###IJJJ,forced,Beginner,9
-one-6_036,6,6,I3,...##..###.............#............,AAA##BC###DBCEEEDBCFFFD#GGGHHHIIIJJJ,forced,Beginner,9
-one-6_037,6,6,I3,.##..............##....#.....#......,A##BBBACDEEEACDFG##CDFG#HHHFG#IIIJJJ,forced,Beginner,9
-one-6_038,6,6,I2,.....##.#...#......#...............#,AABBC##D#ECF#DGEHFI#GJHKILLJMKNNOOM#,forced,Beginner,14
-one-6_039,6,6,I3,#...##.#........#..#................,#AAA##B#CCCDBEEE#DB#FFFDGGGHHHIIIJJJ,forced,Beginner,9
+one-6_024,6,6,I3,...........#............##.###......,AAABBBCDEEE#CDFGGGCDFHHH##F###IIIJJJ,forced,Beginner,8
+one-6_025,6,6,I2,.#...#....#....................#.#.#,A#BCC#ADBE#FGDHEIFGJHKILMJNKOLM#N#O#,forced,Beginner,12
+one-6_026,6,6,L5,.....#...#....##....#......#........,AAAAB#ACC#BDEC##BDEC#BBDECF#DDEEFFFF,forced,Beginner,5
+one-6_027,6,6,L5,.#.....#.....#...........##..#......,A#BBCCA#BDDCA#BDECAABDECF##DE#FFFFEE,forced,Beginner,5
+one-6_028,6,6,L5,.#........#.....#..#.....#........#.,A#BBBBAAAA#BCCCC#DC#DDDDE#FFFFEEEE#F,forced,Beginner,5
+one-6_029,6,6,I3,.....#.##..#............#..........#,AAABC#D##BC#DEFBCGDEFHIG#EFHIGJJJHI#,forced,Beginner,8
+one-6_030,6,6,I2,.##......#...#...........#..#.......,A##BBCADD#ECF#GGEHFIIJJHK#LL#MKNNOOM,forced,Beginner,14
+one-6_031,6,6,I3,......##.......#.#........#.......#.,AAABBB##CDDDEFC#G#EFCHGIEF#HGIJJJH#I,forced,Beginner,8
+one-6_032,6,6,I3,.#...#...#.#......#.........#.......,A#BBB#ACD#E#ACDFEG#CDFEGHHHF#GIIIJJJ,forced,Beginner,9
+one-6_033,6,6,I3,#...#....#...#..............#.#.....,#AAA#BCCC#DBE#FGDBEHFGDIEHFG#I#HJJJI,forced,Beginner,9
+one-6_034,6,6,I3,....#.........#.....##........##....,AAAB#CDDDBECFG#BECFG##EHFGIIIH##JJJH,forced,Beginner,9
+one-6_035,6,6,I2,.....##.#...#......#...............#,AABBC##D#ECF#DGEHFI#GJHKILLJMKNNOOM#,forced,Beginner,14
+one-6_036,6,6,I3,.........#..#............##.......##,AAABBBCCC#DE#FFFDEGHHHDEG##IIIGJJJ##,forced,Beginner,9
+one-6_037,6,6,I3,.##.......#..........#..#....#......,A##BBBACCC#DAEEEFDGGG#FD#HHHF#IIIJJJ,forced,Beginner,9
+one-6_038,6,6,I3,...##..###.............#............,AAA##BC###DBCEEEDBCFFFD#GGGHHHIIIJJJ,forced,Beginner,9
+one-6_039,6,6,I3,##.#.#..............#.#.............,##A#B#CDAEBFCDAEBFCD#E#FGGGHHHIIIJJJ,forced,Beginner,9
 one-6_040,6,6,I3,......#........#..#.................,AAABBB#CCCDEFFF#DE#GGGDEHHHIIIJJJKKK,forced,Beginner,10
 one-6_041,6,6,U5,.#........#.#.........#.........#.#.,A#ABBBAAAB#B#CCDDDEECD#DECCFFFEE#F#F,edges,Medium,7
 one-6_042,6,6,L5,..#..#.#......#.....#...#...........,AA#BB#A#CCBDAE#CBDAE#CBD#EFCDDEEFFFF,edges,Medium,8

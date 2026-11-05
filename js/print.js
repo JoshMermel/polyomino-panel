@@ -65,6 +65,16 @@ function boardSvg(puzzle, solution) {
       svgEl('line', { x1, y1, x2, y2, stroke: INK, 'stroke-width': 0.1, 'stroke-linecap': 'round' }, svg);
     }
   }
+  for (const [type, kind, r, c] of puzzle.givens ?? []) {       // pre-drawn clues: a bold line, or a small x
+    const [x1, y1, x2, y2] = kind === 'h' ? [c, r, c + 1, r] : [c, r, c, r + 1];
+    if (type === 'L') {
+      svgEl('line', { x1, y1, x2, y2, stroke: INK, 'stroke-width': 0.1, 'stroke-linecap': 'round' }, svg);
+    } else {
+      const [mx, my, d] = [(x1 + x2) / 2, (y1 + y2) / 2, 0.14];
+      svgEl('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d, stroke: INK, 'stroke-width': 0.05, 'stroke-linecap': 'round' }, svg);
+      svgEl('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d, stroke: INK, 'stroke-width': 0.05, 'stroke-linecap': 'round' }, svg);
+    }
+  }
   svgEl('rect', { x: 0, y: 0, width: cols, height: rows, fill: 'none', stroke: INK, 'stroke-width': 0.08 }, svg);
   return svg;
 }

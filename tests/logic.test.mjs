@@ -8,7 +8,7 @@ import {
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
-  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
+  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, solveWithGivens, parseGivens, givensString, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
   tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
@@ -400,7 +400,7 @@ test('every set in the manifest loads, has unique solutions, and hints stay soun
     const puzzles = data(set.file);
     assert.equal(puzzles.length, set.count, set.id);
     for (const p of puzzles) {
-      const sols = solve(p, 2);
+      const sols = solveWithGivens(p, 2);
       assert.equal(sols.length, 1, `${set.id}/${p.name}`);
       assert.equal(sols[0], p.solution, `${set.id}/${p.name}`);
       // a few hint steps of each kind must never contradict the solution
@@ -530,6 +530,7 @@ test('sortByRules renumbers and sorts; every shipped book is sorted and its stor
     const tour = Number(/The first (\d+) puzzles are a shape-by-shape tour/.exec(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'))?.[1] ?? 0);
     // (the builder then reshuffles locally so one shape doesn't repeat: a puzzle may sit a little before
     // or after its sorted place, so scores are only in order between puzzles far enough apart)
+    if (book.id === 'intro') continue;             // the Intro book runs from the smallest boards up, whatever the score
     const far = 3 * SPREAD_WINDOW;
     for (let i = 1; i < rs.length; i++) {
       assert.ok(TIERS.indexOf(rs[i - 1].tier) <= TIERS.indexOf(rs[i].tier), `${book.file}: tiers out of order at ${i}`);
@@ -1112,6 +1113,19 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
+    // the Intro book (small, easy puzzles of one shape, mixed sizes) and the Experiments book (puzzles with
+    // pre-drawn edges) are special: no size or sparseness rules, but every puzzle must be uniquely solvable
+    if (book.id === 'intro' || book.id === 'experiments') {
+      assert.equal(book.group, book.id === 'intro' ? 'Intro' : 'Experiments');
+      assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
+      for (const p of ps) {
+        const sols = solveWithGivens(p, 2);
+        assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
+        if (book.id === 'experiments') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
+        else assert.equal(p.tier, 'Beginner');
+      }
+      continue;
+    }
     // id is <one|two|dense1|dense2>-<size>: every puzzle has that many shapes and that board size
     const [kind, size] = book.id.split('-');
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
@@ -1229,4 +1243,24 @@ test('eliminate: tiles that fail are dropped and the survivors agree on edges; e
     }
   }
   assert.ok(found > 0, 'no eliminate deductions found in the sample');
+});
+
+test('given edges: the CSV column round-trips, the hash and starting marks include them, the solver agrees', () => {
+  const csv = 'name,rows,cols,tile,grid,solution,given\n' +
+    'g1,1,5,I2+I3,.....,AABBB,L:v:0:2\n' +
+    'g2,1,5,I2+I3,.....,AABBB,\n';
+  const [g1, g2] = parseCsv(csv);
+  assert.deepEqual(g1.givens, [['L', 'v', 0, 2]]);
+  assert.equal(g2.givens, undefined);
+  assert.notEqual(puzzleHash(g1), puzzleHash(g2), 'givens are part of a puzzle\'s identity');
+  assert.equal(newEdges(g1).v[2], EDGE_LINE, 'a given line is there from the start');
+  assert.equal(newEdges(g2).v[2], EDGE_EMPTY);
+  assert.deepEqual(parseCsv(toCsv([g1, g2]))[0].givens, g1.givens);
+  assert.equal(givensString(g1), 'L:v:0:2');
+  // two tilings of 1x5 by I2+I3: AABBB and AAABB; the given line between cells 1 and 2 picks the first
+  assert.deepEqual(solve(g2, 5).sort(), ['AAABB', 'AABBB']);
+  assert.deepEqual(solveWithGivens(g1, 5), ['AABBB']);
+  // a given must lie between two open cells
+  assert.throws(() => parseGivens('L:v:0:0', g1));
+  assert.throws(() => parseGivens('Q:v:0:2', g1));
 });

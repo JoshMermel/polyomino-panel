@@ -41,7 +41,7 @@
 import {
   readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, rmSync,
 } from 'node:fs';
-import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
+import { parseCsv, toCsv, solveWithGivens, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
 import { pickStable, pickQuantiles, weightedAllocation, spreadByTier } from './lib/pick.mjs';
@@ -74,7 +74,7 @@ const hashOf = p => (p._hash ??= puzzleHash(p));
 // --- The pools -------------------------------------------------------------------------------
 const pool = [];                       // every puzzle that may be published
 for (const tile of recipes.shapes) {
-  for (const size of recipes.sizes) {
+  for (const size of [...recipes.sizes, ...(recipes.extraSizes ?? [])]) {          // extraSizes: the small boards of the Intro book
     const f = new URL(`${tile}_${size}x${size}.csv`, libDir);
     if (!existsSync(f)) continue;
     for (const p of parseCsv(readFileSync(f, 'utf8'))) {
@@ -91,6 +91,16 @@ const bookSize = (g, size) => {
 };
 const specs = [];
 for (const g of config.groups) {
+  const common = { group: g.name, title: g.title ?? g.name, label: g.label ?? g.name, blurb: g.blurb ?? '', order: specs.length };
+  if (g.source) {                       // a hand-assembled book: a file in tools/books/ copied as it is
+    specs.push({ ...common, id: g.idPrefix, source: g.source, count: 0 });
+    continue;
+  }
+  if (g.sizes) {                        // one book mixing several board sizes (the Intro book)
+    specs.push({ ...common, id: g.idPrefix, shapes: g.shapes, sizes: g.sizes, tierList: g.tiers ?? config.tiers, maxScore: g.maxScore ?? null,
+      sizeWeights: g.sizeWeights ?? {}, count: g.perBook, maxBlocked: null, sparseShare: 1, first: true });
+    continue;
+  }
   for (const size of config.sizes) {
     specs.push({
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
@@ -102,11 +112,12 @@ for (const g of config.groups) {
 }
 
 const blockedFraction = p => (p._blocked ??= [...p.grid].filter(c => c === '#').length / p.grid.length);
-const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && p.rows === spec.size && !used.has(p.name) &&
-  (spec.maxBlocked == null || blockedFraction(p) <= spec.maxBlocked));
+const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && (spec.sizes ? spec.sizes.includes(p.rows) : p.rows === spec.size) && !used.has(p.name) &&
+  (spec.maxBlocked == null || blockedFraction(p) <= spec.maxBlocked) &&
+  (spec.tierList == null || spec.tierList.includes(p.tier)) && (spec.maxScore == null || p.score <= spec.maxScore));
 
 if (flags.has('--list')) {
-  for (const s of specs) {
+  for (const s of specs.filter(x => !x.source)) {
     const c = eligible(s, new Set());
     console.log(`${s.id.padEnd(8)} wants ${s.count}  can supply ${config.tiers.map(t => `${t} ${c.filter(p => p.tier === t).length}`).join('  ')}`);
   }
@@ -150,8 +161,25 @@ const byTile = cands => {
   return [...m.keys()].sort().map(k => m.get(k));
 };
 
-const buildOrder = [...specs].sort((a, b) => (b.maxBlocked != null) - (a.maxBlocked != null) || a.order - b.order);
+const rank = s => (s.first ? 0 : s.maxBlocked != null ? 1 : 2);        // Intro first, then the sparse books, then the rest
+const buildOrder = [...specs].sort((a, b) => rank(a) - rank(b) || a.order - b.order);
 for (const spec of buildOrder) {
+  if (spec.source) {
+    const puzzles = parseCsv(readFileSync(new URL(spec.source, new URL('tools/books/', root)), 'utf8'));
+    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles, target: puzzles.length, tourCount: 0, before: undefined });
+    continue;
+  }
+  if (spec.sizes) {                       // the Intro book: shares by board size, then shapes within each size
+    const cands = eligible(spec, used);
+    const bySize = spec.sizes.map(sz => cands.filter(p => p.rows === sz));
+    const alloc = weightedAllocation(spec.count, bySize.map(c => c.length), spec.sizes.map(sz => spec.sizeWeights[sz] ?? 1));
+    const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], () => false, 1) : []));
+    picks.forEach(p => used.add(p.name));
+    picks.sort((a, b) => a.rows - b.rows || a.score - b.score || (a.name < b.name ? -1 : 1));      // smallest boards first
+    const spread = spreadByTier(picks, { tierOf: p => p.rows });                                   // shapes mixed within a size
+    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before: published.get(spec.id) });
+    continue;
+  }
   const before = published.get(spec.id);
   const isKept = before ? (p => before.has(hashOf(p))) : (() => false);
   const tour = [];
@@ -197,7 +225,7 @@ const seenKeys = new Set();
 for (const b of books) {
   for (const p of b.puzzles) {
     // every published puzzle must still have exactly its stored solution
-    const sols = solve(p, 2);
+    const sols = solveWithGivens(p, 2);
     if (sols.length !== 1 || sols[0] !== p.solution) throw new Error(`${b.meta.id}: ${p.name} is not uniquely solvable`);
     const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
     if (seenKeys.has(key)) throw new Error(`${b.meta.id}: duplicate puzzle ${p.name}`);

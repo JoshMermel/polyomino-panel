@@ -232,6 +232,27 @@ export function shapeName(spec) {
 // Columns: name, rows, cols, grid  (required); tile, solution, rules, tier, score (optional).
 // Blank lines and lines starting with '#' are ignored.
 // Returns [{name, rows, cols, tile, grid, solution}].
+// Given edges: marks that are part of the puzzle (pre-drawn for the player, who can't change them). A
+// puzzle with just a few distinct tilings can be made unique by giving an edge or two. In the CSV they
+// are one `given` column: items joined by `;`, each `<L or X>:<h or v>:<row>:<col>` (L = a line, X = a
+// cross, i.e. "these two cells are in the same tile"; the edge is named as in the rest of the code:
+// h = above cell (row, col), v = left of it). In memory: puzzle.givens = [['L', 'v', 2, 3], ...].
+export function parseGivens(text, puzzle) {
+  const out = [];
+  for (const item of text.split(';').map(x => x.trim()).filter(Boolean)) {
+    const [type, kind, r, c] = item.split(':');
+    const row = Number(r), col = Number(c);
+    if (!['L', 'X'].includes(type) || !['h', 'v'].includes(kind) || !Number.isInteger(row) || !Number.isInteger(col)) {
+      throw new Error(`Puzzle "${puzzle.name}": bad given edge "${item}"`);
+    }
+    if (!isPlayableEdge(puzzle, kind, row, col)) throw new Error(`Puzzle "${puzzle.name}": given edge "${item}" is not between two open cells`);
+    out.push([type, kind, row, col]);
+  }
+  return out;
+}
+export const givensString = puzzle => (puzzle.givens ?? []).map(g => g.join(':')).join(';');
+export const isGivenEdge = (puzzle, kind, r, c) => (puzzle.givens ?? []).some(g => g[1] === kind && g[2] === r && g[3] === c);
+
 export function parseCsv(text) {
   const puzzles = [];
   let headers = null;
@@ -254,11 +275,13 @@ export function parseCsv(text) {
     const tile = rec.tile || 'L';
     try { tileSpecs(tile); } catch (err) { throw new Error(`Puzzle "${rec.name}": ${err.message}`); }
     const solution = rec.solution && rec.solution.length === grid.length ? rec.solution : '';
-    puzzles.push({
+    const puzzle = {
       name: rec.name, rows, cols: ncols, tile, grid, solution,
       rules: rec.rules || '', tier: rec.tier || '',
       score: rec.score === undefined || rec.score === '' ? null : Number(rec.score),
-    });
+    };
+    if (rec.given) puzzle.givens = parseGivens(rec.given, puzzle);
+    puzzles.push(puzzle);
   }
   return puzzles;
 }
@@ -268,22 +291,24 @@ export function toCsv(puzzles) {
   const withRules = puzzles.some(p => p.rules);
   const withTier = puzzles.some(p => p.tier);
   const withScore = puzzles.some(p => p.score !== undefined && p.score !== null);
-  const lines = [`name,rows,cols,tile,grid,solution${withRules ? ',rules' : ''}${withTier ? ',tier' : ''}${withScore ? ',score' : ''}`];
+  const withGiven = puzzles.some(p => p.givens?.length);
+  const lines = [`name,rows,cols,tile,grid,solution${withRules ? ',rules' : ''}${withTier ? ',tier' : ''}${withScore ? ',score' : ''}${withGiven ? ',given' : ''}`];
   for (const p of puzzles) {
     const row = [p.name, p.rows, p.cols, p.tile, p.grid, p.solution || ''];
     if (withRules) row.push(p.rules || '');
     if (withTier) row.push(p.tier || '');
     if (withScore) row.push(p.score ?? '');
+    if (withGiven) row.push(givensString(p));
     lines.push(row.join(','));
   }
   return lines.join('\n') + '\n';
 }
 
-// Stable 64-bit identifier (16 hex chars) for a puzzle's content: tile, size
-// and grid. Independent of name and position in any set, so saved progress
+// Stable 64-bit identifier (16 hex chars) for a puzzle's content: tile, size,
+// grid and given edges. Independent of name and position in any set, so saved progress
 // survives renumbering/reordering. (cyrb53-style non-cryptographic hash.)
 export function puzzleHash(puzzle) {
-  const str = `${puzzle.tile}|${puzzle.rows}x${puzzle.cols}|${puzzle.grid}`;
+  const str = `${puzzle.tile}|${puzzle.rows}x${puzzle.cols}|${puzzle.grid}${puzzle.givens?.length ? '|' + givensString(puzzle) : ''}`;
   let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
   for (let i = 0; i < str.length; i++) {
     const ch = str.charCodeAt(i);
@@ -297,11 +322,14 @@ export function puzzleHash(puzzle) {
 
 // --- Edges -----------------------------------------------------------------
 
+// A blank set of marks: nothing drawn except the puzzle's given edges, if it has any.
 export function newEdges(puzzle) {
-  return {
+  const edges = {
     h: new Uint8Array((puzzle.rows + 1) * puzzle.cols),
     v: new Uint8Array(puzzle.rows * (puzzle.cols + 1)),
   };
+  for (const [type, kind, r, c] of puzzle.givens ?? []) edges[kind][kind === 'h' ? r * puzzle.cols + c : r * (puzzle.cols + 1) + c] = type === 'L' ? EDGE_LINE : EDGE_CROSS;
+  return edges;
 }
 
 export function cloneEdges(e) {
@@ -575,6 +603,24 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
 // blocked cells).
 export function solve(puzzle, limit = 2) {
   return searchTilings(puzzle, { limit }).tilings.map(labelString);
+}
+
+// Does a solution agree with the puzzle's given edges (a line where the solution has a tile boundary,
+// a cross where both cells are in the same tile)?
+export function matchesGivens(puzzle, solution) {
+  const { cols } = puzzle;
+  return (puzzle.givens ?? []).every(([type, kind, r, c]) => {
+    const a = kind === 'v' ? r * cols + c - 1 : (r - 1) * cols + c;
+    const b = r * cols + c;
+    return type === 'L' ? solution[a] !== solution[b] : solution[a] === solution[b];
+  });
+}
+
+// The solutions of a puzzle that has given edges: those tilings (looking at up to `scan` of them) that
+// agree with the givens. At most `limit` are returned. (For a puzzle without givens it is solve().)
+export function solveWithGivens(puzzle, limit = 2, scan = 500) {
+  if (!puzzle.givens?.length) return solve(puzzle, limit);
+  return solve(puzzle, scan).filter(sol => matchesGivens(puzzle, sol)).slice(0, limit);
 }
 
 // Number of tilings, counted up to `cap`. Returns cap if the node budget is

@@ -1,0 +1,26 @@
+# Experiments: puzzles with a few distinct tilings made unique by pre-drawn edges (the given column: L = a line, X = a cross).
+# Built by tools/make_given_puzzles.mjs. grid: # = blocked cell, . = open cell. solution: tile labels. given: edges drawn for the player.
+name,rows,cols,tile,grid,solution,rules,tier,score,given
+experiments_01,6,6,N5,####.##.#.......#............##.#...,####A##B#AACBBDA#CBDDACCBDEEC##D#EEE,forced,Beginner,4,L:v:1:5
+experiments_02,6,6,N5,#...###.#............#.....#.###...#,#ABB###A#BBBAACCCDACC#DDEEE#D###EED#,forced,Beginner,4,L:h:4:0
+experiments_03,8,8,Y5,.##........##.#.....#.........#.#.....#...#.....#.....#.#######.,A##BBBBCAAD##B#CADDE#FCCAGDEEF#C#GDEFF#HGG#EIFHH#GIIII#H#######H,forced,Beginner,6,L:v:3:5
+experiments_04,6,6,T,.#..............#..#..............#.,A#BBBCAADBCCADDD#CE#FFFGEEHFGGEHHH#G,forced,Beginner,7,L:h:3:2
+experiments_05,8,8,T,#.##.........#.............#.....#.....#...............#........,#A##BCCCAAABB#CDEFFFBGDDEEF#HGGDE#IHHGJ#KIIIHJJJKKLMMMN#KLLLMNNN,forced,Beginner,13,L:h:2:1;L:v:3:5
+experiments_06,8,8,I3,#......##........###.....#..#.#..#..#.#.....#.#......##.........,#AAABBB##CCCDDDEF###GGGEF#HI#J#EF#HI#J#KLMHI#J#KLMNNN##KLMOOOPPP,forced,Beginner,14,L:h:1:4
+experiments_07,6,6,Y5,.....#...........#....##.....#######,AAAAB#CABBBBCDDDD#CCDE##CEEEE#######,edges,Medium,10,L:h:4:2
+experiments_08,6,6,P5,.....#.....#..............##....##..,AABBB#AACBB#ACCDDDECCDDFEE##FFEE##FF,edges,Medium,20,L:v:2:1
+experiments_09,6,6,T+S,.#............#......#..#...........,A#BCCCAABBCDAE#BDDEEE#FD#GGHFFGGHHHF,edges,Medium,21,L:h:3:4;L:v:5:2
+experiments_10,8,8,Y5,........#..#...#.........................................#......,AAAABBBB#CA#DBE#CCCCDDEEFFFFDGEHIFJKDGEHIIJKGGHHIJJKKGLHI#JKLLLL,tryLine,Medium,42,L:h:2:2;L:v:6:1
+experiments_11,8,8,V3+I3,.#........#....#.#..##....#.#........##..#.#.......##..#..#.....,A#BBBCCCAA#DDDE#F#GG##EEFF#G#HHHIIJJJ##KI#L#MMKKNLL##MO#NN#PPPOO,edges,Medium,48,L:h:1:4
+experiments_12,8,8,N5,#.#...#.....#................#.........................#.....###,#A#BBB#CAABB#DDCAEEDDDCCAFEEE#CGFFHHHIIGFHHIIIGGFJJJKKG#JJKKK###,tryLine,Medium,57,L:h:1:5
+experiments_13,10,10,S,#...#..#.#..............#.....#...#........#..............................................#....#.#.#,#ABB#CC#D#EAABBFCCDDEEAG#FFHHD#EGG#IFJHHKKG#IIJJLLMKKNIOJLLPMMNNOOQQPPRMNSOQQTPURRSSVVTTUU#RSVV#T#U#,edges,Medium,57,L:v:1:1
+experiments_14,10,10,W5,#........#..........................#......................#......................##......#..#..#..#,#AABBCCDD#AABBCCEEDDAFBGCEEHHDIFFGGE#JHHIIFFGGJJKHLIIMMJJKK#LLNNMMKKOOPLLNNMQOORPP##NQQORR#PP#QQ#RR#,lookahead2,Medium,61,L:h:5:5
+experiments_15,10,10,P5,..............#..#..........#...#..........#.#......#..#...............#.....#......................,ABBBCCCDDDAABB#CC#DDAAEEEFFF#GHH#EEFFIGGHHH#J#IIGGKK#JJ#IILLKKKJJMMLLLN#OOMMM#PPNNOOQQRRPPNNOQQQRRRP,tryLine,Medium,87,L:h:7:2
+experiments_16,6,6,N5,##..##........................#....#,##AA##AAABBBCDBBEFCDDEEFCCDEFF#CDEF#,edgesWide,Hard,36,L:h:2:2
+experiments_17,8,8,V3+I3,#..#.....#.#...#.#..##....#....#...#....#....#........#...#..#..,#AA#BCCCD#A#BBE#D#FF##EEDG#FHII#GGJ#HHIK#LJJM#KKNLLOMM#PNN#OO#PP,lookahead3,Hard,55,L:v:4:6
+experiments_18,8,8,V3,...#........#..#......#....#.....###.......#............#.......,AAB#CCDDEABB#CD#EEFFGG#HIIF#GJHHI###KJJLMMN#KKLLMONNPQRR#OOPPQQR,lookahead3,Hard,60,L:h:1:0;L:v:7:7
+experiments_19,8,8,L,........##.....#.....#......#........#...................#...#..,AAABBCCC##ADBCE#FFFDB#EGFHDD#EEGIHHHJ#GGIIIKJJJLMMMKNNNLM#KKN#LL,edgesWide,Hard,72,L:v:2:3
+experiments_20,10,10,T+S,#...#.......#..#...#.##...#..##..#...........#................#...............#....#..#.............,#ABB#CCDDDAA#BB#CCD#A##EEE#FF##GG#EHHHFFGGIII#HJJKLLLIMMJJKKNL#OPMMQQKNNOOPPQQ#RNSO#TP#URRSSSTTTUUUR,lookahead3,Hard,83,L:v:0:7
+experiments_21,6,6,L+T,#............#......#.#.............,#AAABBCCCADBC#DDDBEE#F#GEHFFFGEHHHGG,eliminate,Hard,111,L:v:5:1
+experiments_22,10,10,P5,#....#..##.....#........#..#.....#............#..#..........#......................#....##..###..###,#AABB#CC##AAABB#CCCDEEEB#FF#DDGEE#FFFHDDGGIIJJ#HH#GGIIJJJHHK#LLIMMNNKKLLLMMMNNKKOOO#PPPN##OO###PP###,lookahead3,Hard,133,L:v:3:7;L:h:8:0
+experiments_23,10,10,V3,.....#.......#..#....#..#........##..#....##...........#..#..#..#..#.......#........................,AABCC#DDEEABB#CF#DGEH#II#FFGGJHHI##KK#JJLL##MKNNOOLPPMM#QN#OR#PS#QQ#TTRRUSS#VWWTXUUYZVVaWbXXYYZZaabb,eliminate,Hard,253,L:v:1:1

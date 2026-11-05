@@ -12,7 +12,7 @@
 //                  other open cell dragged across, then onRelease (or onCancel if the
 //                  browser cancels the pointer).
 import {
-  EDGE_LINE, EDGE_CROSS, OPEN, isPlayableEdge, isOpen, getEdge,
+  EDGE_LINE, EDGE_CROSS, OPEN, isPlayableEdge, isOpen, getEdge, isGivenEdge,
 } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -168,6 +168,7 @@ export class Board {
     if (this._hoverKey) this.segs.get(this._hoverKey)?.classList.remove('hover');
     this._hoverKey = key;
     if (key) this.segs.get(key)?.classList.add('hover');
+    if (key && this.segs.get(key)?.classList.contains('given')) this.segs.get(key).classList.remove('hover');   // can't be changed
   }
 
   // Show (or hide, for -1) the hover highlight over an open cell.
@@ -280,6 +281,9 @@ export class Board {
     const key = `${kind}:${r}:${c}`;
     const seg = this.segs.get(key);
     if (!seg) return;
+    const given = isGivenEdge(this.puzzle, kind, r, c);                   // pre-drawn by the puzzle: drawn in its own colour
+    seg.classList.toggle('given', given);
+    this.xs.get(key).classList.toggle('given', given);
     seg.classList.toggle('on', state === EDGE_LINE);
     seg.classList.toggle('cross', state === EDGE_CROSS); // suppress hover ghost under an X
     this.xs.get(key).setAttribute('visibility', state === EDGE_CROSS ? 'visible' : 'hidden');

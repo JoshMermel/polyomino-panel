@@ -53,6 +53,37 @@
       "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard."
     },
     {
+      "name": "Intro",
+      "idPrefix": "intro",
+      "shapes": 1,
+      "sizes": [
+        4,
+        5,
+        6
+      ],
+      "sizeWeights": {
+        "4": 1,
+        "5": 2,
+        "6": 2
+      },
+      "tiers": [
+        "Beginner"
+      ],
+      "maxScore": 7,
+      "perBook": 150,
+      "title": "Intro",
+      "label": "Intro: small and easy",
+      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\"."
+    },
+    {
+      "name": "Experiments",
+      "idPrefix": "experiments",
+      "source": "experiments.csv",
+      "title": "Experiments: pre-drawn clues",
+      "label": "Pre-drawn clues",
+      "blurb": "Experimental. Sparse boards that have a few distinct tilings, made unique by an edge or two drawn for you (in black, like the blocked cells)."
+    },
+    {
       "name": "Dense: one shape",
       "idPrefix": "dense1",
       "shapes": 1,

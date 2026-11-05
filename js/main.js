@@ -2,7 +2,7 @@
 // detection and progress persistence.
 import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
-  parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges,
+  parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges, isGivenEdge,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
   cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
@@ -27,6 +27,7 @@ function unpackEdges(puzzle, s) {
   if (!h || v === undefined || h.length !== edges.h.length || v.length !== edges.v.length) return null;
   for (let i = 0; i < h.length; i++) edges.h[i] = +h[i];
   for (let i = 0; i < v.length; i++) edges.v[i] = +v[i];
+  for (const [type, kind, r, c] of puzzle.givens ?? []) setEdge(puzzle, edges, kind, r, c, type === 'L' ? EDGE_LINE : EDGE_CROSS);   // never lose a given
   return edges;
 }
 
@@ -227,6 +228,13 @@ function renderTier(puzzle) {
   });
   el.append(stars, TIER_INFO[tier].name);
   el.title = `${TIER_INFO[tier].name}: ${TIER_INFO[tier].blurb}`;
+  if (puzzle.givens?.length) {
+    const note = document.createElement('span');
+    note.className = 'tier-beyond';
+    note.textContent = ' · pre-drawn clues';
+    note.title = 'This puzzle comes with some marks already placed (drawn in black, like the blocked cells). They are part of the puzzle and cannot be changed.';
+    el.append(note);
+  }
   if (beyondHints(puzzle)) {
     const note = document.createElement('span');
     note.className = 'tier-beyond';
@@ -246,6 +254,7 @@ function applyChanges(changes, dir) {
 }
 
 function commit(changes) {
+  changes = changes.filter(ch => !isGivenEdge(state.puzzle, ch.kind, ch.r, ch.c));   // given edges are part of the puzzle
   if (!changes.length) return null;
   applyChanges(changes, 'forward');
   const entry = { changes };
@@ -544,7 +553,8 @@ function refresh() {
   if (a.solved) store.set(solvedKey(state.puzzle), '1');
 
   const set = curSet();
-  const hasMarks = state.edges.h.some(Boolean) || state.edges.v.some(Boolean);
+  const blank = newEdges(state.puzzle);                  // (a puzzle's given edges don't count as the player's marks)
+  const hasMarks = state.edges.h.some((x, i) => x !== blank.h[i]) || state.edges.v.some((x, i) => x !== blank.v[i]);
 
   if (hasMarks) store.set(saveKey(state.puzzle), packEdges(state.edges));
   else store.del(saveKey(state.puzzle));
