@@ -161,8 +161,14 @@ export function allOrientations(spec) {
 }
 
 // The distinct tile sizes (cell counts), ascending.
+const tileSizesCache = new Map();
 export function tileSizes(spec) {
-  return [...new Set(tileSpecs(spec).map(tileSize))].sort((a, b) => a - b);
+  let sizes = tileSizesCache.get(spec);
+  if (!sizes) {
+    sizes = [...new Set(tileSpecs(spec).map(tileSize))].sort((a, b) => a - b);
+    tileSizesCache.set(spec, sizes);
+  }
+  return sizes;
 }
 export const minTileSize = spec => tileSizes(spec)[0];
 export const maxTileSize = spec => tileSizes(spec).at(-1);
@@ -437,6 +443,45 @@ export function labelString(assign) {
 //   keep    store each tiling (per-cell tile ids, -1 for blocked cells) in
 //           result.tilings
 // Returns { count, aborted, tilings, nodes }.
+// Every placement of the tile that fits inside a rows x cols board (open or not), as cell
+// lists, in a fixed order (orientation, then row, then column). Cached per tile and board size:
+// a search only has to drop the placements that touch a blocked cell.
+const placementsCache = new Map();
+function boardPlacements(tile, rows, cols) {
+  const key = `${tile}|${rows}x${cols}`;
+  let all = placementsCache.get(key);
+  if (!all) {
+    all = [];
+    for (const o of allOrientations(tile)) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cells = [];
+          for (const [dr, dc] of o) {
+            const nr = r + dr, nc = c + dc - o[0][1];
+            if (nr >= rows || nc < 0 || nc >= cols) break;
+            cells.push(nr * cols + nc);
+          }
+          if (cells.length === o.length) all.push(cells);
+        }
+      }
+    }
+    placementsCache.set(key, all);
+  }
+  return all;
+}
+
+// The search's linked-list arrays, reused between calls (every entry in use is rewritten).
+let dlx = null;
+function dlxArrays(total, m) {
+  if (!dlx || total > dlx.size) {
+    const size = Math.max(total, 2 * (dlx?.size ?? 0));
+    const make = () => new Int32Array(size);
+    dlx = { size, L: make(), R: make(), U: make(), D: make(), C: make(), S: make(), rowOf: make() };
+  }
+  dlx.S.fill(0, 0, m + 1);
+  return dlx;
+}
+
 export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity, keep = true } = {}) {
   const { rows, cols, grid, tile } = puzzle;
   const n = rows * cols;
@@ -447,20 +492,12 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
   for (let i = 0; i < n; i++) if (grid[i] === OPEN) itemOf[i] = ++m;   // items 1..m
   if (!sizeFeasible(tile, m)) return result;
 
-  // All placements of the tile, as lists of item numbers.
+  // All placements of the tile on open cells, as lists of cell indices.
   const pls = [];
-  for (const o of allOrientations(tile)) {
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cells = [];
-        for (const [dr, dc] of o) {
-          const nr = r + dr, nc = c + dc - o[0][1];
-          if (nr >= rows || nc < 0 || nc >= cols || itemOf[nr * cols + nc] < 0) break;
-          cells.push(nr * cols + nc);
-        }
-        if (cells.length === o.length) pls.push(cells);
-      }
-    }
+  for (const cells of boardPlacements(tile, rows, cols)) {
+    let open = true;
+    for (let k = 0; k < cells.length; k++) if (itemOf[cells[k]] < 0) { open = false; break; }
+    if (open) pls.push(cells);
   }
   if (rng) {
     for (let i = pls.length - 1; i > 0; i--) {
@@ -470,10 +507,10 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
   }
 
   // Dancing-links matrix. Node 0 is the root, 1..m are column headers.
-  const total = m + 1 + pls.reduce((sum, cells) => sum + cells.length, 0);
-  const L = new Int32Array(total), R = new Int32Array(total), U = new Int32Array(total),
-        D = new Int32Array(total), C = new Int32Array(total), S = new Int32Array(m + 1),
-        rowOf = new Int32Array(total);   // node -> placement index
+  let total = m + 1;
+  for (const cells of pls) total += cells.length;
+  // L, R, U, D, C: the links and column of each node; S: column sizes; rowOf: node -> placement index
+  const { L, R, U, D, C, S, rowOf } = dlxArrays(total, m);
   for (let j = 0; j <= m; j++) {
     L[j] = j === 0 ? m : j - 1; R[j] = j === m ? 0 : j + 1; U[j] = D[j] = j; C[j] = j;
   }
