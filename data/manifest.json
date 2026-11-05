@@ -57,6 +57,15 @@
       "count": 400
     },
     {
+      "id": "one-12",
+      "group": "One shape",
+      "title": "One shape · 12×12",
+      "label": "12×12",
+      "blurb": "Giant boards, very long solves.",
+      "file": "one-12.csv",
+      "count": 400
+    },
+    {
       "id": "two-6",
       "group": "Two shapes",
       "title": "Two shapes · 6×6",
@@ -81,6 +90,15 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
+      "count": 400
+    },
+    {
+      "id": "two-12",
+      "group": "Two shapes",
+      "title": "Two shapes · 12×12",
+      "label": "12×12",
+      "blurb": "Giant boards, very long solves.",
+      "file": "two-12.csv",
       "count": 400
     },
     {

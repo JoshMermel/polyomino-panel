@@ -1,6 +1,8 @@
 // Fill (or top up) the puzzle pool for one shape at one square size.
 //
 //   node tools/fill_library.mjs --tile P5 --size 8 [--target 400] [--max-minutes 15] [--seed N]
+//        [--min-fraction 0.05] [--max-fraction 0.17] [--attempt-seconds 30]
+//        (only these blocked-cell shares, and more patience per puzzle: sparse pools on big boards)
 //
 // The pool is tools/library/<tile>_<size>x<size>.csv: many scored puzzles with a
 // unique solution each, far more than any book needs. The books in data/ are
@@ -9,7 +11,7 @@
 // How it fills: the number of blocked cells is the main difficulty knob (more
 // blocked cells = easier), so the tool sweeps it. It finds the smallest blocked-
 // cell count the generator can handle for this shape and size, then spreads the
-// target evenly over that count and every larger one (up to 45% of the board).
+// target evenly over that count and every larger one (up to --max-fraction of the board (default 45%)).
 // Every puzzle is scored (js/rating.js) as it is added. Rotated/mirrored
 // duplicates are skipped. Re-running adds to the pool (the file is rewritten
 // after every sweep step, so an interrupted run loses little).
@@ -29,6 +31,9 @@ const target = Number(args.target ?? 400);
 const maxMs = Number(args['max-minutes'] ?? 15) * 60000;
 const seed = Number(args.seed ?? Math.floor(Math.random() * 2 ** 31));
 const quiet = 'quiet' in args;
+const minFraction = Number(args['min-fraction'] ?? 0);       // only blocked-cell counts from this share of the board ...
+const attemptMs = Number(args['attempt-seconds'] ?? 0) * 1000;   // patience per puzzle on hard (sparse, big) boards; 0 = the defaults (2.5 s to test a level, 6 s per puzzle)
+const maxFraction = Number(args['max-fraction'] ?? 0.45);    // ... up to this share (sparse boards: 0.17)
 const rows = size, cols = size;
 
 const dir = new URL('./library/', import.meta.url);
@@ -42,7 +47,7 @@ const log = (...m) => { if (!quiet) console.error(...m); };
 const save = () => writeFileSync(file, '# pool: generated, scored puzzles (not published). See tools/fill_library.mjs\n' + toCsv(pool));
 const holesOf = p => [...p.grid].filter(c => c === '#').length;
 
-const ladder = holeLadder(rows, cols, tile);
+const ladder = holeLadder(rows, cols, tile, maxFraction).filter(k => k >= minFraction * rows * cols);
 if (pool.length >= target) {
   console.log(`${tile} ${size}x${size}: pool already has ${pool.length} >= ${target}`);
   process.exit(0);
@@ -54,7 +59,7 @@ const rng0 = mulberry32(seed);
 for (const k of ladder) {
   let ok = feasible.length > 0;       // once one level works, assume every larger one does
   for (let attempt = 0; !ok && attempt < 2 && Date.now() - t0 < maxMs; attempt++) {
-    ok = !!generatePuzzle({ rows, cols, tile, holes: k, rng: rng0, maxMs: 2500 });
+    ok = !!generatePuzzle({ rows, cols, tile, holes: k, rng: rng0, maxMs: attemptMs || 2500 });
   }
   if (ok) feasible.push(k); else log(`  ${k} blocked: not feasible, skipping`);
 }
@@ -72,7 +77,7 @@ while (pool.length < target && Date.now() - t0 < maxMs && exhausted.size < feasi
     const rng = mulberry32(seed * 1000003 + k * 7919 + round);
     let made = 0, dups = 0, fails = 0;
     while (made < quota && dups < 120 && fails < 3 && pool.length < target && Date.now() - t0 < maxMs) {
-      const res = generatePuzzle({ rows, cols, tile, holes: k, rng, maxMs: 6000 });
+      const res = generatePuzzle({ rows, cols, tile, holes: k, rng, maxMs: attemptMs || 6000 });
       if (!res) { fails++; continue; }
       const key = canonicalGrid(res.puzzle.grid, rows, cols);
       if (seen.has(key)) { dups++; continue; }

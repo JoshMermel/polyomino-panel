@@ -101,7 +101,7 @@ for (const g of config.groups) {
       sizeWeights: g.sizeWeights ?? {}, count: g.perBook, maxBlocked: null, sparseShare: 1, first: true });
     continue;
   }
-  for (const size of config.sizes) {
+  for (const size of g.boardSizes ?? config.sizes) {          // a group may add sizes (the sparse books also have a 12x12)
     specs.push({
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
       title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,

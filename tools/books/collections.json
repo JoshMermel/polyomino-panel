@@ -40,8 +40,19 @@
       "shapes": 1,
       "maxBlocked": 0.17,
       "sparseShare": 1,
-      "perBook": 400,
-      "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard."
+      "perBook": {
+        "6": 400,
+        "8": 400,
+        "10": 400,
+        "12": 400
+      },
+      "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard.",
+      "boardSizes": [
+        6,
+        8,
+        10,
+        12
+      ]
     },
     {
       "name": "Two shapes",
@@ -49,8 +60,19 @@
       "shapes": 2,
       "maxBlocked": 0.17,
       "sparseShare": 1,
-      "perBook": 400,
-      "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard."
+      "perBook": {
+        "6": 400,
+        "8": 400,
+        "10": 400,
+        "12": 400
+      },
+      "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard.",
+      "boardSizes": [
+        6,
+        8,
+        10,
+        12
+      ]
     },
     {
       "name": "Intro",
@@ -101,7 +123,8 @@
   "sizeBlurbs": {
     "6": "Small boards, quick to solve.",
     "8": "Mid-size boards.",
-    "10": "Large boards, long solves."
+    "10": "Large boards, long solves.",
+    "12": "Giant boards, very long solves."
   },
   "tour": {
     "_comment": "The first puzzles of this book are a shape-by-shape introduction: `perShape` easy puzzles of each shape in turn, before the rest of the book in difficulty order.",
