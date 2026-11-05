@@ -227,7 +227,8 @@ for (const b of books) {
     // every published puzzle must still have exactly its stored solution
     const sols = solveWithGivens(p, 2);
     if (sols.length !== 1 || sols[0] !== p.solution) throw new Error(`${b.meta.id}: ${p.name} is not uniquely solvable`);
-    const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
+    // (a board with given edges is a different puzzle: the clue books reuse near-empty boards)
+    const key = p.givens?.length ? puzzleHash(p) : `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
     if (seenKeys.has(key)) throw new Error(`${b.meta.id}: duplicate puzzle ${p.name}`);
     seenKeys.add(key);
   }

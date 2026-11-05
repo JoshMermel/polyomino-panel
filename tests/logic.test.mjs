@@ -1114,15 +1114,20 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     const ps = parseCsv(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'));
     for (const p of ps) {
       const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;      // rotations and mirror images count as the same puzzle
-      assert.ok(!seen.has(key), `${book.id}/${p.name} appears in more than one book`);
-      seen.add(key);
+      if (!p.givens?.length) {       // (a board with given edges is a different puzzle: the clue books reuse near-empty boards)
+        assert.ok(!seen.has(key), `${book.id}/${p.name} appears in more than one book`);
+        seen.add(key);
+      }
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
     // the Intro book (small, easy puzzles of one shape, mixed sizes) and the Experiments book (puzzles with
     // pre-drawn edges) are special: no size or sparseness rules, but every puzzle must be uniquely solvable
     if (book.id === 'intro' || book.id.startsWith('experiments')) {
-      assert.equal(book.group, book.id === 'intro' ? 'Intro' : book.id === 'experiments' ? 'Experiments' : 'Experiments, balanced');
+      assert.equal(book.group, {
+        intro: 'Intro', experiments: 'Experiments', experiments2: 'Experiments, balanced', experiments3: 'Experiments, lines only',
+        experiments4: 'Experiments, crosses only', experiments5: 'Experiments, lines and crosses',
+      }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
         const sols = solveWithGivens(p, 2);

@@ -114,6 +114,30 @@
       "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and \u2715 marks) that make the tiling unique."
     },
     {
+      "name": "Experiments, lines only",
+      "idPrefix": "experiments3",
+      "source": "clues_lines.csv",
+      "title": "Experiments: lines only",
+      "label": "Lines only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by lines drawn for you, each one a tile boundary."
+    },
+    {
+      "name": "Experiments, crosses only",
+      "idPrefix": "experiments4",
+      "source": "clues_crosses.csv",
+      "title": "Experiments: \u2715 marks only",
+      "label": "\u2715 marks only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by \u2715 marks drawn for you, each one saying two cells share a tile."
+    },
+    {
+      "name": "Experiments, lines and crosses",
+      "idPrefix": "experiments5",
+      "source": "clues_both.csv",
+      "title": "Experiments: lines and \u2715",
+      "label": "Lines and \u2715",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and \u2715 marks drawn for you."
+    },
+    {
       "name": "Dense: one shape",
       "idPrefix": "dense1",
       "shapes": 1,

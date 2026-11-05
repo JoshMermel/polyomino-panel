@@ -139,7 +139,7 @@ while (Date.now() - t0 < maxMs && !full()) {
     const givens = greedyGivens(base, solutions, intended);
     if (!givens) continue;
     const puzzle = { ...base, solution: intended, givens };
-    if (solveWithGivens(puzzle, 2, 5000).length !== 1) continue;
+    if (solveWithGivens(puzzle, 2).length !== 1) continue;
     const r = ratePuzzle(puzzle);
     Object.assign(puzzle, { rules: r.rules, tier: r.tier, score: r.score, _tile: tile, _solutions: solutions.length });
     const bucket = buckets.get(`${size}|${r.tier}`) ?? [];

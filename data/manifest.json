@@ -19,7 +19,19 @@
     },
     {
       "name": "Experiments, balanced",
-      "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and ✕ marks) that make the tiling unique."
+      "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and \u2715 marks) that make the tiling unique."
+    },
+    {
+      "name": "Experiments, lines only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by lines drawn for you, each one a tile boundary."
+    },
+    {
+      "name": "Experiments, crosses only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by \u2715 marks drawn for you, each one saying two cells share a tile."
+    },
+    {
+      "name": "Experiments, lines and crosses",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and \u2715 marks drawn for you."
     },
     {
       "name": "Dense: one shape",
@@ -45,8 +57,8 @@
     {
       "id": "one-6",
       "group": "One shape",
-      "title": "One shape · 6×6",
-      "label": "6×6",
+      "title": "One shape \u00b7 6\u00d76",
+      "label": "6\u00d76",
       "blurb": "Small boards, quick to solve.",
       "file": "one-6.csv",
       "count": 400
@@ -54,8 +66,8 @@
     {
       "id": "one-8",
       "group": "One shape",
-      "title": "One shape · 8×8",
-      "label": "8×8",
+      "title": "One shape \u00b7 8\u00d78",
+      "label": "8\u00d78",
       "blurb": "Mid-size boards.",
       "file": "one-8.csv",
       "count": 400
@@ -63,8 +75,8 @@
     {
       "id": "one-10",
       "group": "One shape",
-      "title": "One shape · 10×10",
-      "label": "10×10",
+      "title": "One shape \u00b7 10\u00d710",
+      "label": "10\u00d710",
       "blurb": "Large boards, long solves.",
       "file": "one-10.csv",
       "count": 400
@@ -72,8 +84,8 @@
     {
       "id": "one-12",
       "group": "One shape",
-      "title": "One shape · 12×12",
-      "label": "12×12",
+      "title": "One shape \u00b7 12\u00d712",
+      "label": "12\u00d712",
       "blurb": "Giant boards, very long solves.",
       "file": "one-12.csv",
       "count": 400
@@ -81,8 +93,8 @@
     {
       "id": "two-6",
       "group": "Two shapes",
-      "title": "Two shapes · 6×6",
-      "label": "6×6",
+      "title": "Two shapes \u00b7 6\u00d76",
+      "label": "6\u00d76",
       "blurb": "Small boards, quick to solve.",
       "file": "two-6.csv",
       "count": 400
@@ -90,8 +102,8 @@
     {
       "id": "two-8",
       "group": "Two shapes",
-      "title": "Two shapes · 8×8",
-      "label": "8×8",
+      "title": "Two shapes \u00b7 8\u00d78",
+      "label": "8\u00d78",
       "blurb": "Mid-size boards.",
       "file": "two-8.csv",
       "count": 400
@@ -99,8 +111,8 @@
     {
       "id": "two-10",
       "group": "Two shapes",
-      "title": "Two shapes · 10×10",
-      "label": "10×10",
+      "title": "Two shapes \u00b7 10\u00d710",
+      "label": "10\u00d710",
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
       "count": 400
@@ -108,8 +120,8 @@
     {
       "id": "two-12",
       "group": "Two shapes",
-      "title": "Two shapes · 12×12",
-      "label": "12×12",
+      "title": "Two shapes \u00b7 12\u00d712",
+      "label": "12\u00d712",
       "blurb": "Giant boards, very long solves.",
       "file": "two-12.csv",
       "count": 400
@@ -128,15 +140,42 @@
       "group": "Experiments, balanced",
       "title": "Experiments: balanced clues",
       "label": "Balanced clues",
-      "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and ✕ marks) that make the tiling unique.",
+      "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and \u2715 marks) that make the tiling unique.",
       "file": "experiments2.csv",
       "count": 27
     },
     {
+      "id": "experiments3",
+      "group": "Experiments, lines only",
+      "title": "Experiments: lines only",
+      "label": "Lines only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by lines drawn for you, each one a tile boundary.",
+      "file": "experiments3.csv",
+      "count": 72
+    },
+    {
+      "id": "experiments4",
+      "group": "Experiments, crosses only",
+      "title": "Experiments: \u2715 marks only",
+      "label": "\u2715 marks only",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by \u2715 marks drawn for you, each one saying two cells share a tile.",
+      "file": "experiments4.csv",
+      "count": 72
+    },
+    {
+      "id": "experiments5",
+      "group": "Experiments, lines and crosses",
+      "title": "Experiments: lines and \u2715",
+      "label": "Lines and \u2715",
+      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and \u2715 marks drawn for you.",
+      "file": "experiments5.csv",
+      "count": 72
+    },
+    {
       "id": "dense1-6",
       "group": "Dense: one shape",
-      "title": "Dense: one shape · 6×6",
-      "label": "6×6",
+      "title": "Dense: one shape \u00b7 6\u00d76",
+      "label": "6\u00d76",
       "blurb": "Small boards, quick to solve.",
       "file": "dense1-6.csv",
       "count": 1000
@@ -144,8 +183,8 @@
     {
       "id": "dense1-8",
       "group": "Dense: one shape",
-      "title": "Dense: one shape · 8×8",
-      "label": "8×8",
+      "title": "Dense: one shape \u00b7 8\u00d78",
+      "label": "8\u00d78",
       "blurb": "Mid-size boards.",
       "file": "dense1-8.csv",
       "count": 1000
@@ -153,8 +192,8 @@
     {
       "id": "dense1-10",
       "group": "Dense: one shape",
-      "title": "Dense: one shape · 10×10",
-      "label": "10×10",
+      "title": "Dense: one shape \u00b7 10\u00d710",
+      "label": "10\u00d710",
       "blurb": "Large boards, long solves.",
       "file": "dense1-10.csv",
       "count": 1000
@@ -162,8 +201,8 @@
     {
       "id": "dense2-6",
       "group": "Dense: two shapes",
-      "title": "Dense: two shapes · 6×6",
-      "label": "6×6",
+      "title": "Dense: two shapes \u00b7 6\u00d76",
+      "label": "6\u00d76",
       "blurb": "Small boards, quick to solve.",
       "file": "dense2-6.csv",
       "count": 1000
@@ -171,8 +210,8 @@
     {
       "id": "dense2-8",
       "group": "Dense: two shapes",
-      "title": "Dense: two shapes · 8×8",
-      "label": "8×8",
+      "title": "Dense: two shapes \u00b7 8\u00d78",
+      "label": "8\u00d78",
       "blurb": "Mid-size boards.",
       "file": "dense2-8.csv",
       "count": 1000
@@ -180,8 +219,8 @@
     {
       "id": "dense2-10",
       "group": "Dense: two shapes",
-      "title": "Dense: two shapes · 10×10",
-      "label": "10×10",
+      "title": "Dense: two shapes \u00b7 10\u00d710",
+      "label": "10\u00d710",
       "blurb": "Large boards, long solves.",
       "file": "dense2-10.csv",
       "count": 1000

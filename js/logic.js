@@ -517,7 +517,10 @@ function dlxArrays(total, m) {
   return dlx;
 }
 
-export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity, keep = true } = {}) {
+// `givens` (optional, the puzzle's given edges): only placements that agree with them are used, so the
+// search finds exactly the tilings that match (a line: the two cells are in different tiles; a cross:
+// the same tile).
+export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity, keep = true, givens = null } = {}) {
   const { rows, cols, grid, tile } = puzzle;
   const n = rows * cols;
   const result = { count: 0, aborted: false, tilings: [], nodes: 0 };
@@ -529,10 +532,14 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
 
   // All placements of the tile on open cells, as lists of cell indices.
   const pls = [];
+  const rules = (givens ?? []).map(([type, kind, r, c]) => [type === 'L', kind === 'v' ? r * cols + c - 1 : (r - 1) * cols + c, r * cols + c]);
   for (const cells of boardPlacements(tile, rows, cols)) {
     let open = true;
     for (let k = 0; k < cells.length; k++) if (itemOf[cells[k]] < 0) { open = false; break; }
-    if (open) pls.push(cells);
+    if (open && rules.every(([isLine, a, b]) => {
+      const hasA = cells.includes(a), hasB = cells.includes(b);
+      return isLine ? !(hasA && hasB) : hasA === hasB;
+    })) pls.push(cells);
   }
   if (rng) {
     for (let i = pls.length - 1; i > 0; i--) {
@@ -623,11 +630,11 @@ export function matchesGivens(puzzle, solution) {
   });
 }
 
-// The solutions of a puzzle that has given edges: those tilings (looking at up to `scan` of them) that
-// agree with the givens. At most `limit` are returned. (For a puzzle without givens it is solve().)
-export function solveWithGivens(puzzle, limit = 2, scan = 500) {
-  if (!puzzle.givens?.length) return solve(puzzle, limit);
-  return solve(puzzle, scan).filter(sol => matchesGivens(puzzle, sol)).slice(0, limit);
+// The solutions of a puzzle that has given edges: the tilings that agree with the givens (an exact search
+// over the placements that do). At most `limit` are returned; with a `budget` (search nodes) a search that
+// runs out stops early, so only trust "fewer than limit" when no budget was given.
+export function solveWithGivens(puzzle, limit = 2, budget = Infinity) {
+  return searchTilings(puzzle, { limit, budget, givens: puzzle.givens }).tilings.map(labelString);
 }
 
 // Number of tilings, counted up to `cap`. Returns cap if the node budget is
