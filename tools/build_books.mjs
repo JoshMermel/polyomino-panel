@@ -23,6 +23,7 @@
 //      book follows the pool's own spread of difficulty from its easy end to its hard end. Sparse puzzles
 //      (few blocked cells) are preferred: the pick only looks at the sparsest `sparseShare` (default half) of
 //      a shape's puzzles in that tier, as long as that leaves at least three times the number needed.
+//   3b. The Hard tier holds at most `maxBeyondHints` (20%) puzzles the hint rules cannot finish; see below.
 //   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
 //      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
 //      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
@@ -43,7 +44,7 @@ import {
 import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickStable, weightedAllocation, spreadByTier } from './lib/pick.mjs';
+import { pickStable, pickQuantiles, weightedAllocation, spreadByTier } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -168,7 +169,21 @@ for (const spec of buildOrder) {
   const alloc = weightedAllocation(spec.count, perTier.map(c => c.length), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
   const tourTier = config.tiers.indexOf(config.tour?.tier);
   if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
-  const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare));
+  // The Hard tier may hold at most `maxBeyondHints` (a share, e.g. 0.2) of puzzles the hint rules can't
+  // finish ("no logical hints"): they score highest, so rank-based picks would lean heavily on them. Excess
+  // ones are cut back to evenly spaced ranks and replaced by solvable Hard puzzles (fewer if there aren't any).
+  const rest = perTier.flatMap((c, i) => {
+    const picks = pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare);
+    const cap = config.maxBeyondHints;
+    if (config.tiers[i] !== 'Hard' || cap == null) return picks;
+    const stuck = picks.filter(beyondHints), max = Math.floor(cap * alloc[i]);
+    if (stuck.length <= max) return picks;
+    const keepStuck = max ? pickQuantiles(stuck, { count: max, seed }).picks : [];
+    const chosen = new Set([...picks.filter(p => !beyondHints(p)), ...keepStuck].map(p => p.name));
+    const solvable = c.filter(p => !beyondHints(p) && !chosen.has(p.name));
+    const refill = pickAcross(byTile(solvable), stuck.length - keepStuck.length, isKept, spec.sparseShare);
+    return [...picks.filter(p => !beyondHints(p)), ...keepStuck, ...refill];
+  });
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
   const spread = spreadByTier(rest, { recent: tour.map(p => p.tile) });       // no long runs of one shape

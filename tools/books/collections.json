@@ -14,6 +14,8 @@
   "perBook": 1000,
   "_sparseShare": "Within each shape and tier a book only draws from the sparsest share of the puzzles (fewest blocked cells), as far as that leaves enough: the original L-panel puzzles have few black squares, and a book that takes puzzles by difficulty alone is mostly dense.",
   "sparseShare": 0.5,
+  "_maxBeyondHints": "At most this share of a book's Hard tier may be puzzles the hint rules cannot finish ('no logical hints'): they score highest, so picking by score rank would fill the tier with them. A book comes out smaller rather than exceed it.",
+  "maxBeyondHints": 0.2,
   "_tierWeights": "Share of a book each tier gets (1 unless listed). Read as counts for a 1000-puzzle book: 100 Beginner, 450 Medium, 450 Hard (Beginner is the least interesting tier, so it is small). A tier with too few puzzles gives up what it cannot fill.",
   "tierWeights": {
     "Beginner": 100,
