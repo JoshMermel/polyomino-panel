@@ -2,16 +2,16 @@
   "default": "one-6",
   "groups": [
     {
+      "name": "Intro",
+      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\"."
+    },
+    {
       "name": "One shape",
       "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard."
     },
     {
       "name": "Two shapes",
       "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard."
-    },
-    {
-      "name": "Intro",
-      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\"."
     },
     {
       "name": "Experiments",
@@ -29,6 +29,15 @@
     }
   ],
   "books": [
+    {
+      "id": "intro",
+      "group": "Intro",
+      "title": "Intro",
+      "label": "Intro: small and easy",
+      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\".",
+      "file": "intro.csv",
+      "count": 150
+    },
     {
       "id": "one-6",
       "group": "One shape",
@@ -100,15 +109,6 @@
       "blurb": "Giant boards, very long solves.",
       "file": "two-12.csv",
       "count": 400
-    },
-    {
-      "id": "intro",
-      "group": "Intro",
-      "title": "Intro",
-      "label": "Intro: small and easy",
-      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\".",
-      "file": "intro.csv",
-      "count": 150
     },
     {
       "id": "experiments",

@@ -250,6 +250,13 @@ export function parseGivens(text, puzzle) {
   }
   return out;
 }
+// Do the puzzle's given edges rule these cells out as one tile? A given line inside them would cut it in
+// two, and a given cross on their outline says a neighbouring cell is in the same tile.
+export function givensRuleOutTile(puzzle, cells) {
+  if (!puzzle.givens?.length) return false;
+  const has = (type, [kind, r, c]) => puzzle.givens.some(g => g[0] === type && g[1] === kind && g[2] === r && g[3] === c);
+  return tileInterior(puzzle, cells).some(e => has('L', e)) || tileOutline(puzzle, cells).some(e => has('X', e));
+}
 export const givensString = puzzle => (puzzle.givens ?? []).map(g => g.join(':')).join(';');
 export const isGivenEdge = (puzzle, kind, r, c) => (puzzle.givens ?? []).some(g => g[1] === kind && g[2] === r && g[3] === c);
 

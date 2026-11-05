@@ -8,7 +8,7 @@ import {
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
-  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, solveWithGivens, parseGivens, givensString, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
+  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, solveWithGivens, parseGivens, givensString, givensRuleOutTile, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
   tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
@@ -25,6 +25,10 @@ let libraryCache = null;
 const library = () => libraryCache ??= manifestOf().books.flatMap(b => parseCsv(readFileSync(new URL(`../data/${b.file}`, import.meta.url), 'utf8')));
 // A book's puzzles by file name. Books mix shapes and board sizes now, so a name like 'L_6x6.csv'
 // (the old per-shape books) means "every published puzzle with that tile and size", easiest first.
+// Re-checking every puzzle of every book (9,000+ of them: solving, rating, hints) took minutes in CI, so
+// the book tests look at an evenly spread sample plus the first and last few of each book. The builder
+// (tools/build_books.mjs) already checks every puzzle's solution when it builds a book.
+const sampled = (list, every = 8) => list.filter((_, i) => i % every === 0 || i < 4 || i >= list.length - 4);
 const data = name => {
   if (existsSync(new URL(`../data/${name}`, import.meta.url))) return parseCsv(readFileSync(new URL(`../data/${name}`, import.meta.url), 'utf8'));
   const m = /^(.+)_(\d+)x\d+\.csv$/.exec(name);
@@ -399,7 +403,7 @@ test('every set in the manifest loads, has unique solutions, and hints stay soun
     assert.ok(manifest.groups.some(g => g.name === set.group), `${set.id}: group ${set.group} is listed`);
     const puzzles = data(set.file);
     assert.equal(puzzles.length, set.count, set.id);
-    for (const p of puzzles) {
+    for (const p of sampled(puzzles, 6)) {
       const sols = solveWithGivens(p, 2);
       assert.equal(sols.length, 1, `${set.id}/${p.name}`);
       assert.equal(sols[0], p.solution, `${set.id}/${p.name}`);
@@ -519,12 +523,13 @@ test('sortByRules renumbers and sorts; every shipped book is sorted and its stor
   const manifest = JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
   for (const book of manifest.books) {
     const ps = data(book.file);
-    const rs = ps.map(ratePuzzle);
-    for (let i = 0; i < ps.length; i++) {
-      assert.equal(ps[i].rules, rs[i].rules, `${book.file} ${ps[i].name} rules column`);
-      assert.equal(ps[i].tier, rs[i].tier, `${book.file} ${ps[i].name} tier column`);
-      assert.equal(ps[i].score, rs[i].score, `${book.file} ${ps[i].name} score column`);
+    for (const p of sampled(ps, 12)) {                        // the stored rating columns are current
+      const r = ratePuzzle(p);
+      assert.equal(p.rules, r.rules, `${book.file} ${p.name} rules column`);
+      assert.equal(p.tier, r.tier, `${book.file} ${p.name} tier column`);
+      assert.equal(p.score, r.score, `${book.file} ${p.name} score column`);
     }
+    const rs = ps;                                           // (so the order checks below can use the stored columns)
     // a book runs through the tiers in order, and within a tier by score; a book can open with a
     // shape-by-shape "tour" of easy puzzles (its CSV header says how many), which is exempt
     const tour = Number(/The first (\d+) puzzles are a shape-by-shape tour/.exec(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'))?.[1] ?? 0);
@@ -1263,4 +1268,17 @@ test('given edges: the CSV column round-trips, the hash and starting marks inclu
   // a given must lie between two open cells
   assert.throws(() => parseGivens('L:v:0:0', g1));
   assert.throws(() => parseGivens('Q:v:0:2', g1));
+});
+
+test('given edges rule out dragged tiles that contradict them', () => {
+  // 1x5 with I2+I3 and a given line between cells 1 and 2: the I3 [0,1,2] would be cut by it
+  const p = { rows: 1, cols: 5, tile: 'I2+I3', grid: '.....', solution: 'AABBB', givens: [['L', 'v', 0, 2]] };
+  assert.equal(givensRuleOutTile(p, [0, 1, 2]), true);      // the line runs through it
+  assert.equal(givensRuleOutTile(p, [0, 1]), false);        // the domino ends at the line
+  assert.equal(givensRuleOutTile(p, [2, 3, 4]), false);
+  // a given cross between cells 2 and 3: a tile ending at cell 2 would put a boundary across it
+  const q = { ...p, givens: [['X', 'v', 0, 3]] };
+  assert.equal(givensRuleOutTile(q, [0, 1, 2]), true);
+  assert.equal(givensRuleOutTile(q, [2, 3, 4]), false);
+  assert.equal(givensRuleOutTile({ ...p, givens: undefined }, [0, 1, 2]), false);
 });

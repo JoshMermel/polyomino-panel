@@ -4,7 +4,7 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges, isGivenEdge,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
-  cellsFormTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints } from './rating.js';
@@ -285,9 +285,11 @@ function onEdgePress(kind, r, c) {
   commit([{ kind, r, c, from: cur, to: nextMark(cur) }]);
 }
 
+const dragIsTile = cells => cellsFormTile(state.puzzle, cells) && !givensRuleOutTile(state.puzzle, cells);
+
 function showCellDrag() {
   const { tile, cols } = state.puzzle;
-  board.setDrag(gesture.cells, cellsFormTile(state.puzzle, gesture.cells) ? shapeIndexOf(tile, gesture.cells, cols) : -1);
+  board.setDrag(gesture.cells, dragIsTile(gesture.cells) ? shapeIndexOf(tile, gesture.cells, cols) : -1);
 }
 
 function onCellPress(cell) {
@@ -310,6 +312,10 @@ function onRelease() {
   // Cell drag.
   const { puzzle } = state;
   if (g.cells.length === 1 && minTileSize(puzzle.tile) > 1) return;   // just a click on a cell
+  if (cellsFormTile(puzzle, g.cells) && givensRuleOutTile(puzzle, g.cells)) {
+    showToast('A pre-drawn edge rules those cells out as one tile.', 'info', 2500);
+    return;
+  }
   if (!cellsFormTile(puzzle, g.cells)) {
     showToast(tileSpecs(puzzle.tile).length > 1
       ? `Those cells aren't one of the tile shapes (${shapeName(puzzle.tile)}).`
