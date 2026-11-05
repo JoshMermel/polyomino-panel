@@ -22,6 +22,7 @@
 //   --out FILE                       output CSV (default: stdout)
 import { writeFileSync } from 'node:fs';
 import { toCsv, tileSpecs, shapeName } from '../js/logic.js';
+import './lib/wasm_counter.mjs';        // faster tiling counter, when built (tools/wasm)
 import { generatePuzzleAuto, generatePuzzle, mulberry32, canonicalGrid, defaultHoles } from '../js/generator.js';
 import { sortByRules } from '../js/rating.js';
 

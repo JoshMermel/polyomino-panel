@@ -110,6 +110,7 @@ L_6x6_01,6,6,L,#.....#...#.............#...........,#AAABB#ACC#BDDDCEBDFGCEH#FGE
 | `tools/generate.mjs` | General-purpose generator CLI (any shape, size, blocked-cell count) |
 | `tools/fill_library.mjs`, `tools/fill_all.mjs` | Fill the puzzle pools (one combination / all of them, in parallel) |
 | `tools/hunt_library.mjs`, `tools/hunt_all.mjs` | Hunt for hard puzzles to add to the pools |
+| `tools/wasm/`, `tools/lib/wasm_counter.mjs`, `tools/lib/dlx.wasm` | Optional WASM build (Rust) of the tiling counter that the generator tools use when `dlx.wasm` is present (about 1.6x faster generation; `tools/wasm/build.sh` rebuilds it, `PP_NO_WASM=1` turns it off; `tests/wasm.test.mjs` checks it agrees with the JS counter) |
 | `tools/prune_library.mjs` | Drop near-duplicate puzzles from the pools (dry run unless `--apply`) |
 | `tools/rescore_library.mjs` | Re-rate every pool after the rules or weights change |
 | `tools/build_books.mjs`, `tools/books/collections.json`, `tools/books/recipes.json`, `tools/lib/pick.mjs` | Build books from the pools (collections = the books; recipes = which shapes and sizes the pools cover) |

@@ -15,6 +15,7 @@
 // after every sweep step, so an interrupted run loses little).
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { parseCsv, toCsv, puzzleHash, shapeName } from '../js/logic.js';
+import './lib/wasm_counter.mjs';        // faster tiling counter, when built (tools/wasm)
 import { generatePuzzle, mulberry32, canonicalGrid, holeLadder } from '../js/generator.js';
 import { ratePuzzle, TIERS } from '../js/rating.js';
 

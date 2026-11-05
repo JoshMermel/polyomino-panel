@@ -447,7 +447,7 @@ export function labelString(assign) {
 // lists, in a fixed order (orientation, then row, then column). Cached per tile and board size:
 // a search only has to drop the placements that touch a blocked cell.
 const placementsCache = new Map();
-function boardPlacements(tile, rows, cols) {
+export function boardPlacements(tile, rows, cols) {
   const key = `${tile}|${rows}x${cols}`;
   let all = placementsCache.get(key);
   if (!all) {
@@ -579,7 +579,12 @@ export function solve(puzzle, limit = 2) {
 
 // Number of tilings, counted up to `cap`. Returns cap if the node budget is
 // exhausted first (treat as "at least cap").
+// The generator tools can swap in a faster counter (tools/lib/wasm_counter.mjs); it must give the
+// same answer for every input.
+let customCounter = null;
+export function useCounter(fn) { customCounter = fn; }
 export function countSolutions(puzzle, cap = 2, budget = Infinity) {
+  if (customCounter) return customCounter(puzzle, cap, budget);
   const res = searchTilings(puzzle, { limit: cap, budget, keep: false });
   return res.aborted ? cap : res.count;
 }

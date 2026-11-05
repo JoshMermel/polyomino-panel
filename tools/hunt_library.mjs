@@ -28,6 +28,7 @@
 // combination is written off (rigid shapes that never get past the easy rules).
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'node:fs';
 import { parseCsv, toCsv, puzzleHash, countSolutions, shapeName, hasSwastika, openCellsConnected } from '../js/logic.js';
+import './lib/wasm_counter.mjs';        // faster tiling counter, when built (tools/wasm)
 import {
   generatePuzzle, mulberry32, canonicalGrid, stateFromPuzzle, puzzleFromState, neighborState,
 } from '../js/generator.js';
