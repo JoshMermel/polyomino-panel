@@ -5,8 +5,9 @@
 // Two puzzles are near-duplicates when their boards differ in fewer than --min-distance of the
 // cells (default 8%: 3 cells on 6x6, 5 on 8x8, 8 on 10x10; at least 2), comparing the blocked
 // cells under all rotations and mirrors, within one pool (one tile spec, one size). In each
-// group of near-duplicates the hardest puzzle survives: pools are walked Hard first, then
-// Medium, then Beginner, by descending score, so the thin top tiers lose the least.
+// group of near-duplicates the SPARSEST puzzle survives (fewest blocked cells: sparse boards are the
+// better ones, see tools/sparsify_library.mjs), then the hardest: pools are walked by ascending
+// blocked-cell count, then Hard first, then Medium, then Beginner, by descending score.
 // Without --apply nothing is written; it only prints what would be dropped.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { parseCsv, toCsv } from '../js/logic.js';
@@ -45,7 +46,8 @@ for (const f of readdirSync(dir).filter(f => /^[A-Z0-9+]+_\d+x\d+\.csv$/.test(f)
   const puzzles = parseCsv(text);
   if (!puzzles.length) continue;
   const minD = Math.max(2, Math.round(frac * puzzles[0].rows * puzzles[0].cols));
-  const order = [...puzzles].sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || b.score - a.score || (a.name < b.name ? -1 : 1));
+  const blocked = p => (p._b ??= [...p.grid].filter(c => c === '#').length);
+  const order = [...puzzles].sort((a, b) => blocked(a) - blocked(b) || TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || b.score - a.score || (a.name < b.name ? -1 : 1));
   const kept = new Set(), syms = [];
   for (const p of order) {
     const s = symmetries(p);

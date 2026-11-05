@@ -154,10 +154,19 @@ export function randomInitial(rows, cols, tile, holes, rng, attempts = 300) {
 // Propose a neighbouring state: re-randomize a window around a random cell.
 // Returns a new {mask, assign} (never mutates `state`), or null if the move
 // found nothing new.
-function proposeMove(state, rows, cols, tile, rng) {
+// With `delta` > 0 the window is re-packed with that many FEWER blocked cells (delta should be a tile
+// size, so the open cells still divide into whole tiles): the puzzle gets sparser. The window is then
+// centred on a blocked cell.
+function proposeMove(state, rows, cols, tile, rng, delta = 0) {
   const { mask, assign } = state;
   const n = rows * cols;
-  const centre = Math.floor(rng() * n);
+  let centre = Math.floor(rng() * n);
+  if (delta > 0) {
+    const blocked = [];
+    for (let i = 0; i < n; i++) if (mask[i]) blocked.push(i);
+    if (!blocked.length) return null;
+    centre = blocked[Math.floor(rng() * blocked.length)];
+  }
   const cr = Math.floor(centre / cols), cc = centre % cols;
   const radius = [1, 2, 2, 3][Math.floor(rng() * 4)];
 
@@ -173,7 +182,8 @@ function proposeMove(state, rows, cols, tile, rng) {
 
   const window = [...holesIn];
   for (let i = 0; i < n; i++) if (!mask[i] && tileIds.has(assign[i])) window.push(i);
-  const holeCount = holesIn.size;
+  const holeCount = holesIn.size - delta;
+  if (holeCount < 0) return null;
 
   // The new tiles reuse the old tiles' ids; with one tile size the window holds the same
   // number of tiles as before, with several sizes it may hold more (fresh ids) or fewer.
@@ -317,6 +327,46 @@ export function puzzleFromState(state, rows, cols, tile) {
   const puzzle = makePuzzle(rows, cols, tile, state.mask);
   puzzle.solution = labelString(state.assign);
   return puzzle;
+}
+
+// Make a unique puzzle SPARSER: the same kind of puzzle with `delta` fewer blocked cells (delta: a tile
+// size). Frees blocked cells in one small window and re-tiles it, which almost always makes the puzzle
+// ambiguous, then runs the generator's own local search (moves of the same number of blocked cells) from
+// there until the solution is unique again, trying new windows after `restartAfter` moves. Returns
+// { puzzle, stats } or null when `maxMs` runs out.
+export function sparsifyPuzzle({
+  puzzle, delta, rng = mulberry32(1), maxMs = 20000, cap = 40, budget = 200000, restartAfter = 1500,
+}) {
+  const { rows, cols, tile } = puzzle;
+  const start = Date.now();
+  const timeLeft = () => Date.now() - start < maxMs;
+  const stats = { moves: 0, restarts: 0, ms: 0 };
+  const count = mask => countSolutions(makePuzzle(rows, cols, tile, mask), cap, budget);
+  const base = stateFromPuzzle(puzzle);
+  while (timeLeft()) {
+    stats.restarts++;
+    let state = proposeMove(base, rows, cols, tile, rng, delta);
+    if (!state) continue;
+    let cost = count(state.mask);
+    for (let it = 0; it < restartAfter && timeLeft(); it++) {
+      if (cost === 1) {
+        const out = puzzleFromState(state, rows, cols, tile);
+        const usesAll = solutionShapeCounts(out, out.solution).every(k => k > 0);
+        if (usesAll && openCellsConnected(out) && !hasSwastika(out, out.solution)) {
+          if (solve(out, 2).length !== 1) throw new Error('internal error: not unique');
+          stats.ms = Date.now() - start;
+          return { puzzle: out, stats };
+        }
+      }
+      const next = proposeMove(state, rows, cols, tile, rng);
+      if (!next) continue;
+      stats.moves++;
+      const c2 = count(next.mask);
+      if (c2 <= cost || rng() < Math.exp(-(Math.log(c2) - Math.log(cost)) / 0.35)) { state = next; cost = c2; }
+    }
+  }
+  stats.ms = Date.now() - start;
+  return null;
 }
 
 // A neighbouring state: re-randomizes a small window of tiles and blocked cells
