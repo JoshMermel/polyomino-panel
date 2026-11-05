@@ -12,11 +12,13 @@
 // There is one book per (number of tile shapes, board size): "One shape" and "Two shapes", each on
 // 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard; see
 // js/rating.js), easiest first. How a book is made:
-//   1. The tier shares are even: the book's size is split equally over the tiers, and a tier with
-//      too few puzzles gives up what it can't fill, the others sharing the difference.
+//   1. The book's size is split over the tiers in proportion to their weights (tierWeights in
+//      collections.json: Beginner counts half, so a book is about 20% Beginner, 40% Medium, 40% Hard),
+//      and a tier with too few puzzles gives up what it can't fill, the others sharing the difference.
+//      The 6x6 tour's puzzles count toward its Beginner share.
 //   2. Within a tier the puzzles are shared out over the shapes (or pairs) that have puzzles of that tier,
 //      in proportion to their weights (shapeWeights in collections.json; 1 unless listed, so evenly),
-//      again with the shortfall passed on.
+//      again with the shortfall passed on; each such shape gets at least one.
 //   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
 //      book follows the pool's own spread of difficulty from its easy end to its hard end.
 //   4. The book is sorted by tier, then score. One book can start with a shape-by-shape "tour" of
@@ -35,7 +37,7 @@ import {
 import { parseCsv, toCsv, solve, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickStable, evenAllocation, weightedAllocation } from './lib/pick.mjs';
+import { pickStable, weightedAllocation } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -75,14 +77,18 @@ for (const tile of recipes.shapes) {
 }
 const shapeCount = p => tileSpecs(p.tile).length;
 
-// The books, in order.
+// The books, in order. A group's perBook (or the global one) is a number or an object by board size.
+const bookSize = (g, size) => {
+  const n = g.perBook ?? config.perBook;
+  return typeof n === 'object' ? n[size] : n;
+};
 const specs = [];
 for (const g of config.groups) {
   for (const size of config.sizes) {
     specs.push({
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
       title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,
-      blurb: config.sizeBlurbs?.[size] ?? '', count: g.perBook ?? config.perBook,
+      blurb: config.sizeBlurbs?.[size] ?? '', count: bookSize(g, size),
     });
   }
 }
@@ -107,6 +113,15 @@ const books = [];
 const weightOf = tile => config.shapeWeights?.[tile] ?? 1;
 function pickAcross(groups, count, isKept) {
   const alloc = weightedAllocation(count, groups.map(g => g.length), groups.map(g => weightOf(g[0].tile)));
+  // every shape that has puzzles in this tier gets at least one slot (taken from the biggest share), so a
+  // small share (the Beginner tier of a book) doesn't starve the down-weighted shapes out of the book
+  if (count >= groups.length) {
+    for (let i = 0; i < alloc.length; i++) {
+      if (alloc[i] > 0) continue;
+      const big = alloc.indexOf(Math.max(...alloc));
+      if (alloc[big] > 1) { alloc[big]--; alloc[i] = 1; }
+    }
+  }
   // --trim only trims down-weighted shapes; every other shape keeps all its published puzzles
   return groups.flatMap((g, i) => {
     const trimmed = trim && weightOf(g[0].tile) < 1;
@@ -134,7 +149,9 @@ for (const spec of specs) {
 
   const cands = eligible(spec, used);
   const perTier = config.tiers.map(t => cands.filter(p => p.tier === t));
-  const alloc = evenAllocation(spec.count - tour.length, perTier.map(c => c.length));
+  const alloc = weightedAllocation(spec.count, perTier.map(c => c.length), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
+  const tourTier = config.tiers.indexOf(config.tour?.tier);
+  if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
   const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i], isKept));
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));

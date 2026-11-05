@@ -18,7 +18,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "one-6.csv",
-      "count": 301
+      "count": 300
     },
     {
       "id": "one-8",
@@ -36,7 +36,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "one-10.csv",
-      "count": 300
+      "count": 240
     },
     {
       "id": "two-6",
@@ -45,7 +45,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "two-6.csv",
-      "count": 326
+      "count": 400
     },
     {
       "id": "two-8",
@@ -54,7 +54,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "two-8.csv",
-      "count": 317
+      "count": 400
     },
     {
       "id": "two-10",
