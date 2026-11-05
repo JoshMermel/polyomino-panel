@@ -57,7 +57,7 @@ function launch() {
     const budget = c.anyHard ? minutes : '4';                  // rigid shapes: a short probe
     const child = spawn(process.execPath, [new URL('./hunt_library.mjs', import.meta.url).pathname,
       '--tile', c.tile, '--size', String(c.size), '--minutes', budget, '--want', want, '--targets', targets,
-      '--probe-minutes', c.anyHard ? '3' : '2', '--stall-minutes', '8', '--until', String(until), '--quiet', '1'],
+      '--probe-minutes', c.anyHard ? '3' : '2', '--stall-minutes', '8', '--until', String(until), '--quiet', '1', ...(args.exploit ? ['--exploit', args.exploit] : [])],
     { stdio: ['ignore', 'pipe', 'inherit'] });
     let out = '';
     child.stdout.on('data', d => { out += d; });

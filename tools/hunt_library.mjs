@@ -2,7 +2,7 @@
 //
 //   node tools/hunt_library.mjs --tile L --size 8 --minutes 30
 //        [--want chain,unsolved] [--targets chain=150,unsolved=100]
-//        [--min-distance 4] [--seed N]
+//        [--min-distance 4] [--exploit 0] [--seed N]
 //        [--probe-minutes 3] [--stall-minutes 10] [--until EPOCH_MS]
 //
 // Rejection sampling (what tools/fill_library.mjs does) finds the easy and medium
@@ -12,9 +12,9 @@
 // edgesWide; a rule id means "puzzles whose hardest rule is exactly that"). With --want Beginner,Medium it hunts the other end instead: easy puzzles on
 // the bigger boards, where plain sampling almost never lands (the pools were thin there). Two
 // modes are mixed:
-//   explore  generate fresh uniquely-solvable puzzles at a blocked-cell count picked
+//   explore  (the default, and the only mode unless --exploit is given) generate fresh uniquely-solvable puzzles at a blocked-cell count picked
 //            by a running estimate of which counts yield hard puzzles
-//   exploit  take a hard puzzle found earlier, perturb it with the generator's window
+//   exploit  (--exploit 0.6 = 60% of the steps; off by default because it yields near-duplicate siblings) take a hard puzzle found earlier, perturb it with the generator's window
 //            moves, keep neighbours that are still uniquely solvable, and rate them
 // Every puzzle is rated with the real rules, so nothing is stored that the solver
 // hasn't verified. Puzzles whose open cells are not one connected region are rejected, and so
@@ -50,6 +50,7 @@ const seed = Number(args.seed ?? Math.floor(Math.random() * 2 ** 31));
 const want = new Set((args.want ?? 'chain,unsolved').split(',').filter(Boolean));
 const bucketOf = p => (want.has(p.rules) ? p.rules : want.has(p.tier) ? p.tier : null);
 const targets = Object.fromEntries([...want].map(w => [w, 150]));
+const exploitShare = Number(args.exploit ?? 0);          // share of steps that perturb a stored puzzle (they come out as siblings of it); 0 = fresh puzzles only
 const minDistance = Number(args['min-distance'] ?? 4);   // a find must differ from stored puzzles in this many cells
 for (const kv of (args.targets ?? '').split(',').filter(Boolean)) { const [k, v] = kv.split('='); targets[k] = Number(v); }
 const cap = t => (targets[t] ?? 0) * 4;                // stop storing a tier at 4x its target
@@ -145,7 +146,7 @@ while (Date.now() < deadline && !allMet()) {
   if (now - lastFind > stallMs && now - t0 > probeMs) { log('stalled: nothing new for a while'); break; }
   if (now - t0 > probeMs && added === 0 && !parents.length) { log('probe found nothing hard: giving up on this combination'); break; }
 
-  const exploit = parents.length > 0 && rng() < 0.6;
+  const exploit = parents.length > 0 && rng() < exploitShare;
   const s0 = Date.now();
   if (exploit) {
     // a few perturbations of one parent; prefer parents that are harder
