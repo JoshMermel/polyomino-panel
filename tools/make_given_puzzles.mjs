@@ -5,8 +5,13 @@
 //   node tools/make_given_puzzles.mjs [--out tools/books/experiments.csv] [--per 3] [--sizes 6,8,10]
 //        [--tiles L,T,S,P5,...] [--minutes 8] [--seed N] [--max-givens 2]
 //        [--cross-clues 1] [--add-to tools/books/experiments.csv]
+//        [--balanced 1] [--max-solutions 120] [--min-givens 5] [--max-givens 10]
 // --cross-clues keeps only puzzles with at least one given cross ("these two cells share a tile") among
 // their givens; --add-to adds the new puzzles to an existing book file instead of replacing it.
+// --balanced makes puzzles with FEW blocked cells (2 to 8% of the board) and MANY given edges (at least
+// --min-givens, a mix of lines and crosses): the layout has up to --max-solutions tilings, and a greedy
+// cover picks the edges (each kills as many of the other tilings as it can) until one tiling is left;
+// extra true edges are added up to --min-givens so the clues are balanced between cells and edges.
 //
 // For each board size it generates layouts that have 2 to 4 solutions (the generator's local search with
 // minSolutions/maxSolutions), lists every solution, and looks for the smallest set of edges (one, else
@@ -32,8 +37,11 @@ const per = Number(args.per ?? 3);
 const sizes = (args.sizes ?? '6,8,10').split(',').map(Number);
 const tiles = (args.tiles ?? 'L,T,S,P5,V3,I3,Y5,N5,F5,W5,L+T,T+S,V3+I3').split(',');
 const maxMs = Number(args.minutes ?? 8) * 60000;
-const maxGivens = Number(args['max-givens'] ?? 2);
+const balanced = 'balanced' in args;
+const maxGivens = Number(args['max-givens'] ?? (balanced ? 10 : 2));
 const crossClues = 'cross-clues' in args;
+const maxSolutions = Number(args['max-solutions'] ?? (balanced ? 120 : 4));
+const minGivens = Number(args['min-givens'] ?? (balanced ? 5 : 1));
 const addTo = args['add-to'];
 const rng = mulberry32(Number(args.seed ?? 11));
 const pick = arr => arr[Math.floor(rng() * arr.length)];
@@ -75,6 +83,36 @@ function givenSets(puzzle, solutions, target) {
   }));
 }
 
+// Balanced mode: a greedy set of edges (lines and crosses, true in `target`) that kills every other
+// solution; then extra true edges up to `minGivens`, alternating line / cross. Null if it takes more than maxGivens.
+function greedyGivens(puzzle, solutions, target) {
+  const others = solutions.filter(s => s !== target);
+  const edges = edgeList(puzzle);
+  const kills = edges.map(e => others.map(o => isLine(puzzle, o, e) !== isLine(puzzle, target, e)));
+  const alive = new Set(others.keys());
+  const chosen = [];
+  while (alive.size) {
+    if (chosen.length >= maxGivens) return null;
+    let best = 0;
+    const gains = edges.map((_, i) => { if (chosen.includes(i)) return 0; let g = 0; for (const k of alive) if (kills[i][k]) g++; best = Math.max(best, g); return g; });
+    if (!best) return null;
+    // among the edges that kill nearly as many as the best, take a random one (varied, not always the same kind)
+    const top = gains.map((g, i) => [g, i]).filter(([g]) => g >= Math.max(1, Math.ceil(best * 0.7)));
+    const [, pickedEdge] = pick(top);
+    chosen.push(pickedEdge);
+    for (const k of [...alive]) if (kills[pickedEdge][k]) alive.delete(k);
+  }
+  // extras: random true edges until there are minGivens clues, about half lines and half crosses
+  const lineEdges = edges.map((e, i) => i).filter(i => isLine(puzzle, target, edges[i]));
+  const crossEdges = edges.map((e, i) => i).filter(i => !isLine(puzzle, target, edges[i]));
+  let wantLine = chosen.filter(i => isLine(puzzle, target, edges[i])).length <= chosen.length / 2;
+  for (let guard = 0; chosen.length < minGivens && guard < 200; guard++) {
+    const pool = (wantLine ? lineEdges : crossEdges).filter(i => !chosen.includes(i));
+    if (pool.length) { chosen.push(pick(pool)); wantLine = !wantLine; } else wantLine = !wantLine;
+  }
+  return chosen.map(i => [isLine(puzzle, target, edges[i]) ? 'L' : 'X', ...edges[i]]);
+}
+
 const buckets = new Map();                         // `${size}|${tier}` -> puzzles
 const seen = new Set();
 const t0 = Date.now();
@@ -83,20 +121,31 @@ const full = () => sizes.every(s => TIERS.every(t => (buckets.get(`${s}|${t}`) ?
 while (Date.now() - t0 < maxMs && !full()) {
   const size = pick(sizes), tile = pick(tiles);
   const ladder = holeLadder(size, size, tile);
-  const target = size * size * pick([0.06, 0.09, 0.12, 0.15, 0.2, 0.26]);
+  const target = size * size * pick(balanced ? [0.02, 0.04, 0.06, 0.08] : [0.06, 0.09, 0.12, 0.15, 0.2, 0.26]);
   const holes = ladder.reduce((best, k) => (Math.abs(k - target) < Math.abs(best - target) ? k : best), ladder[0]);
   tried++;
-  const res = generatePuzzle({ rows: size, cols: size, tile, holes, rng, maxMs: 8000, minSolutions: 2, maxSolutions: 4 });
+  const res = generatePuzzle({ rows: size, cols: size, tile, holes, rng, maxMs: 8000, minSolutions: balanced ? 6 : 2, maxSolutions, cap: maxSolutions + 1 });
   if (!res) continue;
   const base = res.puzzle;
-  const solutions = solve(base, 6);
-  if (solutions.length < 2 || solutions.length > 4) continue;
+  const solutions = solve(base, maxSolutions + 1);
+  if (solutions.length < (balanced ? 6 : 2) || solutions.length > maxSolutions) continue;
   const key = `${tile}|${canonicalGrid(base.grid, size, size)}`;
   if (seen.has(key)) continue;
   seen.add(key);
   const clean = solutions.filter(sol => !hasSwastika(base, sol));      // never publish a swastika in the solution
   if (!clean.length) continue;
   const intended = pick(clean);
+  if (balanced) {
+    const givens = greedyGivens(base, solutions, intended);
+    if (!givens) continue;
+    const puzzle = { ...base, solution: intended, givens };
+    if (solveWithGivens(puzzle, 2, 5000).length !== 1) continue;
+    const r = ratePuzzle(puzzle);
+    Object.assign(puzzle, { rules: r.rules, tier: r.tier, score: r.score, _tile: tile, _solutions: solutions.length });
+    const bucket = buckets.get(`${size}|${r.tier}`) ?? [];
+    if (bucket.length < per) { bucket.push(puzzle); buckets.set(`${size}|${r.tier}`, bucket); found++; }
+    continue;
+  }
   const sets = givenSets(base, solutions, intended);
   if (!sets.length) continue;
   const best = Math.min(...sets.map(s => s.length));

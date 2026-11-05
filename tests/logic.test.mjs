@@ -1121,13 +1121,13 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     }
     // the Intro book (small, easy puzzles of one shape, mixed sizes) and the Experiments book (puzzles with
     // pre-drawn edges) are special: no size or sparseness rules, but every puzzle must be uniquely solvable
-    if (book.id === 'intro' || book.id === 'experiments') {
-      assert.equal(book.group, book.id === 'intro' ? 'Intro' : 'Experiments');
+    if (book.id === 'intro' || book.id.startsWith('experiments')) {
+      assert.equal(book.group, book.id === 'intro' ? 'Intro' : book.id === 'experiments' ? 'Experiments' : 'Experiments, balanced');
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
         const sols = solveWithGivens(p, 2);
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
-        if (book.id === 'experiments') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
+        if (book.id.startsWith('experiments')) assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else assert.equal(p.tier, 'Beginner');
       }
       continue;
