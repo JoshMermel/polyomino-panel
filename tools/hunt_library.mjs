@@ -1,7 +1,7 @@
 // Hunt for hard puzzles and add them to a pool in tools/library/.
 //
 //   node tools/hunt_library.mjs --tile L --size 8 --minutes 30
-//        [--want chain,unsolved] [--targets chain=150,unsolved=100]
+//        [--want eliminate,chain,unsolved] [--targets eliminate=150,chain=100,unsolved=100]
 //        [--min-distance 4] [--exploit 0] [--seed N]
 //        [--probe-minutes 3] [--stall-minutes 10] [--until EPOCH_MS]
 //
@@ -48,7 +48,7 @@ const seed = Number(args.seed ?? Math.floor(Math.random() * 2 ** 31));
 // What counts as a find: a tier name or a rule id (default: the rarest hard puzzles, those whose
 // hardest rule is a chain or beyond the rules; --want Beginner,Medium hunts easy puzzles). A puzzle
 // falls in the bucket of its rule if that is wanted, else of its tier if that is wanted.
-const want = new Set((args.want ?? 'chain,unsolved').split(',').filter(Boolean));
+const want = new Set((args.want ?? 'eliminate,chain,unsolved').split(',').filter(Boolean));
 const bucketOf = p => (want.has(p.rules) ? p.rules : want.has(p.tier) ? p.tier : null);
 const targets = Object.fromEntries([...want].map(w => [w, 150]));
 const exploitShare = Number(args.exploit ?? 0);          // share of steps that perturb a stored puzzle (they come out as siblings of it); 0 = fresh puzzles only

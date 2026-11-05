@@ -2,7 +2,7 @@
 // tools/books/recipes.json, several at a time, most-needy combinations first.
 //
 //   node tools/hunt_all.mjs [--hours 3] [--minutes 30] [--jobs 8]
-//        [--want chain,unsolved] [--targets chain=300,unsolved=150] [--only L_8x8,P5_*]
+//        [--want eliminate,chain,unsolved] [--targets eliminate=300,chain=150,unsolved=150] [--only L_8x8,P5_*]
 //
 // --want Beginner,Medium hunts easy puzzles instead (for books whose pools are thin there).
 //
@@ -23,9 +23,9 @@ const recipes = JSON.parse(readFileSync(new URL('./books/recipes.json', import.m
 const hours = Number(args.hours ?? 3);
 const minutes = args.minutes ?? '30';
 const jobs = Number(args.jobs ?? Math.max(1, os.cpus().length - 1));
-const want = args.want ?? 'chain,unsolved';
+const want = args.want ?? 'eliminate,chain,unsolved';
 const wanted = want.split(',');
-const targets = args.targets ?? (want.includes('Beginner') ? 'Beginner=300,Medium=300' : 'chain=300,unsolved=150');
+const targets = args.targets ?? (want.includes('Beginner') ? 'Beginner=300,Medium=300' : 'eliminate=300,chain=150,unsolved=150');
 const only = args.only ? args.only.split(',').map(g => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$')) : null;
 const until = Date.now() + hours * 3600000;
 const logFile = new URL('./library/hunt.log', import.meta.url);

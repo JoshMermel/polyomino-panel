@@ -9,8 +9,10 @@
 //   edgesWide   the same edge reasoning over four or more possible tiles
 //   lookahead3  a cell has three or more possible tiles; all but one lead to a
 //               contradiction
-//   chain       as above, but a tile is eliminated only after following its forced
-//               consequences for several steps until something breaks
+//   eliminate   a cell has three or more possible tiles; some (not all but one) lead to a
+//               contradiction, and the tiles that are left agree on an edge
+//   chain       a cell has two possible tiles and one is eliminated only after following its
+//               forced consequences for several steps until something breaks
 //
 // A "contradiction" is a cell left with no placement, a region walled in by lines
 // whose size is not a multiple of the tile (or, inside chains, whose chessboard
@@ -21,7 +23,7 @@
 // ('unsolved' if the rules got stuck), and its `tier` is that rule's tier.
 import {
   forcedTile, allForcedTiles, edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, lookaheadTile, allLookaheadTiles,
-  chainTile, allChainTiles, newEdges, setEdge, analyze, searchTilings,
+  chainTile, allChainTiles, eliminateTile, allEliminateTiles, newEdges, setEdge, analyze, searchTilings,
   EDGE_LINE, EDGE_CROSS, LOOKAHEAD_2, LOOKAHEAD_3, EDGES_NARROW, EDGES_WIDE,
 } from './logic.js';
 
@@ -34,7 +36,7 @@ export const TIERS = ['Beginner', 'Medium', 'Hard'];
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
   Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell, or trying one of two tiles and seeing it fail' },
-  Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, or chains of consequences (a few need more than the hint rules can do)' },
+  Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, dropping the tiles that fail and comparing the rest, or a chain of consequences from a cell with two tiles (a few need more than the hint rules can do)' },
 };
 
 // Puzzles the deduction rules can't finish (their `rules` value is 'unsolved'). They are in the Hard
@@ -48,6 +50,10 @@ export const beyondHints = puzzle => puzzle.rules === 'unsolved';
 // this same table) tries them in this order. Fields:
 //   find / findAll  the first / every deduction of this kind (see logic.js)
 //   hintKind        how the app explains a deduction of this rule
+// A chain (a tile hypothesis followed through several forced steps) is only used for a cell with just two
+// possible tiles; branching over more tiles AND following chains is too much to keep in your head.
+const CHAIN_OPTIONS = { maxOptions: 2 };
+
 export const RULES = [
   { id: 'forced', tier: 'Beginner', weight: 1, hintKind: 'forced',
     find: forcedTile, findAll: allForcedTiles,
@@ -67,9 +73,12 @@ export const RULES = [
   { id: 'lookahead3', tier: 'Hard', weight: 16, hintKind: 'lookahead3',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_3), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_3),
     label: 'three or more possible tiles, all but one fail' },
+  { id: 'eliminate', tier: 'Hard', weight: 22, hintKind: 'eliminate',
+    find: eliminateTile, findAll: allEliminateTiles,
+    label: 'some of a cell\'s tiles fail; the ones left agree on an edge' },
   { id: 'chain', tier: 'Hard', weight: 30, hintKind: 'chain',
-    find: chainTile, findAll: allChainTiles,
-    label: 'a tile fails after a chain of forced steps' },
+    find: (p, e) => chainTile(p, e, CHAIN_OPTIONS), findAll: (p, e) => allChainTiles(p, e, CHAIN_OPTIONS),
+    label: 'one of a cell\'s two tiles fails after a chain of forced steps' },
 ];
 
 // What each tile the rules could not place costs in the score.

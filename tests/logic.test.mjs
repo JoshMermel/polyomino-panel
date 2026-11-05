@@ -8,7 +8,7 @@ import {
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
-  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
+  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
   tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
@@ -494,7 +494,7 @@ test('ratePuzzle uses only the deduction rules and classifies correctly', () => 
   // lookahead, chains and puzzles beyond the rules are Hard
   assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard']);
   assert.deepEqual(RULES.map(x => [x.id, x.tier]), [
-    ['forced', 'Beginner'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['chain', 'Hard'],
+    ['forced', 'Beginner'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['eliminate', 'Hard'], ['chain', 'Hard'],
   ]);
   assert.equal(tierOfRule('unsolved'), 'Hard');
   assert.equal(beyondHints({ rules: 'unsolved' }), true);
@@ -799,7 +799,7 @@ test('the whole rule ladder is sound on every published puzzle, and solves most 
           if (!found) break;
           for (const [k, r, c] of found.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
           for (const [k, r, c] of found.crosses ?? []) { setEdge(pz, e, k, r, c, EDGE_CROSS); crossSteps++; }
-          if (which === 'chain') chainSteps++;
+          if (which === 'chain' || which === 'eliminate') chainSteps++;
           assert.deepEqual(checkMarks(pz, e, pz.solution), [], `${book.file} ${pz.name}: rule ${which} was wrong`);
         }
         if (analyze(pz, e).solved) solved++;
@@ -815,7 +815,7 @@ test('the whole rule ladder is sound on every published puzzle, and solves most 
         if (!found) break;
         for (const [k, r, c] of found.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
         for (const [k, r, c] of found.crosses ?? []) { setEdge(pz, e, k, r, c, EDGE_CROSS); crossSteps++; }
-        if (which === 'chain') chainSteps++;
+        if (which === 'chain' || which === 'eliminate') chainSteps++;
         assert.deepEqual(checkMarks(pz, e, pz.solution), [], `${book.file} ${pz.name}: rule ${which} was wrong`);
       }
       if (analyze(pz, e).solved) solved++;
@@ -835,7 +835,7 @@ test('chains: all-but-one tiles fail after forced steps; first chain matches the
       // walk the ladder until only chains apply, then look at the chain hints
       const e = newEdges(pz);
       for (let guard = 0; guard < 500; guard++) {
-        const f = RULES.filter(r => r.id !== 'lookahead3' && r.id !== 'chain').map(r => r.find(pz, e)).find(Boolean);
+        const f = RULES.filter(r => !['lookahead3', 'eliminate', 'chain'].includes(r.id)).map(r => r.find(pz, e)).find(Boolean);
         if (!f) break;
         for (const [k, r, c] of f.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
         for (const [k, r, c] of f.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
@@ -1201,4 +1201,32 @@ test('tryLine: a cell whose every possible tile contains an edge makes that edge
   setEdge(p, e, 'v', 0, 1, EDGE_CROSS);
   setEdge(p, e, 'v', 0, 4, EDGE_CROSS);
   assert.equal(crossDeduction(p, e), null);
+});
+
+test('eliminate: tiles that fail are dropped and the survivors agree on edges; every deduction is sound', () => {
+  let found = 0;
+  for (const file of ['L_8x8.csv', 'N5_8x8.csv', 'Y5_8x8.csv', 'L_10x10.csv', 'F5_8x8.csv']) {
+    for (const pz of data(file).slice(-12)) {
+      const sol = getSolution(pz);
+      const e = newEdges(pz);
+      for (let guard = 0; guard < 500; guard++) {
+        const f = RULES.filter(r => !['eliminate', 'chain'].includes(r.id)).map(r => r.find(pz, e)).find(Boolean);
+        if (!f) break;
+        for (const [k, r, c] of f.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
+        for (const [k, r, c] of f.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
+      }
+      const all = allEliminateTiles(pz, e);
+      assert.equal(all.length === 0, eliminateTile(pz, e) === null);
+      for (const h of all) {
+        found++;
+        assert.ok(h.ruledOut >= 1 && h.survivors >= 2 && h.alternatives.length === h.ruledOut);
+        assert.ok(h.lines.length + h.crosses.length > 0);
+        const trial = { h: e.h.slice(), v: e.v.slice() };
+        for (const [k, r, c] of h.lines) setEdge(pz, trial, k, r, c, EDGE_LINE);
+        for (const [k, r, c] of h.crosses) setEdge(pz, trial, k, r, c, EDGE_CROSS);
+        assert.deepEqual(checkMarks(pz, trial, sol), [], `${file} ${pz.name}: eliminate deduction is wrong`);
+      }
+    }
+  }
+  assert.ok(found > 0, 'no eliminate deductions found in the sample');
 });

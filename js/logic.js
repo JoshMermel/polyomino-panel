@@ -958,6 +958,65 @@ export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = In
   }
 }
 
+// "Eliminate, then compare": a cell with three or more possible tiles where SOME (not all but one)
+// lead straight to a contradiction (a cell with no tile, or a pocket that can't be tiled: one
+// step, no chain of consequences). Drop those tiles; the tiles that are left must agree: an edge on
+// the outline of every one of them is a line, an edge inside every one of them is a cross. (With one
+// survivor this is lookahead3, whose result is the whole tile.) Yields
+// { cell, lines, crosses, ruledOut, survivors, alternatives: [{cells, dead, reason}], sharedDead }.
+export function* eliminateTiles(puzzle, edges, { mode = 'size' } = {}) {
+  const reach = maxTileSize(puzzle.tile);
+  const { cols } = puzzle;
+  const seen = new Set();
+  const done = finishedTileCells(puzzle, edges);
+  const keyOf = ([kind, r, c]) => `${kind}${r}:${c}`;
+  for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
+    if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
+    const options = consistentPlacements(puzzle, edges, cell);
+    if (options.length < 3) continue;                           // two tiles: lookahead2's job
+    const survivors = [], failed = [];
+    for (const opt of options) {
+      const trial = cloneEdges(edges);
+      for (const [kind, r, c] of opt.outline) setEdge(puzzle, trial, kind, r, c, EDGE_LINE);
+      const reason = findContradiction(puzzle, trial, opt.cells, mode);
+      (reason ? failed : survivors).push({ ...opt, trial, reason });
+    }
+    if (survivors.length < 2 || !failed.length) continue;       // none dropped: nothing learned; one left: lookahead3
+    const outN = new Map(), inN = new Map(), edgeOf = new Map();
+    for (const o of survivors) {
+      o.outline.forEach(e => { outN.set(keyOf(e), (outN.get(keyOf(e)) ?? 0) + 1); edgeOf.set(keyOf(e), e); });
+      o.inner.forEach(e => { inN.set(keyOf(e), (inN.get(keyOf(e)) ?? 0) + 1); edgeOf.set(keyOf(e), e); });
+    }
+    const lines = [...outN].filter(([, n]) => n === survivors.length).map(([k]) => edgeOf.get(k))
+      .filter(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) !== EDGE_LINE);
+    const crosses = [...inN].filter(([, n]) => n === survivors.length).map(([k]) => edgeOf.get(k))
+      .filter(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) === EDGE_EMPTY);
+    if (!lines.length && !crosses.length) continue;
+    const key = [...lines.map(e => 'L' + keyOf(e)), ...crosses.map(e => 'X' + keyOf(e))].sort().join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const alternatives = failed.map(f => ({
+      cells: f.cells, dead: findDeadCellsNear(puzzle, f.trial, f.cells, reach), reason: f.reason,
+    }));
+    const candidates = new Set(alternatives.flatMap(a => a.dead));
+    const [or, oc] = [Math.floor(cell / cols), cell % cols];
+    const sharedDead = [...candidates]
+      .filter(c => failed.every(f => consistentPlacements(puzzle, f.trial, c, true).length === 0))
+      .sort((a, b) => (Math.abs(Math.floor(a / cols) - or) + Math.abs(a % cols - oc)) -
+                      (Math.abs(Math.floor(b / cols) - or) + Math.abs(b % cols - oc)) || a - b);
+    yield { cell, lines, crosses, ruledOut: failed.length, survivors: survivors.length, alternatives, sharedDead };
+  }
+}
+
+export function eliminateTile(puzzle, edges, options) {
+  return eliminateTiles(puzzle, edges, options).next().value ?? null;
+}
+
+export function allEliminateTiles(puzzle, edges, options) {
+  return [...eliminateTiles(puzzle, edges, options)];
+}
+
 export function lookaheadTile(puzzle, edges, range) {
   return lookaheadTiles(puzzle, edges, range).next().value ?? null;
 }
@@ -1099,13 +1158,13 @@ function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
 // chessboard test). The survivor must be right. Yields
 // { cell, cells, lines, ruledOut, alternatives, maxSteps } where alternatives =
 // [{cells, steps, reason}] and maxSteps is the longest chain needed.
-export function* chainTiles(puzzle, edges, { mode = 'parity', maxSteps = 60 } = {}) {
+export function* chainTiles(puzzle, edges, { mode = 'parity', maxSteps = 60, maxOptions = Infinity } = {}) {
   const seen = new Set();
   const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
     if (puzzle.grid[cell] !== OPEN || done[cell]) continue;
     const options = consistentPlacements(puzzle, edges, cell);
-    if (options.length < 2) continue;
+    if (options.length < 2 || options.length > maxOptions) continue;
     const survivors = [], failed = [];
     for (const opt of options) {
       const res = propagateHypothesis(puzzle, edges, opt, mode, maxSteps);

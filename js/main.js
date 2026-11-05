@@ -502,10 +502,18 @@ function displayHint(h) {
     text = h.tier === 'lookahead2'
       ? `the yellow cell has just two possible tiles, and one of them would leave ${why.text}. Draw the dashed outline of the other one.`
       : `the yellow cell has ${item.ruledOut + 1} possible tiles, but every one except the dashed one would leave ${why.text}. Draw the dashed outline.`;
+  } else if (h.tier === 'eliminate') {
+    const why = failureText(item);
+    board.showHint({ target: [item.cell], lines: item.lines, crosses: item.crosses, marker: why.marker });
+    const parts = [];
+    if (item.lines.length) parts.push(`draw the dashed ${item.lines.length === 1 ? 'line' : 'lines'} (every remaining tile has a boundary there)`);
+    if (item.crosses.length) parts.push(`mark the ✕ (every remaining tile contains both cells beside it)`);
+    text = `the yellow cell has ${item.ruledOut + item.survivors} possible tiles. ${item.ruledOut === 1 ? 'One of them would' : `${item.ruledOut} of them would`} leave ${why.text}, so ${item.ruledOut === 1 ? 'it' : 'they'} can't be right. ` +
+      `The other ${item.survivors} all agree: ${parts.join(', and ')}.`;
   } else if (h.tier === 'chain') {
     board.showHint({ target: [item.cell], lines: item.lines });
-    text = `the yellow cell has ${item.ruledOut + 1} possible tiles. Try any tile except the dashed one and follow what it forces` +
-      `${item.maxSteps ? ` (up to ${item.maxSteps} ${item.maxSteps === 1 ? 'step' : 'steps'})` : ''}: it always ends in a contradiction. Draw the dashed outline.`;
+    text = `the yellow cell has just two possible tiles. Try the other one, not the dashed one, and follow what it forces` +
+      `${item.maxSteps ? ` (up to ${item.maxSteps} ${item.maxSteps === 1 ? 'step' : 'steps'})` : ''}: it ends in a contradiction. Draw the dashed outline.`;
   } else {
     const [kind, r, c] = item;
     board.showHint({ target: edgeCells(puzzle, kind, r, c), crosses: [item] });
