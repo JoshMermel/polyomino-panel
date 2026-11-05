@@ -213,7 +213,7 @@ if (flags.has('--promote')) {
   for (const b of books) copyFileSync(new URL(b.meta.file, stageDir), new URL(b.meta.file, dataDir));
   const manifest = {
     default: config.default,
-    groups: config.groups.map(g => ({ name: g.name, blurb: g.blurb })),
+    groups: config.groups.map(g => ({ name: g.name, blurb: g.blurb, ...(g.secondary ? { secondary: true } : {}) })),
     books: books.map(b => b.meta),
   };
   writeFileSync(new URL('manifest.json', dataDir), JSON.stringify(manifest, null, 2) + '\n');

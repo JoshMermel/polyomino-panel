@@ -530,6 +530,8 @@ select, input[type="number"] {
   margin: 16px 0 2px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.6px; color: var(--text-secondary);
 }
+.bp-more { margin-top: 14px; border-top: 1px solid var(--border-light); }
+.bp-more-summary { cursor: pointer; padding: 10px 0 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .bp-blurb { margin: 0 0 6px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
 .bp-book {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;

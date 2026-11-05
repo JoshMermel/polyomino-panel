@@ -1115,15 +1115,15 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     // id is <one|two>-<size>: every puzzle has that many shapes and that board size
     const [kind, size] = book.id.split('-');
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
-    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
-    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', sparse: 'Sparse' }[kind]);
+    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' || kind === 'sparse2' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
+    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', sparse: 'Sparse: one shape', sparse2: 'Sparse: two shapes' }[kind]);
     // a sparse book only has puzzles with few blocked cells
-    if (kind === 'sparse') assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
+    if (kind.startsWith('sparse')) assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
     // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
     const tiers = new Set(ps.map(p => p.tier));
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
-    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' ? 4 : 8), `${book.id}: mixes shapes`);
+    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' || kind === 'sparse2' ? 4 : 8), `${book.id}: mixes shapes`);
     assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
   // the L tetromino is an ordinary shape now
@@ -1136,7 +1136,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.equal(shapes.size, 19, `${b.id}: all 19 single shapes`);
   }
   // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the domino
-  const first = data(manifest.books.find(b => b.id === manifest.default).file);
+  const first = data(manifest.books.find(b => b.id === 'one-6').file);
   assert.equal(first[0].tile, 'I2');
   assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I2', 'I3', 'V3']);
 });

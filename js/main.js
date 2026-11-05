@@ -741,6 +741,8 @@ function renderBookPicker() {
   const names = [...state.groups.map(g => g.name)];
   for (const s of state.sets) if (!names.includes(s.group)) names.push(s.group);
   const progress = [];                                    // rows to fill in once their book is loaded
+  const more = el('details', 'bp-more');                  // secondary groups sit under "More books"
+  more.append(el('summary', 'bp-more-summary', 'More books'));
   for (const name of names) {
     const idxs = state.sets.map((s, i) => i).filter(i => state.sets[i].group === name);
     if (!idxs.length) continue;
@@ -769,8 +771,14 @@ function renderBookPicker() {
       sec.append(row);
       progress.push({ i, count });
     }
-    body.append(sec);
+    if (state.groups.find(g => g.name === name)?.secondary) {
+      more.append(sec);
+      if (idxs.includes(state.setIdx)) more.open = true;      // never hide the book being played
+    } else {
+      body.append(sec);
+    }
   }
+  if (more.querySelector('.bp-section')) body.append(more);
   requestAnimationFrame(() => body.querySelector('.bp-current')?.scrollIntoView({ block: 'center' }));
 
   // how many of each book's puzzles are solved: needs the book's puzzles, so load them (a small
