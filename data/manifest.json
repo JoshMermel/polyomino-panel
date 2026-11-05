@@ -8,6 +8,10 @@
     {
       "name": "Two shapes",
       "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard."
+    },
+    {
+      "name": "Sparse",
+      "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard."
     }
   ],
   "books": [
@@ -64,6 +68,33 @@
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
       "count": 1000
+    },
+    {
+      "id": "sparse-6",
+      "group": "Sparse",
+      "title": "Sparse · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "sparse-6.csv",
+      "count": 400
+    },
+    {
+      "id": "sparse-8",
+      "group": "Sparse",
+      "title": "Sparse · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "sparse-8.csv",
+      "count": 400
+    },
+    {
+      "id": "sparse-10",
+      "group": "Sparse",
+      "title": "Sparse · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "sparse-10.csv",
+      "count": 400
     }
   ]
 }

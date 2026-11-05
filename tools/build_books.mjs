@@ -20,7 +20,9 @@
 //      in proportion to their weights (shapeWeights in collections.json; 1 unless listed, so evenly),
 //      again with the shortfall passed on; each such shape gets at least one.
 //   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
-//      book follows the pool's own spread of difficulty from its easy end to its hard end.
+//      book follows the pool's own spread of difficulty from its easy end to its hard end. Sparse puzzles
+//      (few blocked cells) are preferred: the pick only looks at the sparsest `sparseShare` (default half) of
+//      a shape's puzzles in that tier, as long as that leaves at least three times the number needed.
 //   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
 //      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
 //      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
@@ -29,6 +31,9 @@
 // players keep their progress. The book size in collections.json is therefore a floor: a book can end
 // up a little larger when kept puzzles exceed a share. (--fresh picks everything from scratch, which
 // is how to trim a book or drop a shape.)
+// A group with `maxBlocked` (a fraction of the board, e.g. 0.17) is a "sparse" group: its books only
+// take puzzles with that few blocked cells. Such books are built before the others, so they get first
+// pick of the sparse puzzles, but they stay in the manifest in the order collections.json lists them.
 // Every puzzle is in at most one book. Never published: puzzles whose open cells are not one
 // connected region (logic.openCellsConnected) and puzzles whose solution's tile boundaries contain a
 // swastika pattern (logic.hasSwastika). The pools to draw from are the shapes and sizes in recipes.json.
@@ -89,12 +94,15 @@ for (const g of config.groups) {
     specs.push({
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
       title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,
-      blurb: config.sizeBlurbs?.[size] ?? '', count: bookSize(g, size),
+      blurb: config.sizeBlurbs?.[size] ?? '', count: bookSize(g, size), maxBlocked: g.maxBlocked ?? null,
+      sparseShare: g.sparseShare ?? config.sparseShare ?? 1, order: specs.length,
     });
   }
 }
 
-const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && p.rows === spec.size && !used.has(p.name));
+const blockedFraction = p => (p._blocked ??= [...p.grid].filter(c => c === '#').length / p.grid.length);
+const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && p.rows === spec.size && !used.has(p.name) &&
+  (spec.maxBlocked == null || blockedFraction(p) <= spec.maxBlocked));
 
 if (flags.has('--list')) {
   for (const s of specs) {
@@ -112,7 +120,7 @@ const books = [];
 // Share `count` slots over `groups` (an array of candidate arrays) evenly, then take each group's
 // share at evenly spaced score ranks.
 const weightOf = tile => config.shapeWeights?.[tile] ?? 1;
-function pickAcross(groups, count, isKept) {
+function pickAcross(groups, count, isKept, sparseShare = 1) {
   const alloc = weightedAllocation(count, groups.map(g => g.length), groups.map(g => weightOf(g[0].tile)));
   // every shape that has puzzles in this tier gets at least one slot (taken from the biggest share), so a
   // small share (the Beginner tier of a book) doesn't starve the down-weighted shapes out of the book
@@ -123,8 +131,14 @@ function pickAcross(groups, count, isKept) {
       if (alloc[big] > 1) { alloc[big]--; alloc[i] = 1; }
     }
   }
+  // prefer sparse puzzles: look only at the sparsest share of each group, keeping at least 3x what it must give
+  const sparsest = (g, n) => {
+    const keep = Math.min(g.length, Math.max(Math.ceil(g.length * sparseShare), 3 * n));
+    return keep >= g.length ? g : [...g].sort((a, b) => blockedFraction(a) - blockedFraction(b) || (a.name < b.name ? -1 : 1)).slice(0, keep);
+  };
   // --trim only trims down-weighted shapes; every other shape keeps all its published puzzles
-  return groups.flatMap((g, i) => {
+  return groups.flatMap((g0, i) => {
+    const g = sparsest(g0, alloc[i]);
     const trimmed = trim && weightOf(g[0].tile) < 1;
     return alloc[i] || !trimmed ? pickStable(g, { count: alloc[i], seed, isKept, keepAll: !trimmed }).picks : [];
   });
@@ -135,7 +149,8 @@ const byTile = cands => {
   return [...m.keys()].sort().map(k => m.get(k));
 };
 
-for (const spec of specs) {
+const buildOrder = [...specs].sort((a, b) => (b.maxBlocked != null) - (a.maxBlocked != null) || a.order - b.order);
+for (const spec of buildOrder) {
   const before = published.get(spec.id);
   const isKept = before ? (p => before.has(hashOf(p))) : (() => false);
   const tour = [];
@@ -153,12 +168,14 @@ for (const spec of specs) {
   const alloc = weightedAllocation(spec.count, perTier.map(c => c.length), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
   const tourTier = config.tiers.indexOf(config.tour?.tier);
   if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
-  const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i], isKept));
+  const rest = perTier.flatMap((c, i) => pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare));
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
   const spread = spreadByTier(rest, { recent: tour.map(p => p.tile) });       // no long runs of one shape
-  books.push({ meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
+  books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
 }
+
+books.sort((a, b) => a.order - b.order);          // manifest order = collections.json order
 
 // --- Checks, files, report ---------------------------------------------------------------------
 const seenKeys = new Set();
