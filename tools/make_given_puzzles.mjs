@@ -4,6 +4,9 @@
 //
 //   node tools/make_given_puzzles.mjs [--out tools/books/experiments.csv] [--per 3] [--sizes 6,8,10]
 //        [--tiles L,T,S,P5,...] [--minutes 8] [--seed N] [--max-givens 2]
+//        [--cross-clues 1] [--add-to tools/books/experiments.csv]
+// --cross-clues keeps only puzzles with at least one given cross ("these two cells share a tile") among
+// their givens; --add-to adds the new puzzles to an existing book file instead of replacing it.
 //
 // For each board size it generates layouts that have 2 to 4 solutions (the generator's local search with
 // minSolutions/maxSolutions), lists every solution, and looks for the smallest set of edges (one, else
@@ -12,9 +15,9 @@
 // tool keeps up to --per puzzles per size and tier, as varied in shape as it can, and writes the book
 // file (sorted by tier, then score). Nothing here touches data/: tools/build_books.mjs picks the file up
 // (the "Experiments" group in tools/books/collections.json).
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import {
-  toCsv, solve, solveWithGivens, isPlayableEdge, hasSwastika,
+  toCsv, parseCsv, solve, solveWithGivens, isPlayableEdge, hasSwastika,
 } from '../js/logic.js';
 import './lib/wasm_counter.mjs';
 import { generatePuzzle, mulberry32, holeLadder, canonicalGrid } from '../js/generator.js';
@@ -30,6 +33,8 @@ const sizes = (args.sizes ?? '6,8,10').split(',').map(Number);
 const tiles = (args.tiles ?? 'L,T,S,P5,V3,I3,Y5,N5,F5,W5,L+T,T+S,V3+I3').split(',');
 const maxMs = Number(args.minutes ?? 8) * 60000;
 const maxGivens = Number(args['max-givens'] ?? 2);
+const crossClues = 'cross-clues' in args;
+const addTo = args['add-to'];
 const rng = mulberry32(Number(args.seed ?? 11));
 const pick = arr => arr[Math.floor(rng() * arr.length)];
 
@@ -96,9 +101,11 @@ while (Date.now() - t0 < maxMs && !full()) {
   if (!sets.length) continue;
   const best = Math.min(...sets.map(s => s.length));
   const choices = sets.filter(s => s.length === best);
-  // lines read better than crosses as pre-drawn clues: prefer sets that are all lines
+  // lines read better than crosses as pre-drawn clues: prefer sets that are all lines (unless crosses are wanted)
   const lines = choices.filter(s => s.every(g => g[0] === 'L'));
-  const givens = pick(lines.length ? lines : choices);
+  const withCross = choices.filter(s => s.some(g => g[0] === 'X'));
+  if (crossClues && !withCross.length) continue;
+  const givens = crossClues ? pick(withCross) : pick(lines.length ? lines : choices);
   const puzzle = { ...base, solution: intended, givens };
   if (solveWithGivens(puzzle, 2).length !== 1) throw new Error('internal error: givens do not give a unique solution');
   const r = ratePuzzle(puzzle);
@@ -114,13 +121,14 @@ while (Date.now() - t0 < maxMs && !full()) {
   found++;
 }
 
-const all = [...buckets.values()].flat().sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
+const existing = addTo && existsSync(addTo) ? parseCsv(readFileSync(addTo, 'utf8')) : [];
+const all = [...existing, ...[...buckets.values()].flat()].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
 const book = all.map((p, i) => ({
   ...p, name: `experiments_${String(i + 1).padStart(2, '0')}`,
 }));
 const header = '# Experiments: puzzles with a few distinct tilings made unique by pre-drawn edges (the given column: L = a line, X = a cross).\n' +
   '# Built by tools/make_given_puzzles.mjs. grid: # = blocked cell, . = open cell. solution: tile labels. given: edges drawn for the player.\n';
-writeFileSync(out, header + toCsv(book));
+writeFileSync(addTo ?? out, header + toCsv(book));
 const summary = sizes.map(s => `${s}x${s}: ` + TIERS.map(t => `${t} ${(buckets.get(`${s}|${t}`) ?? []).length}`).join(' ')).join(' | ');
 console.log(`${book.length} puzzles (${found} found from ${tried} layouts in ${((Date.now() - t0) / 60000).toFixed(1)} min) -> ${out}\n${summary}`);
-console.log('solutions before givens:', JSON.stringify(book.reduce((m, p) => ((m[p._solutions] = (m[p._solutions] ?? 0) + 1), m), {})), 'givens:', JSON.stringify(book.reduce((m, p) => ((m[p.givens.length] = (m[p.givens.length] ?? 0) + 1), m), {})));
+console.log('solutions before givens:', JSON.stringify(book.filter(p => p._solutions).reduce((m, p) => ((m[p._solutions] = (m[p._solutions] ?? 0) + 1), m), {})), 'givens:', JSON.stringify(book.reduce((m, p) => ((m[p.givens.length] = (m[p.givens.length] ?? 0) + 1), m), {})));

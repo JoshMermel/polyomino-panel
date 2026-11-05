@@ -22,13 +22,14 @@ import { LOOKAHEAD_2, LOOKAHEAD_3 } from '../js/logic.js';
 
 const manifestOf = () => JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
 let libraryCache = null;
-const library = () => libraryCache ??= manifestOf().books.flatMap(b => parseCsv(readFileSync(new URL(`../data/${b.file}`, import.meta.url), 'utf8')));
-// A book's puzzles by file name. Books mix shapes and board sizes now, so a name like 'L_6x6.csv'
-// (the old per-shape books) means "every published puzzle with that tile and size", easiest first.
+// (puzzles with given edges are left out: their layout alone has several solutions)
+const library = () => libraryCache ??= manifestOf().books.flatMap(b => parseCsv(readFileSync(new URL(`../data/${b.file}`, import.meta.url), 'utf8'))).filter(p => !p.givens?.length);
 // Re-checking every puzzle of every book (9,000+ of them: solving, rating, hints) took minutes in CI, so
 // the book tests look at an evenly spread sample plus the first and last few of each book. The builder
 // (tools/build_books.mjs) already checks every puzzle's solution when it builds a book.
 const sampled = (list, every = 8) => list.filter((_, i) => i % every === 0 || i < 4 || i >= list.length - 4);
+// A book's puzzles by file name. Books mix shapes and board sizes now, so a name like 'L_6x6.csv'
+// (the old per-shape books) means "every published puzzle with that tile and size", easiest first.
 const data = name => {
   if (existsSync(new URL(`../data/${name}`, import.meta.url))) return parseCsv(readFileSync(new URL(`../data/${name}`, import.meta.url), 'utf8'));
   const m = /^(.+)_(\d+)x\d+\.csv$/.exec(name);

@@ -117,7 +117,7 @@
       "label": "Pre-drawn clues",
       "blurb": "Experimental. Sparse boards that have a few distinct tilings, made unique by an edge or two drawn for you (in black, like the blocked cells).",
       "file": "experiments.csv",
-      "count": 23
+      "count": 32
     },
     {
       "id": "dense1-6",
