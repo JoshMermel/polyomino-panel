@@ -1,80 +1,26 @@
 {
-  "default": "sparse-6",
+  "default": "one-6",
   "groups": [
     {
-      "name": "Sparse: one shape",
+      "name": "One shape",
       "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard."
     },
     {
-      "name": "Sparse: two shapes",
+      "name": "Two shapes",
       "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard."
     },
     {
-      "name": "One shape",
-      "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard.",
+      "name": "Dense: one shape",
+      "blurb": "Every tile is the same shape; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
       "secondary": true
     },
     {
-      "name": "Two shapes",
-      "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard.",
+      "name": "Dense: two shapes",
+      "blurb": "Each tile is either of two shapes; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
       "secondary": true
     }
   ],
   "books": [
-    {
-      "id": "sparse-6",
-      "group": "Sparse: one shape",
-      "title": "Sparse: one shape · 6×6",
-      "label": "6×6",
-      "blurb": "Small boards, quick to solve.",
-      "file": "sparse-6.csv",
-      "count": 400
-    },
-    {
-      "id": "sparse-8",
-      "group": "Sparse: one shape",
-      "title": "Sparse: one shape · 8×8",
-      "label": "8×8",
-      "blurb": "Mid-size boards.",
-      "file": "sparse-8.csv",
-      "count": 400
-    },
-    {
-      "id": "sparse-10",
-      "group": "Sparse: one shape",
-      "title": "Sparse: one shape · 10×10",
-      "label": "10×10",
-      "blurb": "Large boards, long solves.",
-      "file": "sparse-10.csv",
-      "count": 400
-    },
-    {
-      "id": "sparse2-6",
-      "group": "Sparse: two shapes",
-      "title": "Sparse: two shapes · 6×6",
-      "label": "6×6",
-      "blurb": "Small boards, quick to solve.",
-      "file": "sparse2-6.csv",
-      "count": 400
-    },
-    {
-      "id": "sparse2-8",
-      "group": "Sparse: two shapes",
-      "title": "Sparse: two shapes · 8×8",
-      "label": "8×8",
-      "blurb": "Mid-size boards.",
-      "file": "sparse2-8.csv",
-      "count": 400
-    },
-    {
-      "id": "sparse2-10",
-      "group": "Sparse: two shapes",
-      "title": "Sparse: two shapes · 10×10",
-      "label": "10×10",
-      "blurb": "Large boards, long solves.",
-      "file": "sparse2-10.csv",
-      "count": 400
-    },
     {
       "id": "one-6",
       "group": "One shape",
@@ -82,7 +28,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "one-6.csv",
-      "count": 1000
+      "count": 400
     },
     {
       "id": "one-8",
@@ -91,7 +37,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "one-8.csv",
-      "count": 1000
+      "count": 400
     },
     {
       "id": "one-10",
@@ -100,7 +46,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "one-10.csv",
-      "count": 1000
+      "count": 400
     },
     {
       "id": "two-6",
@@ -109,7 +55,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "two-6.csv",
-      "count": 1000
+      "count": 400
     },
     {
       "id": "two-8",
@@ -118,7 +64,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "two-8.csv",
-      "count": 1000
+      "count": 400
     },
     {
       "id": "two-10",
@@ -127,6 +73,60 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
+      "count": 400
+    },
+    {
+      "id": "dense1-6",
+      "group": "Dense: one shape",
+      "title": "Dense: one shape · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "dense1-6.csv",
+      "count": 1000
+    },
+    {
+      "id": "dense1-8",
+      "group": "Dense: one shape",
+      "title": "Dense: one shape · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "dense1-8.csv",
+      "count": 1000
+    },
+    {
+      "id": "dense1-10",
+      "group": "Dense: one shape",
+      "title": "Dense: one shape · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "dense1-10.csv",
+      "count": 1000
+    },
+    {
+      "id": "dense2-6",
+      "group": "Dense: two shapes",
+      "title": "Dense: two shapes · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "dense2-6.csv",
+      "count": 1000
+    },
+    {
+      "id": "dense2-8",
+      "group": "Dense: two shapes",
+      "title": "Dense: two shapes · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "dense2-8.csv",
+      "count": 1000
+    },
+    {
+      "id": "dense2-10",
+      "group": "Dense: two shapes",
+      "title": "Dense: two shapes · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "dense2-10.csv",
       "count": 1000
     }
   ]

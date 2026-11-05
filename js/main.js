@@ -625,13 +625,7 @@ function renderBrowse() {
       const nameEl = document.createElement('span');
       nameEl.className = 'browse-tier-name';
       nameEl.textContent = info?.name ?? tier;
-      head.append(nameEl);
-      if (info?.blurb) {
-        const blurb = document.createElement('span');
-        blurb.className = 'browse-tier-blurb';
-        blurb.textContent = info.blurb;
-        head.append(blurb);
-      }
+      head.append(nameEl);              // just the tier's name: which solving tools it needs is left for the player to find out
       grid.append(head);
     }
     const done = isSolved(p), started = !done && hasProgress(p);

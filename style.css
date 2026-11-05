@@ -486,7 +486,6 @@ select, input[type="number"] {
   grid-column: 1 / -1; padding: 8px 2px 2px; margin-bottom: 2px; border-bottom: 1px solid var(--border-light);
 }
 .browse-tier-name { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); }
-.browse-tier-blurb { font-size: 0.75rem; color: var(--text-muted); margin-left: 6px; }
 
 /* --- Print puzzles modal ----------------------------------------------------------- */
 .print-form { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin: 8px 0; }

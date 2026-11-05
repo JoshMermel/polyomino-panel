@@ -1,6 +1,6 @@
 {
   "_comment": "Which books exist and how they are built from the pools in tools/library/. See tools/build_books.mjs. One book per (number of shapes, board size); each runs through every difficulty tier, easiest first. A puzzle is in at most one book.",
-  "default": "sparse-6",
+  "default": "one-6",
   "tiers": [
     "Beginner",
     "Medium",
@@ -33,8 +33,8 @@
   },
   "groups": [
     {
-      "name": "Sparse: one shape",
-      "idPrefix": "sparse",
+      "name": "One shape",
+      "idPrefix": "one",
       "shapes": 1,
       "maxBlocked": 0.17,
       "sparseShare": 1,
@@ -42,8 +42,8 @@
       "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard."
     },
     {
-      "name": "Sparse: two shapes",
-      "idPrefix": "sparse2",
+      "name": "Two shapes",
+      "idPrefix": "two",
       "shapes": 2,
       "maxBlocked": 0.17,
       "sparseShare": 1,
@@ -51,17 +51,17 @@
       "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard."
     },
     {
-      "name": "One shape",
-      "idPrefix": "one",
+      "name": "Dense: one shape",
+      "idPrefix": "dense1",
       "shapes": 1,
-      "blurb": "Every tile is the same shape. Each book runs from Beginner to Hard.",
+      "blurb": "Every tile is the same shape; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
       "secondary": true
     },
     {
-      "name": "Two shapes",
-      "idPrefix": "two",
+      "name": "Dense: two shapes",
+      "idPrefix": "dense2",
       "shapes": 2,
-      "blurb": "Each tile is either of two shapes. Each book runs from Beginner to Hard.",
+      "blurb": "Each tile is either of two shapes; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
       "secondary": true
     }
   ],
@@ -72,7 +72,7 @@
   },
   "tour": {
     "_comment": "The first puzzles of this book are a shape-by-shape introduction: `perShape` easy puzzles of each shape in turn, before the rest of the book in difficulty order.",
-    "book": "one-6",
+    "book": "dense1-6",
     "tier": "Beginner",
     "perShape": 2,
     "shapes": [
@@ -91,5 +91,5 @@
       "U5"
     ]
   },
-  "_secondary": "A group with secondary: true is listed under \"More books\" in the book picker; the Sparse groups come first."
+  "_secondary": "A group with secondary: true is listed under \"More books\" in the book picker; the first two groups (sparse boards, at most 17% blocked) are the main books."
 }

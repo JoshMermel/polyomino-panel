@@ -1112,23 +1112,23 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
-    // id is <one|two>-<size>: every puzzle has that many shapes and that board size
+    // id is <one|two|dense1|dense2>-<size>: every puzzle has that many shapes and that board size
     const [kind, size] = book.id.split('-');
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
-    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' || kind === 'sparse2' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
-    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', sparse: 'Sparse: one shape', sparse2: 'Sparse: two shapes' }[kind]);
-    // a sparse book only has puzzles with few blocked cells
-    if (kind.startsWith('sparse')) assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
+    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' || kind === 'dense2' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
+    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', dense1: 'Dense: one shape', dense2: 'Dense: two shapes' }[kind]);
+    // the one- and two-shape books are the sparse ones: they only have puzzles with few blocked cells
+    if (kind === 'one' || kind === 'two') assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
     // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
     const tiers = new Set(ps.map(p => p.tier));
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
-    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' || kind === 'sparse2' ? 4 : 8), `${book.id}: mixes shapes`);
+    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' || kind === 'dense2' ? 4 : 8), `${book.id}: mixes shapes`);
     assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
   // the L tetromino is an ordinary shape now
-  const oneBooks = manifest.books.filter(b => b.id.startsWith('one-'));
-  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the one-shape books');
+  const oneBooks = manifest.books.filter(b => b.id.startsWith('dense1-'));
+  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the dense one-shape books');
   // every one of the 19 single shapes is in every one-shape book, including the line pieces
   for (const b of oneBooks) {
     const shapes = new Set(data(b.file).map(p => p.tile));
@@ -1136,7 +1136,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.equal(shapes.size, 19, `${b.id}: all 19 single shapes`);
   }
   // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the domino
-  const first = data(manifest.books.find(b => b.id === 'one-6').file);
+  const first = data(manifest.books.find(b => b.id === 'dense1-6').file);
   assert.equal(first[0].tile, 'I2');
   assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I2', 'I3', 'V3']);
 });
