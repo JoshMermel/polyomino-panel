@@ -527,8 +527,8 @@ function displayHint(h) {
       `The other ${item.survivors} all agree: ${parts.join(', and ')}.`;
   } else if (h.tier === 'chain') {
     board.showHint({ target: [item.cell], lines: item.lines });
-    text = `the yellow cell has just two possible tiles. Try the other one, not the dashed one, and follow what it forces` +
-      `${item.maxSteps ? ` (up to ${item.maxSteps} ${item.maxSteps === 1 ? 'step' : 'steps'})` : ''}: it ends in a contradiction. Draw the dashed outline.`;
+    text = `the yellow cell has just two possible tiles. Try the other one, not the dashed one, and follow what it forces (the lines and ✕ marks it makes certain)` +
+      `${item.maxSteps ? `, up to ${item.maxSteps} ${item.maxSteps === 1 ? 'step' : 'steps'}` : ''}: it ends in a contradiction. Draw the dashed outline.`;
   } else {
     const [kind, r, c] = item;
     board.showHint({ target: edgeCells(puzzle, kind, r, c), crosses: [item] });

@@ -1175,11 +1175,13 @@ export const EDGES_NARROW = { minOptions: 2, maxOptions: 3 };
 export const EDGES_WIDE = { minOptions: 4 };
 
 // --- Forcing chains ----------------------------------------------------------------
-// Suppose a tile were placed: draw its outline, then follow the forced consequences
-// (any cell left with a single placement gets that tile's outline too), checking for
-// a contradiction after every step. Returns { contradiction, steps } where
-// contradiction is {kind, cells} if the assumption leads to an impossible position
-// (within maxSteps forced steps), else null.
+// Suppose a tile were placed: draw its outline, then follow the consequences, checking for a
+// contradiction after every step: a cell left with a single placement gets that tile's outline, and
+// when none is left, an edge that every one of a cell's two or three tiles agrees on is drawn (or
+// crossed), or an edge where a line would strand a cell (the Beginner and Medium rules, so a chain
+// is a hypothesis followed with steps the player already knows). Returns { contradiction, steps }
+// where contradiction is {kind, cells} if the assumption leads to an impossible position (within
+// maxSteps steps), else null.
 function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
   const reach = maxTileSize(puzzle.tile);
   const { rows, cols } = puzzle;
@@ -1205,7 +1207,15 @@ function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
         }
       }
     }
-    if (!next) return { contradiction: null, steps };
+    if (!next) {
+      const edge = edgeDeduction(puzzle, trial, EDGES_NARROW) ?? crossDeduction(puzzle, trial);
+      if (!edge) return { contradiction: null, steps };
+      const marks = [...(edge.lines ?? []).map(e => [...e, EDGE_LINE]), ...(edge.crosses ?? []).map(e => [...e, EDGE_CROSS])];
+      for (const [kind, r, c, state] of marks) setEdge(puzzle, trial, kind, r, c, state);
+      near = [...new Set(marks.flatMap(([kind, r, c]) => edgeCells(puzzle, kind, r, c)))];
+      steps++;
+      continue;
+    }
     for (const [kind, r, c] of next.outline) setEdge(puzzle, trial, kind, r, c, EDGE_LINE);
     near = next.cells;
     steps++;

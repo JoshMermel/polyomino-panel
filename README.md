@@ -78,7 +78,7 @@ Each puzzle is solved by a rule-based solver that uses the same deductions as th
 | `edgesWide` | the same edge reasoning over four or more possible tiles | Hard | 8 |
 | `lookahead3` | three or more possible tiles; all but one lead to a contradiction | Hard | 16 |
 | `eliminate` | a cell has three or more possible tiles; some (not all but one) lead to a contradiction in one step, and the tiles that are left all agree on an edge: draw it (outline of every survivor) or mark a ✕ (inside every survivor) | Hard | 22 |
-| `chain` | a cell with just two possible tiles, where one fails only after following its forced consequences for several steps (chains are not used when a cell has more tiles: branching over several tiles and following chains is too much to keep in your head) | Hard | 30 |
+| `chain` | a cell with just two possible tiles, where one fails only after following its consequences for several steps: forced tiles, and also the edges that two or three candidate tiles agree on and the edges where a line would strand a cell, i.e. the pre-drawn clues and everything they make certain are used too (chains are not used when a cell has more tiles: branching over several tiles and following chains is too much to keep in your head) | Hard | 30 |
 | (none) | the rules get stuck ("beyond the hints"; still Hard) | Hard | 40 per undetermined tile |
 
 A **contradiction** is a cell left with no possible tile, or a region walled in by lines whose size is not a multiple of the tile size (the "pocket" check), or, inside chains only, a region whose chessboard colours are unbalanced in a way no tiles can produce (a parity test; on the current library it never changes a result, but it is sound and free).

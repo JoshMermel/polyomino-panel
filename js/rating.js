@@ -12,7 +12,8 @@
 //   eliminate   a cell has three or more possible tiles; some (not all but one) lead to a
 //               contradiction, and the tiles that are left agree on an edge
 //   chain       a cell has two possible tiles and one is eliminated only after following its
-//               forced consequences for several steps until something breaks
+//               consequences (forced tiles, edges the candidate tiles agree on, edges where a line
+//               would strand a cell) for several steps until something breaks
 //
 // A "contradiction" is a cell left with no placement, a region walled in by lines
 // whose size is not a multiple of the tile (or, inside chains, whose chessboard
@@ -78,7 +79,7 @@ export const RULES = [
     label: 'some of a cell\'s tiles fail; the ones left agree on an edge' },
   { id: 'chain', tier: 'Hard', weight: 30, hintKind: 'chain',
     find: (p, e) => chainTile(p, e, CHAIN_OPTIONS), findAll: (p, e) => allChainTiles(p, e, CHAIN_OPTIONS),
-    label: 'one of a cell\'s two tiles fails after a chain of forced steps' },
+    label: 'one of a cell\'s two tiles fails after a chain of steps' },
 ];
 
 // What each tile the rules could not place costs in the score.

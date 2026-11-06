@@ -865,6 +865,28 @@ test('chains: all-but-one tiles fail after forced steps; first chain matches the
   assert.ok(deep > 0, 'some chains need at least one forced step');
 });
 
+test('the rules read pre-drawn clues: every step on the clue books agrees with the solution, and chains follow edge steps', () => {
+  const bookPuzzles = id => parseCsv(readFileSync(new URL(`../data/${id}.csv`, import.meta.url), 'utf8'));
+  let chains = 0;
+  for (const id of ['experiments2', 'experiments5']) {
+    for (const pz of bookPuzzles(id).filter((_, i) => i % 5 === 0)) {          // a sample keeps CI fast
+      assert.ok(pz.givens.length >= 2, `${id}/${pz.name} has clues`);
+      const sol = getSolution(pz);
+      const e = newEdges(pz);
+      assert.deepEqual(checkMarks(pz, e, sol), [], `${id}/${pz.name}: the pre-drawn clues contradict the solution`);
+      for (let guard = 0; guard < 2000; guard++) {
+        const f = RULES.map(r => r.find(pz, e)).find(Boolean);
+        if (!f) break;
+        for (const [k, r, c] of f.lines ?? []) setEdge(pz, e, k, r, c, EDGE_LINE);
+        for (const [k, r, c] of f.crosses ?? []) setEdge(pz, e, k, r, c, EDGE_CROSS);
+        assert.deepEqual(checkMarks(pz, e, sol), [], `${id}/${pz.name}: a rule step is wrong`);
+      }
+      if (ratePuzzle(pz).rules === 'chain') chains++;
+    }
+  }
+  assert.ok(chains >= 2, `only ${chains} sampled clue puzzles need a chain`);
+});
+
 test('edge intersection splits cleanly into narrow (2-3 tiles) and wide (4+ tiles)', () => {
   let narrowItems = 0, wideItems = 0;
   for (const file of ['L_8x8.csv', 'N5_8x8.csv', 'V3_8x8.csv']) {
