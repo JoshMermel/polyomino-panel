@@ -1125,8 +1125,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     // pre-drawn edges) are special: no size or sparseness rules, but every puzzle must be uniquely solvable
     if (book.id === 'intro' || book.id.startsWith('experiments')) {
       assert.equal(book.group, {
-        intro: 'Intro', experiments: 'Experiments', experiments2: 'Experiments, balanced', experiments3: 'Experiments, lines only',
-        experiments4: 'Experiments, crosses only', experiments5: 'Experiments, lines and crosses',
+        intro: 'Intro', experiments2: 'Experiments, balanced', experiments5: 'Experiments, lines and crosses',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {

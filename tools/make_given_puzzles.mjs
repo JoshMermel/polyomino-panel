@@ -6,6 +6,8 @@
 //        [--tiles L,T,S,P5,...] [--minutes 8] [--seed N] [--max-givens 2]
 //        [--cross-clues 1] [--add-to tools/books/experiments.csv]
 //        [--balanced 1] [--max-solutions 120] [--min-givens 5] [--max-givens 10]
+// Shapes are tried in proportion to tools/lib/tile_weights.mjs (line pieces rarely); in --balanced mode a
+// size-and-tier bucket holds at most --max-per-tile puzzles of one shape.
 // --cross-clues keeps only puzzles with at least one given cross ("these two cells share a tile") among
 // their givens; --add-to adds the new puzzles to an existing book file instead of replacing it.
 // --balanced makes puzzles with FEW blocked cells (2 to 8% of the board) and MANY given edges (at least
@@ -27,6 +29,7 @@ import {
 import './lib/wasm_counter.mjs';
 import { generatePuzzle, mulberry32, holeLadder, canonicalGrid } from '../js/generator.js';
 import { ratePuzzle, TIERS } from '../js/rating.js';
+import { weightedPick, tileCap } from './lib/tile_weights.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => {
   if (a.startsWith('--')) acc.push([a.slice(2), all[i + 1]]);
@@ -35,7 +38,7 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) =>
 const out = args.out ?? new URL('./books/experiments.csv', import.meta.url).pathname;
 const per = Number(args.per ?? 3);
 const sizes = (args.sizes ?? '6,8,10').split(',').map(Number);
-const tiles = (args.tiles ?? 'L,T,S,P5,V3,I3,Y5,N5,F5,W5,L+T,T+S,V3+I3').split(',');
+const tiles = (args.tiles ?? 'L,T,S,P5,V3,I3,Y5,N5,F5,W5,L5,L+T,T+S,L+S,V3+I3').split(',');
 const maxMs = Number(args.minutes ?? 8) * 60000;
 const balanced = 'balanced' in args;
 const maxGivens = Number(args['max-givens'] ?? (balanced ? 10 : 2));
@@ -43,6 +46,7 @@ const crossClues = 'cross-clues' in args;
 const maxSolutions = Number(args['max-solutions'] ?? (balanced ? 120 : 4));
 const minGivens = Number(args['min-givens'] ?? (balanced ? 5 : 1));
 const addTo = args['add-to'];
+const maxPerTile = Number(args['max-per-tile'] ?? Math.max(1, Math.ceil(per / 4)));
 const rng = mulberry32(Number(args.seed ?? 11));
 const pick = arr => arr[Math.floor(rng() * arr.length)];
 
@@ -119,7 +123,7 @@ const t0 = Date.now();
 let tried = 0, found = 0;
 const full = () => sizes.every(s => TIERS.every(t => (buckets.get(`${s}|${t}`) ?? []).length >= per));
 while (Date.now() - t0 < maxMs && !full()) {
-  const size = pick(sizes), tile = pick(tiles);
+  const size = pick(sizes), tile = weightedPick(rng, tiles);
   const ladder = holeLadder(size, size, tile);
   const target = size * size * pick(balanced ? [0.02, 0.04, 0.06, 0.08] : [0.06, 0.09, 0.12, 0.15, 0.2, 0.26]);
   const holes = ladder.reduce((best, k) => (Math.abs(k - target) < Math.abs(best - target) ? k : best), ladder[0]);
@@ -143,7 +147,7 @@ while (Date.now() - t0 < maxMs && !full()) {
     const r = ratePuzzle(puzzle);
     Object.assign(puzzle, { rules: r.rules, tier: r.tier, score: r.score, _tile: tile, _solutions: solutions.length });
     const bucket = buckets.get(`${size}|${r.tier}`) ?? [];
-    if (bucket.length < per) { bucket.push(puzzle); buckets.set(`${size}|${r.tier}`, bucket); found++; }
+    if (bucket.length < per && bucket.filter(q => q.tile === tile).length < tileCap(tile, maxPerTile)) { bucket.push(puzzle); buckets.set(`${size}|${r.tier}`, bucket); found++; }
     continue;
   }
   const sets = givenSets(base, solutions, intended);
