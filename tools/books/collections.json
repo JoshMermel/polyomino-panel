@@ -114,6 +114,22 @@
       "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and ✕ marks drawn for you."
     },
     {
+      "name": "Experiments, symmetric voids",
+      "idPrefix": "experiments6",
+      "source": "sym_voids.csv",
+      "title": "Experiments: symmetric voids",
+      "label": "Symmetric voids",
+      "blurb": "Experimental. The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too."
+    },
+    {
+      "name": "Experiments, symmetric clues",
+      "idPrefix": "experiments7",
+      "source": "sym_clues.csv",
+      "title": "Experiments: symmetric clues",
+      "label": "Symmetric clues",
+      "blurb": "Experimental. Few black cells, placed symmetrically, and pre-drawn clues in symmetric positions: an edge and its mirror image or rotation both carry a clue, but one can be a line and the other a ✕."
+    },
+    {
       "name": "Dense: one shape",
       "idPrefix": "dense1",
       "shapes": 1,

@@ -22,6 +22,14 @@
       "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and ✕ marks drawn for you."
     },
     {
+      "name": "Experiments, symmetric voids",
+      "blurb": "Experimental. The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too."
+    },
+    {
+      "name": "Experiments, symmetric clues",
+      "blurb": "Experimental. Few black cells, placed symmetrically, and pre-drawn clues in symmetric positions: an edge and its mirror image or rotation both carry a clue, but one can be a line and the other a ✕."
+    },
+    {
       "name": "Dense: one shape",
       "blurb": "Every tile is the same shape; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
       "secondary": true
@@ -131,6 +139,24 @@
       "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and ✕ marks drawn for you.",
       "file": "experiments5.csv",
       "count": 82
+    },
+    {
+      "id": "experiments6",
+      "group": "Experiments, symmetric voids",
+      "title": "Experiments: symmetric voids",
+      "label": "Symmetric voids",
+      "blurb": "Experimental. The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too.",
+      "file": "experiments6.csv",
+      "count": 73
+    },
+    {
+      "id": "experiments7",
+      "group": "Experiments, symmetric clues",
+      "title": "Experiments: symmetric clues",
+      "label": "Symmetric clues",
+      "blurb": "Experimental. Few black cells, placed symmetrically, and pre-drawn clues in symmetric positions: an edge and its mirror image or rotation both carry a clue, but one can be a line and the other a ✕.",
+      "file": "experiments7.csv",
+      "count": 85
     },
     {
       "id": "dense1-6",
