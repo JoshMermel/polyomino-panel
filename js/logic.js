@@ -1364,16 +1364,22 @@ const SWASTIKA_VARIANTS = (() => {
   return out;
 })();
 
-// Does this solution's drawn boundary contain a swastika?
+// Does this solution's drawn boundary contain a swastika? The outline of the black squares is part
+// of what a player sees, so an edge between an open cell and a blocked one counts as a line of the
+// pattern. (An edge between two blocked cells is invisible inside the black, and the board's own
+// border is not part of any pattern.)
 export function hasSwastika(puzzle, solution) {
   const { rows, cols } = puzzle;
   const n = SWASTIKA_WINDOW;
   if (rows < n || cols < n) return false;
-  const lines = edgesFromSolution(puzzle, solution);
+  const open = (r, c) => puzzle.grid[r * cols + c] === OPEN;
   const has = new Set();                         // in star battle's edge terms
-  for (const [kind, r, c] of playableEdges(puzzle)) {
-    if (getEdge(puzzle, lines, kind, r, c) !== EDGE_LINE) continue;
-    has.add(kind === 'v' ? `v:${r}:${c - 1}` : `h:${r - 1}:${c}`);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (c + 1 < cols && (open(r, c) !== open(r, c + 1) || (open(r, c) && solution[i] !== solution[i + 1]))) has.add(`v:${r}:${c}`);
+      if (r + 1 < rows && (open(r, c) !== open(r + 1, c) || (open(r, c) && solution[i] !== solution[i + cols]))) has.add(`h:${r}:${c}`);
+    }
   }
   for (let r0 = 0; r0 + n <= rows; r0++) {
     for (let c0 = 0; c0 + n <= cols; c0++) {

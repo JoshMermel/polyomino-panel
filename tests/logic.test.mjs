@@ -962,6 +962,15 @@ test('swastika: the pinwheel pattern in a solution\'s drawn boundaries', () => {
   assert.equal(hasSwastika({ rows: 3, cols: 3, tile: 'L', grid: '.'.repeat(9), solution: '' }, 'ABCDEFGHI'), false);
 });
 
+test('swastika: the outline of black squares counts as drawn boundary', () => {
+  // the Intro puzzles 76 and 83 that players reported: part of the pinwheel is the edge of a black square
+  const board = (tile, sol) => ({ rows: 5, cols: 5, tile, grid: [...sol].map(ch => (ch === '#' ? '#' : '.')).join(''), solution: sol });
+  const p76 = board('T', 'AAAB#CABBBCCD##CDD####D##');
+  const p83 = board('L', 'AAAB#CCAB#CDBB#CD####DD##');
+  assert.equal(hasSwastika(p76, p76.solution), true, 'intro 76');
+  assert.equal(hasSwastika(p83, p83.solution), true, 'intro 83');
+});
+
 test('the generator rejects swastika solutions by default (and finds them when allowed)', () => {
   let rejected = 0, allowed = 0, tries = 0;
   const r1 = mulberry32(21), r2 = mulberry32(21);
@@ -1013,7 +1022,7 @@ test('the generator keeps the open cells connected by default (and produces isla
   for (let i = 0; i < 25; i++) {
     const a = generatePuzzle({ rows: 6, cols: 6, tile: 'V3', holes: 9, rng, maxMs: 5000 });
     assert.ok(a && openCellsConnected(a.puzzle), 'default generation must never return islands');
-    const b = generatePuzzle({ rows: 6, cols: 6, tile: 'V3', holes: 9, rng: rng2, maxMs: 5000, allowDisconnected: true });
+    const b = generatePuzzle({ rows: 6, cols: 6, tile: 'V3', holes: 9, rng: rng2, maxMs: 5000, allowDisconnected: true, allowSwastika: true });
     if (b && !openCellsConnected(b.puzzle)) islands++;
   }
   assert.ok(islands > 0, 'with allowDisconnected some V-tromino boards should have islands');
@@ -1175,12 +1184,15 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
   // the L tetromino is an ordinary shape now
   const oneBooks = manifest.books.filter(b => b.id.startsWith('dense1-'));
   assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the dense one-shape books');
-  // every one of the 19 single shapes is in every one-shape book, including the line pieces
+  // every single shape is in every one-shape book, including the line pieces. The plus pentomino (X5) is
+  // the exception: its tile boundaries make a swastika almost every time (black outlines count), so few
+  // X5 puzzles survive the filter and the 8x8 book has none.
   for (const b of oneBooks) {
     const shapes = new Set(data(b.file).map(p => p.tile));
-    for (const s of ['I2', 'I3', 'I', 'I5', 'L', 'T', 'P5', 'X5']) assert.ok(shapes.has(s), `${b.id} has ${s}`);
-    assert.equal(shapes.size, 19, `${b.id}: all 19 single shapes`);
+    for (const s of ['I2', 'I3', 'I', 'I5', 'L', 'T', 'P5']) assert.ok(shapes.has(s), `${b.id} has ${s}`);
+    assert.ok(shapes.size >= 18, `${b.id}: at least 18 of the 19 single shapes`);
   }
+  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'X5')), 'X5 still appears in some one-shape book');
   // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the domino
   const first = data(manifest.books.find(b => b.id === 'dense1-6').file);
   assert.equal(first[0].tile, 'I2');

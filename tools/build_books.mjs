@@ -173,11 +173,13 @@ for (const spec of buildOrder) {
     const cands = eligible(spec, used);
     const bySize = spec.sizes.map(sz => cands.filter(p => p.rows === sz));
     const alloc = weightedAllocation(spec.count, bySize.map(c => c.length), spec.sizes.map(sz => spec.sizeWeights[sz] ?? 1));
-    const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], () => false, 1) : []));
+    const before = published.get(spec.id);
+    const isKept = before ? (p => before.has(hashOf(p))) : (() => false);
+    const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], isKept, 1) : []));
     picks.forEach(p => used.add(p.name));
     picks.sort((a, b) => a.rows - b.rows || a.score - b.score || (a.name < b.name ? -1 : 1));      // smallest boards first
     const spread = spreadByTier(picks, { tierOf: p => p.rows });                                   // shapes mixed within a size
-    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before: published.get(spec.id) });
+    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before });
     continue;
   }
   const before = published.get(spec.id);
