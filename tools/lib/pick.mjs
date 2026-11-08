@@ -12,14 +12,17 @@ export function hashString(s) {
 // mostly easy picks). One pick is the median. (Star battle's builder spaces picks evenly over a fixed
 // score range instead, which suits hand-tuned ranges; ours are merged tiers whose scores run from
 // tens to over a thousand, so equal-width score bins would be dominated by the extreme tail.)
-// Equal scores are ordered by a hash of the puzzle's name and the seed, so rescoring or re-sorting a
-// pool doesn't reshuffle which of several equal puzzles is chosen.
+// Equal scores are ordered by a hash of the puzzle's content (`key(c)`, by default its name) and the seed,
+// like star battle's builder: the order depends on nothing but the puzzle itself, not on the pool's row
+// order or size or on what the puzzle is called, so rescoring or growing a pool doesn't reshuffle which of
+// several equal puzzles is chosen. (The builder passes the puzzle's content hash as the key.)
 // cands: [{name, score, ...}]; returns { picks (ascending by score), short }.
-export function pickQuantiles(cands, { count, seed = 1 }) {
-  const tie = c => hashString(`${c.name}#${seed}`);
-  const sorted = cands.map(c => ({ c, t: tie(c) }))
-    .sort((a, b) => a.c.score - b.c.score || a.t - b.t || (a.c.name < b.c.name ? -1 : 1))
-    .map(x => x.c);
+export const tieHash = (c, key, seed) => hashString(`${key(c)}#${seed}`);
+export const byScoreThenTie = (key, seed) => (a, b) =>
+  a.score - b.score || tieHash(a, key, seed) - tieHash(b, key, seed) || (key(a) < key(b) ? -1 : 1);
+
+export function pickQuantiles(cands, { count, seed = 1, key = c => c.name }) {
+  const sorted = [...cands].sort(byScoreThenTie(key, seed));
   const n = sorted.length;
   if (n <= count) return { picks: sorted, short: count - n };
   const picks = [];
@@ -32,11 +35,11 @@ export function pickQuantiles(cands, { count, seed = 1 }) {
 // picks from the rest make up the number. If more than `count` are kept, `keepAll` decides: true keeps
 // them all (a rebuild only ever adds puzzles), false trims them to a quantile subset. With nothing
 // kept it is exactly pickQuantiles.
-export function pickStable(cands, { count, seed = 1, isKept = () => false, keepAll = false }) {
+export function pickStable(cands, { count, seed = 1, isKept = () => false, keepAll = false, key = c => c.name }) {
   const kept = cands.filter(isKept);
-  const byScore = (a, b) => a.score - b.score || (a.name < b.name ? -1 : 1);
-  if (kept.length >= count) return keepAll ? { picks: kept.sort(byScore), short: 0 } : pickQuantiles(kept, { count, seed });
-  const more = pickQuantiles(cands.filter(c => !isKept(c)), { count: count - kept.length, seed });
+  const byScore = byScoreThenTie(key, seed);
+  if (kept.length >= count) return keepAll ? { picks: kept.sort(byScore), short: 0 } : pickQuantiles(kept, { count, seed, key });
+  const more = pickQuantiles(cands.filter(c => !isKept(c)), { count: count - kept.length, seed, key });
   return { picks: [...kept, ...more.picks].sort(byScore), short: more.short };
 }
 

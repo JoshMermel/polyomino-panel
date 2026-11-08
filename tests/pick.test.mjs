@@ -43,6 +43,21 @@ test('ties are broken deterministically by seed, whatever the pool order', () =>
   assert.deepEqual(pickQuantiles([...cands].reverse(), { count: 10, seed: 1 }).picks.map(p => p.name), a);
 });
 
+test('ties are broken by the puzzle\'s content (the key), not its name or the pool order', () => {
+  const mk = (prefix, ids) => ids.map(i => ({ name: `${prefix}${i}`, content: `grid-${i}`, score: 7 }));
+  const key = c => c.content;
+  const ids = Array.from({ length: 100 }, (_, i) => i);
+  const a = pickQuantiles(mk('a', ids), { count: 10, seed: 1, key }).picks.map(p => p.content);
+  const renamed = pickQuantiles(mk('zz_', [...ids].reverse()), { count: 10, seed: 1, key }).picks.map(p => p.content);
+  assert.deepEqual(a, renamed, 'renaming or reordering the same puzzles does not change the choice');
+  assert.equal(new Set(a).size, 10);
+  const other = pickQuantiles(mk('a', ids), { count: 10, seed: 2, key }).picks.map(p => p.content);
+  assert.notDeepEqual(a, other, 'the seed still changes the choice');
+  // with no key the name is used, as before
+  assert.deepEqual(pickQuantiles(mk('a', ids), { count: 10, seed: 1 }).picks.map(p => p.name),
+    pickQuantiles(mk('a', ids).reverse(), { count: 10, seed: 1 }).picks.map(p => p.name));
+});
+
 test('hashString is stable', () => {
   assert.equal(hashString('abc'), hashString('abc'));
   assert.notEqual(hashString('abc'), hashString('abd'));

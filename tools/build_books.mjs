@@ -27,6 +27,10 @@
 //   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
 //      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
 //      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
+// Ties (equal scores or sparseness) are broken by a hash of the puzzle's content salted with --seed, not by its name
+// or its place in a pool, as in star battle's builder, so rescoring or growing a pool disturbs only the puzzles
+// that changed. A puzzle published in one book is never taken by another book, and a published puzzle stays a
+// candidate whatever the sparseness slice or the beyond-hints cap would otherwise do: a rebuild only ever adds.
 // A rebuild is STABLE: every puzzle already published in data/ stays (pickStable with keepAll), and only
 // the gaps in the shares are filled, so adding a shape or growing a book never reshuffles it and
 // players keep their progress. The book size in collections.json is therefore a floor: a book can end
@@ -44,7 +48,7 @@ import {
 import { parseCsv, toCsv, solveWithGivens, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
-import { pickStable, pickQuantiles, weightedAllocation, spreadByTier } from './lib/pick.mjs';
+import { pickStable, weightedAllocation, spreadByTier, byScoreThenTie, tieHash } from './lib/pick.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -70,6 +74,14 @@ if (!fresh && existsSync(new URL('manifest.json', dataDir))) {
   }
 }
 const hashOf = p => (p._hash ??= puzzleHash(p));
+// Which book already publishes each puzzle: another book must not take it (the sparse books are built first
+// and would otherwise pick up sparse-enough puzzles that the dense books publish, which then lose them).
+const owner = new Map();
+for (const [id, set] of published) for (const h of set) if (!owner.has(h)) owner.set(h, id);
+// Ties (equal scores, equal sparseness) are broken by a hash of the puzzle's CONTENT salted with the seed, as in
+// star battle's builder, so they depend on nothing else: not the pool's order or size, not the puzzle's name.
+const byTie = (a, b) => tieHash(a, hashOf, seed) - tieHash(b, hashOf, seed) || (hashOf(a) < hashOf(b) ? -1 : 1);
+const byScore = byScoreThenTie(hashOf, seed);
 
 // --- The pools -------------------------------------------------------------------------------
 const pool = [];                       // every puzzle that may be published
@@ -113,6 +125,7 @@ for (const g of config.groups) {
 
 const blockedFraction = p => (p._blocked ??= [...p.grid].filter(c => c === '#').length / p.grid.length);
 const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && (spec.sizes ? spec.sizes.includes(p.rows) : p.rows === spec.size) && !used.has(p.name) &&
+  (!owner.has(hashOf(p)) || owner.get(hashOf(p)) === spec.id) &&
   (spec.maxBlocked == null || blockedFraction(p) <= spec.maxBlocked) &&
   (spec.tierList == null || spec.tierList.includes(p.tier)) && (spec.maxScore == null || p.score <= spec.maxScore));
 
@@ -146,13 +159,17 @@ function pickAcross(groups, count, isKept, sparseShare = 1) {
   // prefer sparse puzzles: look only at the sparsest share of each group, keeping at least 3x what it must give
   const sparsest = (g, n) => {
     const keep = Math.min(g.length, Math.max(Math.ceil(g.length * sparseShare), 3 * n));
-    return keep >= g.length ? g : [...g].sort((a, b) => blockedFraction(a) - blockedFraction(b) || (a.name < b.name ? -1 : 1)).slice(0, keep);
+    if (keep >= g.length) return g;
+    // published puzzles always stay candidates, even if the slice's edge moves (a changed tiebreak, a grown pool)
+    const slice = [...g].sort((a, b) => blockedFraction(a) - blockedFraction(b) || byTie(a, b)).slice(0, keep);
+    const inSlice = new Set(slice);
+    return [...slice, ...g.filter(p => !inSlice.has(p) && isKept(p))];
   };
   // --trim only trims down-weighted shapes; every other shape keeps all its published puzzles
   return groups.flatMap((g0, i) => {
     const g = sparsest(g0, alloc[i]);
     const trimmed = trim && weightOf(g[0].tile) < 1;
-    return alloc[i] || !trimmed ? pickStable(g, { count: alloc[i], seed, isKept, keepAll: !trimmed }).picks : [];
+    return alloc[i] || !trimmed ? pickStable(g, { count: alloc[i], seed, isKept, keepAll: !trimmed, key: hashOf }).picks : [];
   });
 }
 const byTile = cands => {
@@ -177,7 +194,7 @@ for (const spec of buildOrder) {
     const isKept = before ? (p => before.has(hashOf(p))) : (() => false);
     const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], isKept, 1) : []));
     picks.forEach(p => used.add(p.name));
-    picks.sort((a, b) => a.rows - b.rows || a.score - b.score || (a.name < b.name ? -1 : 1));      // smallest boards first
+    picks.sort((a, b) => a.rows - b.rows || byScore(a, b));      // smallest boards first
     const spread = spreadByTier(picks, { tierOf: p => p.rows });                                   // shapes mixed within a size
     books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before });
     continue;
@@ -188,7 +205,7 @@ for (const spec of buildOrder) {
   if (config.tour?.book === spec.id) {
     for (const tile of config.tour.shapes) {
       const cands = eligible(spec, used).filter(p => p.tile === tile && p.tier === config.tour.tier);
-      const r = pickStable(cands, { count: config.tour.perShape, seed, isKept });
+      const r = pickStable(cands, { count: config.tour.perShape, seed, isKept, key: hashOf });
       if (r.short) console.log(`  ${spec.id} tour: only ${r.picks.length} of ${config.tour.perShape} ${config.tour.tier} puzzles for ${tile}`);
       r.picks.forEach(p => { used.add(p.name); tour.push(p); });
     }
@@ -208,14 +225,17 @@ for (const spec of buildOrder) {
     if (config.tiers[i] !== 'Hard' || cap == null) return picks;
     const stuck = picks.filter(beyondHints), max = Math.floor(cap * alloc[i]);
     if (stuck.length <= max) return picks;
-    const keepStuck = max ? pickQuantiles(stuck, { count: max, seed }).picks : [];
+    const keepStuck = max ? pickStable(stuck, { count: max, seed, isKept, key: hashOf }).picks : [];      // published ones first
     const chosen = new Set([...picks.filter(p => !beyondHints(p)), ...keepStuck].map(p => p.name));
     const solvable = c.filter(p => !beyondHints(p) && !chosen.has(p.name));
-    const refill = pickAcross(byTile(solvable), stuck.length - keepStuck.length, isKept, spec.sparseShare);
+    // replace the cut ones, but only up to the tier's share: a tier that already holds more (every published puzzle
+    // stays, so a book can run over its size) must not grow by the cut ones again on every rebuild
+    const removed = stuck.length - keepStuck.length;
+    const refill = pickAcross(byTile(solvable), Math.min(removed, Math.max(0, alloc[i] - (picks.length - removed))), isKept, spec.sparseShare);
     return [...picks.filter(p => !beyondHints(p)), ...keepStuck, ...refill];
   });
   rest.forEach(p => used.add(p.name));
-  rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score || (a.name < b.name ? -1 : 1));
+  rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || byScore(a, b));
   const spread = spreadByTier(rest, { recent: tour.map(p => p.tile) });       // no long runs of one shape
   books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
 }
