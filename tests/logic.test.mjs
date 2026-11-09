@@ -868,7 +868,7 @@ test('chains: all-but-one tiles fail after forced steps; first chain matches the
 test('the rules read pre-drawn clues: every step on the clue books agrees with the solution, and chains follow edge steps', () => {
   const bookPuzzles = id => parseCsv(readFileSync(new URL(`../data/${id}.csv`, import.meta.url), 'utf8'));
   let chains = 0;
-  for (const id of ['experiments2', 'experiments5', 'experiments7']) {
+  for (const id of ['bonus-clues', 'experiments7']) {
     for (const pz of bookPuzzles(id).filter((_, i) => i % 5 === 0)) {          // a sample keeps CI fast
       assert.ok(pz.givens.length >= 2, `${id}/${pz.name} has clues`);
       const sol = getSolution(pz);
@@ -1152,18 +1152,19 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
-    // the Intro book (small, easy puzzles of one shape, mixed sizes) and the Experiments book (puzzles with
-    // pre-drawn edges) are special: no size or sparseness rules, but every puzzle must be uniquely solvable
-    if (book.id === 'intro' || book.id.startsWith('experiments')) {
+    // the Intro book (small, easy puzzles of one shape, mixed sizes), the Bonus books and the Experiments book
+    // (puzzles with pre-drawn edges or symmetric voids) are special: no size or sparseness rules, but every
+    // puzzle must be uniquely solvable
+    if (book.id === 'intro' || book.id.startsWith('experiments') || book.id.startsWith('bonus')) {
       assert.equal(book.group, {
-        intro: 'Intro', experiments2: 'Experiments, balanced', experiments5: 'Experiments, lines and crosses',
-        experiments6: 'Experiments, symmetric voids', experiments7: 'Experiments, symmetric clues',
+        intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
+        experiments7: 'Experiments, symmetric clues',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
         const sols = solveWithGivens(p, 2);
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
-        if (book.id.startsWith('experiments') && book.id !== 'experiments6') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
+        if (['bonus-clues', 'experiments7'].includes(book.id)) assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
       }
       continue;

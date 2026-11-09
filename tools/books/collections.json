@@ -101,28 +101,20 @@
       ]
     },
     {
-      "name": "Experiments, balanced",
-      "idPrefix": "experiments2",
-      "source": "experiments_balanced.csv",
-      "title": "Experiments: balanced clues",
-      "label": "Balanced clues",
-      "blurb": "Experimental. Few black cells and more pre-drawn clues (lines and ✕ marks) that make the tiling unique."
-    },
-    {
-      "name": "Experiments, lines and crosses",
-      "idPrefix": "experiments5",
-      "source": "clues_both.csv",
-      "title": "Experiments: lines and ✕",
-      "label": "Lines and ✕",
-      "blurb": "Experimental. An almost empty board (only as many black cells as a tiling needs), made unique by a mix of lines and ✕ marks drawn for you."
-    },
-    {
-      "name": "Experiments, symmetric voids",
-      "idPrefix": "experiments6",
+      "name": "Bonus: symmetric voids",
+      "idPrefix": "bonus-voids",
       "source": "sym_voids.csv",
-      "title": "Experiments: symmetric voids",
+      "title": "Bonus: symmetric voids",
       "label": "Symmetric voids",
-      "blurb": "Experimental. The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too."
+      "blurb": "The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too."
+    },
+    {
+      "name": "Bonus: clues",
+      "idPrefix": "bonus-clues",
+      "source": "bonus_clues.csv",
+      "title": "Bonus: clues",
+      "label": "Clues",
+      "blurb": "Few black cells and some pre-drawn clues (lines and ✕ marks) that make the tiling unique, from a handful of clues on a sparse board to an almost empty board held together by the clues alone."
     },
     {
       "name": "Experiments, symmetric clues",
