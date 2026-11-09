@@ -22,8 +22,8 @@ then open <http://localhost:8765>. (Opening `index.html` via `file://` won't wor
 The main view is deliberately sparse: a title bar (⚙ settings, **?** help), the book button (current shape(s) and board size; it opens the book picker) with the puzzle pager, one info line (the tile shape on the left, progress or "Solved!" on the right), the action buttons and the board. The rules and controls are in the **?** "How to play" dialog. Summary:
 
 - **Where a press lands decides the gesture** (all deterministic, nothing depends on timing, and it works with mouse, touch and pen):
-  - **On an edge:** a tap cycles it empty → line → small ✕ → empty. Dragging from an edge does nothing (it used to paint along the stroke, but it only ever happened by accident), so a press that moves away from the edge is not a tap and changes nothing.
-  - **On a cell:** drag across cells to trace a tile. The cells you cover are previewed (purple while they are not a tile yet; once they form exactly one of the shapes, in any rotation or reflection, in that shape's color); on release, all of that tile's outline lines are drawn and any lines already inside it are erased (✕ marks inside are kept), all as one undo step. Cells that don't form the tile are ignored with a short message.
+  - **On an edge:** a tap cycles it empty → line → small ✕ → empty. A press on an edge that moves more than a small slop is not a tap: it becomes a cell drag (below) that starts in the cell the press landed in, so a drag that happens to start on an edge still works.
+  - **On a cell:** drag across cells to trace a tile. The cells you cover are previewed (purple while they are not a tile yet; once they form exactly one of the shapes, in any rotation or reflection, in that shape's color); on release, all of that tile's outline lines are drawn and any lines already inside it are erased (✕ marks inside are kept), all as one undo step. Cells that don't form the tile are ignored with a short message. **Dragging over a tile that is already outlined erases it:** its outline lines come off (lines shared with a finished neighbouring tile stay; ✕ marks stay), as one undo step.
   - **Right-click** an edge toggles a ✕ directly.
   - A whole gesture is one undo step; **Esc** cancels a drag in progress. Touch drags on the board don't scroll the page.
 - Edges next to a black cell or the outer border are implicit walls and aren't clickable.
@@ -37,12 +37,15 @@ The main view is deliberately sparse: a title bar (⚙ settings, **?** help), th
   3. **Edges:** lines and ✕ that every possible tile for a cell agrees on (an edge on every tile's outline is a line; an edge inside every tile is a ✕). Shown as dashed ghost lines and ghost ✕ marks.
   4. **Two-way lookahead** (a cell with two possible tiles, one of which leads to a contradiction) and **lookahead on 3+ options** (all but one fail): the survivor's dashed outline. A red "!" marks a cell that *every* failing tile strands, when there is one; otherwise the text says what goes wrong (a cell with nowhere to go, or a pocket that can't be tiled).
   5. **Chain:** the same, but a tile only fails after following what it forces for several steps.
-  6. Otherwise show an edge that can take a ✕ (the solution has no line there), never inside an already-closed shape.
+  6. Otherwise a peek: an edge that can take a ✕ (the solution has no line there), never inside an already-closed shape. The peeks are ranked by how many logical steps (Beginner and Medium rules) each one sets off once it is marked (`rankPeeks` in `js/rating.js`, limited to about a quarter of a second), ties going to the one nearest the player's last mark.
+
+  **Order:** the hints of one kind come nearest first to where the player last marked (board order before any mark). **Step-by-step hints** (Settings ⚙, off by default, an experiment) make each hint take three presses: the yellow cell to look at, then why, then the move (mistakes and peeks are shown whole).
 
   **Cycling:** pressing Hint while a hint is on screen steps to the next hint *of the same kind*, wrapping around. Dismissing a hint (clicking its toast, or clicking empty page away from the board and controls) clears the toast and highlights but keeps your place in the cycle, so the next press shows the next hint; only a change to the board restarts the cycle. The toast moves to the top of the window when sitting at the bottom would cover the board.
 - ⚙ **Settings**: dark mode (defaults to your system theme) and tinting of closed tiles (blue = valid tile, red = enclosed but can't become one).
 - Ctrl/⌘-Z undo, Ctrl/⌘-Shift-Z (or Ctrl-Y) redo. Progress is saved in `localStorage`, keyed by a hash of the puzzle (tile, size, grid), so it survives renumbering or reordering a set.
 - Settings ⚙ → "Load puzzles from a file" opens any puzzle CSV for the session without touching `data/`.
+- On localhost only, a git-ignored `data/tmp.csv` shows up as a "tmp" book (group Scratch) for looking at example puzzles; it is never fetched from the published site and the service worker skips it. Write it with `toCsv`; a position can be shown by listing its marks in the `given` column.
 - Settings ⚙ → "Offline play" (off by default) saves the app and every book on the device through a service worker (`sw.js`), so it works with no connection. The app files are refreshed together in the background when you open the page online (an update appears on the following visit); books refresh one by one. Turning it off removes the worker and its caches. `?sw=on` / `?sw=off` flips the setting from the address bar. Tested in `tests/sw.test.mjs` against a fake Cache API and network; browsers that don't allow service workers (or insecure origins) just report that it isn't available.
 - Settings ⚙ → "Print puzzles" makes a printable booklet from the current book: pick puzzles (`1-10, 15`), 1, 2, 4 or 6 per page, and an optional answer key (boards with the tile boundaries drawn bold). It opens the browser's print dialog, where "Save as PDF" gives a file. Booklet pages are built by `js/print.js` as plain black-and-white SVG, independent of dark mode.
 - Settings ⚙ → "Clear saves" erases your saved progress on every puzzle (two clicks: it asks "Are you sure?" first). Dark mode and tint settings are kept.
@@ -74,11 +77,12 @@ Each puzzle is solved by a rule-based solver that uses the same deductions as th
 | Rule | What it does | Tier | Weight |
 | --- | --- | --- | --- |
 | `forced` | a cell has exactly one possible tile: outline it | Beginner | 1 |
+| `lookahead2` | a cell has two possible tiles and one leads to a contradiction | Medium | 6 |
 | `edges` | an edge that every one of two or three possible tiles for a cell agrees on: a line if it is on every tile's outline, a ✕ if it is inside every tile | Medium | 3 |
 | `tryLine` | a line on some edge would leave a cell (anywhere) with no possible tile, because every tile that could cover it contains both cells beside the edge: mark the edge with a ✕ | Medium | 4 |
-| `lookahead2` | a cell has two possible tiles and one leads to a contradiction | Medium | 6 |
-| `edgesWide` | the same edge reasoning over four or more possible tiles | Hard | 8 |
+| `pocket` | a line on some edge would wall off a pocket (together with the lines already drawn) whose number of cells tiles cannot make up, even though no single cell is stranded: mark the edge with a ✕ | Medium | 5 |
 | `lookahead3` | three or more possible tiles; all but one lead to a contradiction | Hard | 16 |
+| `edgesWide` | the same edge reasoning over four or more possible tiles | Hard | 8 |
 | `eliminate` | a cell has three or more possible tiles; some (not all but one) lead to a contradiction in one step, and the tiles that are left all agree on an edge: draw it (outline of every survivor) or mark a ✕ (inside every survivor) | Hard | 22 |
 | `chain` | a cell with just two possible tiles, where one fails only after following its consequences for several steps: forced tiles, and also the edges that two or three candidate tiles agree on and the edges where a line would strand a cell, i.e. the pre-drawn clues and everything they make certain are used too (chains are not used when a cell has more tiles: branching over several tiles and following chains is too much to keep in your head) | Hard | 30 |
 | (none) | the rules get stuck ("beyond the hints"; still Hard) | Hard | 40 per undetermined tile |

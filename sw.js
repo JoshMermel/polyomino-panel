@@ -23,7 +23,7 @@ const APP_SHELL = [
   './js/print.js',
 ];
 
-const isDataRequest = url => url.pathname.includes('/data/');
+const isDataRequest = url => url.pathname.includes('/data/') && !url.pathname.endsWith('/data/tmp.csv');   // tmp.csv: local scratch book, never cached
 const SHELL_PATHS = new Set(APP_SHELL.map(u => new URL(u, self.location.href).pathname));
 
 self.addEventListener('install', event => {

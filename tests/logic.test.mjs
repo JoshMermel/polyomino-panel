@@ -8,7 +8,7 @@ import {
   checkMarks, crossHints, getSolution, playableEdges, puzzleHash, labelString,
   consistentPlacements, forcedTile, lookaheadTile, shapeName, SHAPES, newEdges, edgeCells,
   cellsFormTile, tileOutline, tileInterior, allForcedTiles, allLookaheadTiles, findPocketContradiction,
-  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, solveWithGivens, parseGivens, givensString, givensRuleOutTile, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
+  edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, allPocketDeductions, tileErasure, solveWithGivens, parseGivens, givensString, givensRuleOutTile, eliminateTile, allEliminateTiles, chainTile, allChainTiles, LOOKAHEAD_PARITY, findContradiction,
   EDGES_NARROW, EDGES_WIDE, hasSwastika, openCellsConnected,
   tileSpecs, allOrientations, tileSizes, sizeFeasible, solutionShapeCounts, finishedTileCells,
 } from '../js/logic.js';
@@ -17,7 +17,7 @@ import {
 } from '../js/generator.js';
 import { referenceSearch } from './reference_solver.mjs';
 import { SPREAD_WINDOW } from '../tools/lib/pick.mjs';
-import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule, beyondHints } from '../js/rating.js';
+import { ratePuzzle, compareRatings, sortByRules, TIERS, RULES, RULE_IDS, tierOfRule, beyondHints, rankPeeks } from '../js/rating.js';
 import { LOOKAHEAD_2, LOOKAHEAD_3 } from '../js/logic.js';
 
 const manifestOf = () => JSON.parse(readFileSync(new URL('../data/manifest.json', import.meta.url), 'utf8'));
@@ -499,7 +499,7 @@ test('ratePuzzle uses only the deduction rules and classifies correctly', () => 
   // lookahead, chains and puzzles beyond the rules are Hard
   assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard']);
   assert.deepEqual(RULES.map(x => [x.id, x.tier]), [
-    ['forced', 'Beginner'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['lookahead2', 'Medium'], ['edgesWide', 'Hard'], ['lookahead3', 'Hard'], ['eliminate', 'Hard'], ['chain', 'Hard'],
+    ['forced', 'Beginner'], ['lookahead2', 'Medium'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['pocket', 'Medium'], ['lookahead3', 'Hard'], ['edgesWide', 'Hard'], ['eliminate', 'Hard'], ['chain', 'Hard'],
   ]);
   assert.equal(tierOfRule('unsolved'), 'Hard');
   assert.equal(beyondHints({ rules: 'unsolved' }), true);
@@ -1321,4 +1321,78 @@ test('given edges rule out dragged tiles that contradict them', () => {
   assert.equal(givensRuleOutTile(q, [0, 1, 2]), true);
   assert.equal(givensRuleOutTile(q, [2, 3, 4]), false);
   assert.equal(givensRuleOutTile({ ...p, givens: undefined }, [0, 1, 2]), false);
+});
+
+test('rankPeeks puts the peek that unlocks the most logical steps first, keeps ties in the given order, and honours its budget', () => {
+  // a puzzle the rules cannot finish: walk the rules until they stall, then rank the crosses the solution allows
+  const stuck = data('one-8.csv').find(p => p.rules === 'unsolved');
+  assert.ok(stuck, 'one-8 has a "no logical hints" puzzle');
+  const edges = newEdges(stuck);
+  for (let guard = 0; guard < 500; guard++) {
+    const found = RULES.map(r => r.find(stuck, edges)).find(Boolean);
+    if (!found) break;
+    for (const [k, r, c] of found.lines ?? []) setEdge(stuck, edges, k, r, c, EDGE_LINE);
+    for (const [k, r, c] of found.crosses ?? []) setEdge(stuck, edges, k, r, c, EDGE_CROSS);
+  }
+  const candidates = crossHints(stuck, edges, getSolution(stuck));
+  assert.ok(candidates.length > 1);
+  const ranked = rankPeeks(stuck, edges, candidates);
+  assert.deepEqual(ranked.map(x => x.edge.join()).sort(), candidates.map(e => e.join()).sort());   // a permutation
+  for (let i = 1; i < ranked.length; i++) assert.ok(ranked[i - 1].gain >= ranked[i].gain);
+  assert.ok(ranked[0].gain > 0, 'some peek opens up a logical step');
+  // the gain is real: after the best peek the cheap rules do find something
+  const trial = { h: edges.h.slice(), v: edges.v.slice() };
+  setEdge(stuck, trial, ...ranked[0].edge, EDGE_CROSS);
+  assert.ok(RULES.filter(r => r.tier !== 'Hard').some(r => r.find(stuck, trial)));
+  // ties keep the given order: with no time to look at any candidate, nothing moves
+  const none = rankPeeks(stuck, edges, candidates, { budgetMs: -1 });
+  assert.deepEqual(none.map(x => x.edge), candidates);
+  assert.ok(none.every(x => x.gain === 0));
+});
+
+test('pocket: a line that would wall off a region the tiles cannot fill takes a cross, and only ever a true cross', () => {
+  // walk the solver's own path over Hard V3 puzzles (where corners are cut off most often) and check every
+  // pocket deduction against the solution; at least one must show up in the sample
+  let seen = 0;
+  for (const p of library().filter(q => q.tier === 'Hard' && q.tile === 'V3').slice(0, 120)) {
+    const solution = getSolution(p), expected = edgesFromSolution(p, solution);
+    const e = newEdges(p);
+    for (let guard = 0; guard < 400; guard++) {
+      for (const d of allPocketDeductions(p, e)) {
+        seen++;
+        assert.equal(d.crosses.length, 1);
+        const [kind, r, c] = d.crosses[0];
+        assert.notEqual(getEdge(p, expected, kind, r, c), EDGE_LINE, `${p.name}: pocket cross on a true line`);
+        assert.ok(d.cells.length % 3 !== 0, 'the pocket has a size V3 tiles cannot make');
+      }
+      const found = RULES.map(r => r.find(p, e)).find(Boolean);
+      if (!found) break;
+      for (const [k, r, c] of found.lines ?? []) setEdge(p, e, k, r, c, EDGE_LINE);
+      for (const [k, r, c] of found.crosses ?? []) setEdge(p, e, k, r, c, EDGE_CROSS);
+    }
+  }
+  assert.ok(seen > 0, 'the sample has pocket deductions');
+});
+
+test('tileErasure: dragging over a closed tile takes its outline off, keeping lines a finished neighbour shares', () => {
+  const p = { rows: 1, cols: 6, tile: 'I2', grid: '.'.repeat(6), solution: '' };
+  const e = newEdges(p);
+  assert.equal(tileErasure(p, e, [0, 1]), null, 'outline not drawn yet: that is a draw, not an erase');
+  setEdge(p, e, 'v', 0, 2, EDGE_LINE);
+  assert.deepEqual(tileErasure(p, e, [0, 1]), [['v', 0, 2]], 'the line next to an unfinished region goes');
+  // close the neighbouring tile too: the line between the two finished tiles is theirs both
+  setEdge(p, e, 'v', 0, 4, EDGE_LINE);
+  setEdge(p, e, 'v', 0, 3, EDGE_EMPTY);
+  assert.deepEqual(tileErasure(p, e, [0, 1]), [], 'shared with the finished tile on cells 2 and 3');
+  // a neighbour that only this tile's line closes off (nothing else walls it) does not keep the line
+  const corner = { rows: 1, cols: 4, tile: 'I2', grid: '....', solution: '' };
+  const ce = newEdges(corner);
+  setEdge(corner, ce, 'v', 0, 2, EDGE_LINE);
+  assert.deepEqual(tileErasure(corner, ce, [0, 1]), [['v', 0, 2]]);
+  // a line cutting through the shape: not an erase
+  const q = newEdges(p);
+  setEdge(p, q, 'v', 0, 1, EDGE_LINE); setEdge(p, q, 'v', 0, 2, EDGE_LINE);
+  assert.equal(tileErasure(p, q, [0, 1]), null);
+  // a tile with no outline to speak of (the whole board) is not an erase either
+  assert.equal(tileErasure({ rows: 1, cols: 2, tile: 'I2', grid: '..', solution: '' }, newEdges({ rows: 1, cols: 2, tile: 'I2', grid: '..', solution: '' }), [0, 1]), null);
 });

@@ -7,7 +7,9 @@
 // Input: pointer events on the whole SVG, decoded geometrically. Where a press
 // lands decides the kind of gesture:
 //   on an edge  -> a tap: onEdgePress when the pointer is released without having moved
-//                  more than TAP_SLOP (cell units). Dragging from an edge does nothing.
+//                  more than TAP_SLOP (cell units). A press that does move turns into a "cell"
+//                  gesture (below) that starts in the cell the press landed in, so a drag that
+//                  happens to start on an edge still works.
 //   on a cell   -> a "cell" gesture: onCellPress, then onCellEnter for every
 //                  other open cell dragged across, then onRelease (or onCancel if the
 //                  browser cancels the pointer).
@@ -185,7 +187,7 @@ export class Board {
     let mode = null;          // 'edge' | 'cell' while a gesture is in progress
     let last = null;          // last pointer position (cell units)
     let lastCell = -1;
-    let tap = null;           // an edge press waiting for its release: { edge, from: [x, y], moved }
+    let tap = null;           // an edge press waiting for its release: { edge, from: [x, y], moved, cell }
 
     svg.addEventListener('pointerdown', e => {
       if (e.button !== 0 || mode) return;
@@ -194,7 +196,9 @@ export class Board {
       const edge = this._edgeAt(x, y);
       if (edge) {
         mode = 'edge';
-        tap = { edge, from: [x, y], moved: 0 };     // applied on release, if it really was a tap
+        // applied on release, if it really was a tap; `cell` is the open cell the press landed in (the edge
+        // band is thin, so the pointer is inside one of the two cells beside the edge): where a drag starts
+        tap = { edge, from: [x, y], moved: 0, cell: this._cellAt(x, y) };
       } else {
         const cell = this._cellAt(x, y);
         if (cell < 0) return;
@@ -217,9 +221,16 @@ export class Board {
         svg.style.cursor = edge ? 'pointer' : cell >= 0 ? 'cell' : '';
         return;
       }
-      if (mode === 'edge') {                          // dragging from an edge does nothing
+      if (mode === 'edge') {
         tap.moved = Math.max(tap.moved, Math.hypot(x - tap.from[0], y - tap.from[1]));
-        return;
+        if (tap.moved < TAP_SLOP || tap.cell < 0) return;
+        // it is a drag, not a tap: carry on as a cell drag that started where the press landed
+        mode = 'cell';
+        lastCell = tap.cell;
+        last = tap.from;
+        tap = null;
+        this._setHover(null);
+        this.cb.onCellPress(lastCell);
       }
       // Sample along the segment from the last position, so a fast drag
       // can't skip over cells.

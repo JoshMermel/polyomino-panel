@@ -1,3 +1,6 @@
 # Big scratch pools of generated puzzles and staged books (see tools/build_books.mjs)
 tools/library/
 tools/books_staging/
+
+# Local scratch book of example puzzles; the app shows it as the "tmp" book on localhost only
+data/tmp.csv

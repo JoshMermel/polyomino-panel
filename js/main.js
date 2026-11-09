@@ -3,11 +3,11 @@
 import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges, isGivenEdge,
-  getSolution, checkMarks, crossHints, edgeCells, puzzleHash,
+  getSolution, checkMarks, crossHints, edgeCells, puzzleHash, tileErasure,
   cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo } from './tile-view.js';
-import { RULES, TIERS, TIER_INFO, beyondHints } from './rating.js';
+import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks, ruleLabel } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
 const $ = id => document.getElementById(id);
@@ -40,7 +40,9 @@ const state = {
   puzzle: null,
   edges: null,
   browseFilter: '',    // Browse's shape filter: '' (all), 'tile:<spec>' or 'has:<shape>' (reset when the book changes)
-  hint: null,          // the hint on screen: { tier, items, index } (see hint())
+  hint: null,          // the hint on screen: { tier, rule, items, index, stage?, gains? } (see hint())
+  lastEdit: null,      // cells beside the edges of the player's latest mark: hints nearest to them come first
+  stepHints: store.get('pp_stepHints') === '1',   // experiment: Hint escalates (where to look, why, the move)
   undo: [],            // each entry: {changes: [{kind,r,c,from,to}]}
   redo: [],
   showTiles: store.get('pp_showTiles') !== '0',
@@ -107,6 +109,7 @@ async function init() {
     state.sets = manifest.books.map(b => ({ ...b, puzzles: null }));
     state.groups = manifest.groups ?? [];
     state.defaultSet = Math.max(0, state.sets.findIndex(s => s.id === manifest.default));
+    await addScratchBook();
   } catch (err) {
     showFatal(err);
     return;
@@ -133,6 +136,23 @@ async function init() {
   await goTo(setIdx, puzIdx);
 }
 
+// On localhost only: data/tmp.csv (git-ignored; write it with toCsv) shows up as a "tmp" book, for looking
+// at example puzzles. It is never fetched from the published site, and the service worker skips it.
+const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+async function addScratchBook() {
+  if (!isLocalhost) return;
+  try {
+    const res = await fetch('data/tmp.csv', { cache: 'no-store' });
+    if (!res.ok) return;
+    const puzzles = parseCsv(await res.text());
+    if (!puzzles.length) return;
+    state.sets.push({
+      id: 'tmp', group: 'Scratch', title: 'tmp', label: 'tmp (local scratch book)',
+      blurb: 'Example puzzles from data/tmp.csv (local only, not committed).', file: 'tmp.csv', count: puzzles.length, puzzles,
+    });
+  } catch { /* no scratch book */ }
+}
+
 function showFatal(err) {
   console.error(err);
   $('status').className = 'status error';
@@ -157,6 +177,7 @@ async function goTo(setIdx, puzIdx) {
   state.puzIdx = puzIdx;
   state.puzzle = puzzles[puzIdx];
   state.undo = [];
+  state.lastEdit = null;
   state.redo = [];
 
   const saved = unpackEdges(state.puzzle, store.get(saveKey(state.puzzle)));
@@ -253,10 +274,17 @@ function applyChanges(changes, dir) {
   }
 }
 
+// Remember where the player just worked (the cells beside the changed edges) so a hint can start nearby.
+// A bulk change (Reset) doesn't say anything about where the player is.
+function noteEdit(changes) {
+  state.lastEdit = changes.length > 14 ? null : changes.flatMap(ch => edgeCells(state.puzzle, ch.kind, ch.r, ch.c));
+}
+
 function commit(changes) {
   changes = changes.filter(ch => !isGivenEdge(state.puzzle, ch.kind, ch.r, ch.c));   // given edges are part of the puzzle
   if (!changes.length) return null;
   applyChanges(changes, 'forward');
+  noteEdit(changes);
   const entry = { changes };
   state.undo.push(entry);
   state.redo = [];
@@ -322,6 +350,13 @@ function onRelease() {
       : `Those cells aren't the tile shape (${shapeName(puzzle.tile)}).`, 'info', 2500);
     return;
   }
+  // Dragging over a tile that is already outlined erases its outline (lines shared with a finished neighbour stay).
+  const erase = tileErasure(puzzle, state.edges, g.cells);
+  if (erase) {
+    const entry = commit(erase.map(([kind, r, c]) => ({ kind, r, c, from: EDGE_LINE, to: EDGE_EMPTY })));
+    if (!entry) showToast("That tile's lines are shared with neighbouring tiles or pre-drawn, so nothing was erased.", 'info', 2500);
+    return;
+  }
   const changes = [];
   for (const [kind, r, c] of tileOutline(puzzle, g.cells)) {
     const cur = getEdge(puzzle, state.edges, kind, r, c);
@@ -350,6 +385,7 @@ function undo() {
   const entry = state.undo.pop();
   if (!entry) return;
   applyChanges(entry.changes, 'backward');
+  noteEdit(entry.changes);
   state.redo.push(entry);
   refresh();
 }
@@ -358,6 +394,7 @@ function redo() {
   const entry = state.redo.pop();
   if (!entry) return;
   applyChanges(entry.changes, 'forward');
+  noteEdit(entry.changes);
   state.undo.push(entry);
   refresh();
 }
@@ -442,8 +479,10 @@ function checkSoFar() {
 //   2. the deduction rules in js/rating.js, easiest first (forced tiles, edges that
 //      every possible tile agrees on, lookahead, chains: see that file);
 //   3. otherwise edges that can take a ✕ (the solution has no line there), random order.
-// Pressing Hint again while one is on screen steps to the next hint of the same
-// kind (wrapping around). Colors: yellow = the cell(s) the hint is about, blue =
+// The hints of that kind are ordered nearest first to where the player last marked (board order
+// before any mark). Pressing Hint again while one is on screen steps to the next hint of the same
+// kind (wrapping around); with "Step-by-step hints" on (an experiment), each hint takes three presses:
+// where to look (the yellow cell), why, then the move. Colors: yellow = the cell(s) the hint is about, blue =
 // the tile to place, dashed = lines to draw, ✕ = marks to place, "!" = a cell the
 // text refers to. Highlights stay until the board changes or the toast is dismissed.
 const HINT_TOAST_MS = 30000;
@@ -460,9 +499,13 @@ function findHints() {
   // the same rules, in the same order, as the puzzle ratings (js/rating.js)
   for (const rule of RULES) {
     const items = rule.findAll(puzzle, edges);
-    if (items.length) return { tier: rule.hintKind, items, index: 0 };
+    if (items.length) {
+      return { tier: rule.hintKind, rule: rule.id, items: nearestFirst(items, item => [item.cell, ...(item.cells ?? [])]), index: 0 };
+    }
   }
 
+  // No rule finds anything: peek at the answer. Of the edges known to take a cross, offer first the one
+  // that sets off the most logical progress (ties: nearest to the player's last mark, else random).
   if (!solution) return { none: 'No hint available for this puzzle.' };
   const options = crossHints(puzzle, edges, solution);
   if (!options.length) return { none: 'No more hints available.' };
@@ -470,7 +513,19 @@ function findHints() {
     const j = Math.floor(Math.random() * (i + 1));
     [options[i], options[j]] = [options[j], options[i]];
   }
-  return { tier: 'cross', items: options, index: 0 };
+  const ranked = rankPeeks(puzzle, edges, nearestFirst(options, e => edgeCells(puzzle, ...e)));
+  return { tier: 'cross', items: ranked.map(x => x.edge), gains: ranked.map(x => x.gain), index: 0 };
+}
+
+// Order hint items by how close they are to the player's last mark (stable: items keep their order
+// among equals, and with no mark yet nothing moves). cellsOf gives the cells an item is about.
+function nearestFirst(items, cellsOf) {
+  const near = state.lastEdit;
+  if (!near?.length) return items;
+  const { cols } = state.puzzle;
+  const dist = item => Math.min(...cellsOf(item).flatMap(a => near.map(b =>
+    Math.abs(Math.floor(a / cols) - Math.floor(b / cols)) + Math.abs((a % cols) - (b % cols)))));
+  return items.map((item, i) => ({ item, i, d: dist(item) })).sort((x, y) => x.d - y.d || x.i - y.i).map(x => x.item);
 }
 
 // Words for why a hypothetical tile fails, from the contradiction reasons of the
@@ -489,12 +544,46 @@ function failureText(item) {
   return { text: 'some cell with nowhere to go, or a pocket that can\'t be tiled', marker: null };
 }
 
-// Display the current item of a hint set.
+// Words for a pocket hint: why a region of n cells can't be filled with tiles.
+function pocketWhy(n) {
+  const sizes = tileSizes(state.puzzle.tile);
+  return sizes.length === 1 ? `${n} is not a multiple of ${sizes[0]}` : `${n} cells can't be made from tiles of ${sizes.join(' and ')} cells`;
+}
+
+// What the step-by-step hint says on its second press: why the yellow cell is special, without the move.
+function reasonText(h, item) {
+  const why = h.tier === 'lookahead2' || h.tier === 'lookahead3' || h.tier === 'eliminate' ? failureText(item) : { marker: null };
+  switch (h.tier) {
+    case 'forced': return { text: 'only one tile placement fits over the yellow cell.', marker: null };
+    case 'edges': return { text: 'every possible tile for the yellow cell agrees about an edge: they all have a boundary along it, or they all contain both cells beside it.', marker: null };
+    case 'tryLine': return { text: 'a line on some edge would leave the yellow cell with no possible tile.', marker: null };
+    case 'pocket': return { text: 'a line on some edge would wall off a pocket that tiles cannot fill.', marker: null };
+    case 'lookahead2': return { text: `the yellow cell has just two possible tiles, and one of them would leave ${why.text}.`, marker: why.marker };
+    case 'lookahead3': return { text: `the yellow cell has ${item.ruledOut + 1} possible tiles, and all but one would leave ${why.text}.`, marker: why.marker };
+    case 'eliminate': return { text: `the yellow cell has ${item.ruledOut + item.survivors} possible tiles; ${item.ruledOut === 1 ? 'one' : item.ruledOut} would leave ${why.text}, and the rest agree about an edge.`, marker: why.marker };
+    default: return { text: 'the yellow cell has just two possible tiles; follow what one of them forces and it ends in a contradiction.', marker: null };
+  }
+}
+
+// Display the current item of a hint set. With step-by-step hints, stage 0 only points at the cell, stage 1
+// says why, and stage 2 (the only one otherwise) shows the move.
 function displayHint(h) {
   const { puzzle } = state;
   const item = h.items[h.index];
   const label = 'Hint';
   let text;
+
+  if (h.stage === 0) {
+    board.showHint({ target: [item.cell] });
+    showToast(`${label}: look at the yellow cell (${ruleLabel(h.rule)}). Press Hint again for the reason.`, 'hint', HINT_TOAST_MS);
+    return;
+  }
+  if (h.stage === 1) {
+    const why = reasonText(h, item);
+    board.showHint({ target: [item.cell], marker: why.marker });
+    showToast(`${label}: ${why.text} Press Hint again for the move.`, 'hint', HINT_TOAST_MS);
+    return;
+  }
 
   if (h.tier === 'errors') {
     board.showErrors(item);
@@ -511,6 +600,10 @@ function displayHint(h) {
   } else if (h.tier === 'tryLine') {
     board.showHint({ target: [item.cell], crosses: item.crosses });
     text = `a line along the ✕ ${item.crosses.length === 1 ? 'edge' : 'edges'} would leave the yellow cell with no possible tile (every tile that could cover it contains both cells beside the ✕). So there is no line there: mark ${item.crosses.length === 1 ? 'it' : 'them'}.`;
+  } else if (h.tier === 'pocket') {
+    const n = item.cells.length, small = n <= 12;           // (a big pocket is not worth colouring in)
+    board.showHint({ target: small ? item.cells : edgeCells(puzzle, ...item.crosses[0]), crosses: item.crosses });
+    text = `a line along the ✕ would wall off ${small ? `the ${n} yellow cells` : `a pocket of ${n} cells`} from the rest, and ${pocketWhy(n)}, so no tiles could fill ${small ? 'them' : 'it'}. So there is no line there: mark it.`;
   } else if (h.tier === 'lookahead2' || h.tier === 'lookahead3') {
     const why = failureText(item);
     board.showHint({ target: [item.cell], lines: item.lines, marker: why.marker });
@@ -532,7 +625,8 @@ function displayHint(h) {
   } else {
     const [kind, r, c] = item;
     board.showHint({ target: edgeCells(puzzle, kind, r, c), crosses: [item] });
-    text = "no logical inference is available right now, so here's a peek at the answer: the two yellow cells belong to the same tile. Mark the edge between them with a ✕.";
+    text = "no logical inference is available right now, so here's a peek at the answer: the two yellow cells belong to the same tile. Mark the edge between them with a ✕." +
+      (h.gains?.[h.index] ? ' (Of the peeks, this one should open up the most logical hints afterwards.)' : '');
   }
   showToast(`${label}: ${text}`, 'hint', HINT_TOAST_MS);
 }
@@ -540,10 +634,16 @@ function displayHint(h) {
 function hint() {
   if (analyze(state.puzzle, state.edges).solved) { showToast('Already solved!', 'success'); return; }
   if (state.hint) {
-    state.hint.index = (state.hint.index + 1) % state.hint.items.length;   // next of the same kind
+    const h = state.hint;
+    if (h.stage !== undefined && h.stage < 2) h.stage++;                    // step-by-step: reason, then the move
+    else {
+      h.index = (h.index + 1) % h.items.length;                             // next of the same kind
+      if (h.stage !== undefined) h.stage = 0;
+    }
   } else {
     const found = findHints();
     if (found.none) { showToast(found.none, 'info'); return; }
+    if (state.stepHints && found.rule) found.stage = 0;                     // (not for mistakes or peeks)
     state.hint = found;
   }
   displayHint(state.hint);
@@ -871,6 +971,14 @@ function bindControls() {
     if (e.key !== 'Escape') return;
     if (gesture) { onCancel(); return; }
     modals.find(({ modal }) => !modal.classList.contains('modal-hidden'))?.close();
+  });
+
+  const steps = $('setting-step-hints');
+  steps.checked = state.stepHints;
+  steps.addEventListener('change', () => {
+    state.stepHints = steps.checked;
+    store.set('pp_stepHints', steps.checked ? '1' : '0');
+    state.hint = null;
   });
 
   const tiles = $('setting-tint-tiles');

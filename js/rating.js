@@ -2,13 +2,16 @@
 // as the hint system (see logic.js). The rules, easiest first:
 //
 //   forced      a cell has exactly one possible tile placement
+//   lookahead2  a cell has two possible tiles and one would lead to a contradiction
 //   edges       every possible tile for a cell (two or three of them) has a line on
 //               some edge (draw it), or contains both cells beside some edge (mark it
 //               with a cross)
-//   lookahead2  a cell has two possible tiles and one would lead to a contradiction
-//   edgesWide   the same edge reasoning over four or more possible tiles
+//   tryLine     a line on an edge would leave a cell with no tile (mark it with a cross)
+//   pocket      a line on an edge would wall off a pocket whose size the tiles cannot make up
+//               (mark it with a cross)
 //   lookahead3  a cell has three or more possible tiles; all but one lead to a
 //               contradiction
+//   edgesWide   the same edge reasoning over four or more possible tiles
 //   eliminate   a cell has three or more possible tiles; some (not all but one) lead to a
 //               contradiction, and the tiles that are left agree on an edge
 //   chain       a cell has two possible tiles and one is eliminated only after following its
@@ -23,8 +26,8 @@
 // stored solution. A puzzle's `rules` value is the hardest rule it needed
 // ('unsolved' if the rules got stuck), and its `tier` is that rule's tier.
 import {
-  forcedTile, allForcedTiles, edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, lookaheadTile, allLookaheadTiles,
-  chainTile, allChainTiles, eliminateTile, allEliminateTiles, newEdges, setEdge, analyze, searchTilings,
+  forcedTile, allForcedTiles, edgeDeduction, allEdgeDeductions, crossDeduction, allCrossDeductions, pocketDeduction, allPocketDeductions, lookaheadTile, allLookaheadTiles,
+  chainTile, allChainTiles, eliminateTile, allEliminateTiles, newEdges, setEdge, cloneEdges, analyze, searchTilings,
   EDGE_LINE, EDGE_CROSS, LOOKAHEAD_2, LOOKAHEAD_3, EDGES_NARROW, EDGES_WIDE,
 } from './logic.js';
 
@@ -36,7 +39,7 @@ export const TIERS = ['Beginner', 'Medium', 'Hard'];
 // How the app presents each tier: its name and what it means.
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
-  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell, or trying one of two tiles and seeing it fail' },
+  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell or wall off a pocket, or trying one of two tiles and seeing it fail' },
   Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, dropping the tiles that fail and comparing the rest, or a chain of consequences from a cell with two tiles (a few need more than the hint rules can do)' },
 };
 
@@ -59,21 +62,24 @@ export const RULES = [
   { id: 'forced', tier: 'Beginner', weight: 1, hintKind: 'forced',
     find: forcedTile, findAll: allForcedTiles,
     label: 'only one tile fits a cell' },
+  { id: 'lookahead2', tier: 'Medium', weight: 6, hintKind: 'lookahead2',
+    find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_2), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_2),
+    label: 'two possible tiles, one fails' },
   { id: 'edges', tier: 'Medium', weight: 3, hintKind: 'edges',
     find: (p, e) => edgeDeduction(p, e, EDGES_NARROW), findAll: (p, e) => allEdgeDeductions(p, e, EDGES_NARROW),
     label: 'an edge that every one of two or three possible tiles agrees on' },
   { id: 'tryLine', tier: 'Medium', weight: 4, hintKind: 'tryLine',
     find: crossDeduction, findAll: allCrossDeductions,
     label: 'a line on an edge would leave a cell with no tile' },
-  { id: 'lookahead2', tier: 'Medium', weight: 6, hintKind: 'lookahead2',
-    find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_2), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_2),
-    label: 'two possible tiles, one fails' },
-  { id: 'edgesWide', tier: 'Hard', weight: 8, hintKind: 'edges',
-    find: (p, e) => edgeDeduction(p, e, EDGES_WIDE), findAll: (p, e) => allEdgeDeductions(p, e, EDGES_WIDE),
-    label: 'an edge that every one of four or more possible tiles agrees on' },
+  { id: 'pocket', tier: 'Medium', weight: 5, hintKind: 'pocket',
+    find: pocketDeduction, findAll: allPocketDeductions,
+    label: 'a line on an edge would wall off a pocket the tiles cannot fill' },
   { id: 'lookahead3', tier: 'Hard', weight: 16, hintKind: 'lookahead3',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_3), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_3),
     label: 'three or more possible tiles, all but one fail' },
+  { id: 'edgesWide', tier: 'Hard', weight: 8, hintKind: 'edges',
+    find: (p, e) => edgeDeduction(p, e, EDGES_WIDE), findAll: (p, e) => allEdgeDeductions(p, e, EDGES_WIDE),
+    label: 'an edge that every one of four or more possible tiles agrees on' },
   { id: 'eliminate', tier: 'Hard', weight: 22, hintKind: 'eliminate',
     find: eliminateTile, findAll: allEliminateTiles,
     label: 'some of a cell\'s tiles fail; the ones left agree on an edge' },
@@ -124,6 +130,34 @@ export function ratePuzzle(puzzle) {
     score += Math.min(30, Math.round(2 * Math.log2(nodes + 1)));
   }
   return { rules, tier: tierOfRule(rules), counts, steps, remaining, score };
+}
+
+// Peeks. When no rule finds anything, the hint reveals one edge the solution has no line on (a cross). Which
+// one? The one that sets off the most logical progress afterwards: for each candidate edge (in the order
+// given), mark it, then count how many deductions the cheap rules (the Beginner and Medium ones) can make
+// before they run dry (at most maxSteps). Returns [{ edge, gain }] sorted by gain, best first; candidates
+// with equal gain keep the order given, so a caller can put its favourites first. Candidates the time
+// budget did not reach get gain 0 (and keep their place among the zeros), so the call always takes about
+// budgetMs at most, however big the board.
+const PEEK_RULES = RULES.filter(r => r.tier !== 'Hard');
+export function rankPeeks(puzzle, edges, candidates, { budgetMs = 250, maxSteps = 40, now = () => performance.now() } = {}) {
+  const t0 = now();
+  const gains = candidates.map(([kind, r, c]) => {
+    if (now() - t0 > budgetMs) return 0;
+    const trial = cloneEdges(edges);
+    setEdge(puzzle, trial, kind, r, c, EDGE_CROSS);
+    let steps = 0;
+    for (; steps < maxSteps; steps++) {
+      let found = null;
+      for (let i = 0; i < PEEK_RULES.length && !found; i++) found = PEEK_RULES[i].find(puzzle, trial);
+      if (!found) break;
+      for (const [k, r2, c2] of found.lines ?? []) setEdge(puzzle, trial, k, r2, c2, EDGE_LINE);
+      for (const [k, r2, c2] of found.crosses ?? []) setEdge(puzzle, trial, k, r2, c2, EDGE_CROSS);
+    }
+    return steps;
+  });
+  return candidates.map((edge, i) => ({ edge, gain: gains[i], i }))
+    .sort((a, b) => b.gain - a.gain || a.i - b.i).map(({ edge, gain }) => ({ edge, gain }));
 }
 
 // Order puzzles by rating: easier tier first, then lower score.

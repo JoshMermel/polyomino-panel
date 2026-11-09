@@ -1168,6 +1168,34 @@ export function allCrossDeductions(puzzle, edges) {
   return [...crossDeductions(puzzle, edges)];
 }
 
+// "Pocket": suppose a line were drawn on an empty edge. If that walls off a region (together with the
+// lines already drawn) whose number of cells tiles cannot make up, the edge takes a cross. (A cell left
+// with no tile is the try-a-line rule's business, above; edges beside a finished tile are skipped: a
+// line there would cut the tile, which tells the player nothing.) Chessboard colours are not
+// checked: that version applied to 3 of 2,267 Hard puzzles and re-binned none (see TODO.md).
+// Yields { cell, cells, crosses } where `cell` is a cell beside the edge and `cells` the pocket.
+export function* pocketDeductions(puzzle, edges) {
+  if (findPocketContradiction(puzzle, edges, 'size')) return;      // the marks already wall off such a pocket (a mistake)
+  const done = finishedTileCells(puzzle, edges);
+  for (const [kind, r, c] of playableEdges(puzzle)) {
+    if (getEdge(puzzle, edges, kind, r, c) !== EDGE_EMPTY) continue;
+    const [a, b] = edgeCells(puzzle, kind, r, c);
+    if (done[a] || done[b]) continue;
+    const trial = cloneEdges(edges);
+    setEdge(puzzle, trial, kind, r, c, EDGE_LINE);
+    const pocket = findPocketContradiction(puzzle, trial, 'size');
+    if (pocket) yield { cell: a, cells: pocket.cells, crosses: [[kind, r, c]] };
+  }
+}
+
+export function pocketDeduction(puzzle, edges) {
+  return pocketDeductions(puzzle, edges).next().value ?? null;
+}
+
+export function allPocketDeductions(puzzle, edges) {
+  return [...pocketDeductions(puzzle, edges)];
+}
+
 // Edge intersection splits by how many candidate tiles have to be compared:
 //   EDGES_NARROW  two or three (easy to keep in your head)
 //   EDGES_WIDE    four or more
@@ -1306,6 +1334,29 @@ export function tileInterior(puzzle, cells) {
     }
   }
   return out;
+}
+
+// Erasing a finished tile: dragging over exactly the cells of a tile whose outline is already drawn takes
+// that outline off again. Returns the [kind, r, c] edges whose lines to remove, or null when this is not
+// an erase (the outline is not complete, or lines inside the cells cut the shape: drawing it is then the
+// job). A line the tile shares with a finished neighbouring tile stays when that neighbour has lines of its
+// own elsewhere (it was drawn as a tile in its own right); a neighbour that only the erased tile's lines
+// close off (it sits in a corner, say) does not hold the line.
+
+export function tileErasure(puzzle, edges, cells) {
+  const outline = tileOutline(puzzle, cells);
+  if (!outline.length || !outline.every(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) === EDGE_LINE)) return null;
+  if (tileInterior(puzzle, cells).some(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) === EDGE_LINE)) return null;
+  const inside = new Set(cells);
+  const regionOf = new Map();
+  for (const region of analyze(puzzle, edges).regions) if (region.valid) for (const i of region.cells) regionOf.set(i, region.cells);
+  return outline.filter(([kind, r, c]) => {
+    const [a, b] = edgeCells(puzzle, kind, r, c);
+    const neighbour = regionOf.get(inside.has(a) ? b : a);
+    if (!neighbour) return true;
+    const own = new Set(neighbour);
+    return !tileOutline(puzzle, neighbour).some(e => edgeCells(puzzle, ...e).some(x => !own.has(x) && !inside.has(x)));   // a line of its own
+  });
 }
 
 // True when the open (white) cells form one orthogonally connected region, i.e. the board has no
