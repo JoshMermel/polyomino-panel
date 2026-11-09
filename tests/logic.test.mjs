@@ -1158,7 +1158,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     if (book.id === 'intro' || book.id.startsWith('experiments') || book.id.startsWith('bonus')) {
       assert.equal(book.group, {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        experiments7: 'Experiments, symmetric clues',
+        'bonus-giants': 'Bonus: giants', experiments7: 'Experiments, symmetric clues',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
@@ -1166,6 +1166,10 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
         if (['bonus-clues', 'experiments7'].includes(book.id)) assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
+        else if (book.id === 'bonus-giants') {
+          assert.ok(p.rows === 16 && p.cols === 16, `${p.name}: a 16x16 board`);
+          assert.ok(tileSpecs(p.tile).length <= 2, `${p.name}: one or two shapes`);
+        }
       }
       continue;
     }
@@ -1184,7 +1188,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Experiments, symmetric clues']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: giants', 'Experiments, symmetric clues']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

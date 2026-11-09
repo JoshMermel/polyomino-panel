@@ -117,6 +117,14 @@
       "blurb": "Some lines and ✕ marks are already drawn for you."
     },
     {
+      "name": "Bonus: giants",
+      "idPrefix": "bonus-giants",
+      "source": "giants.csv",
+      "title": "Bonus: giants",
+      "label": "Giants",
+      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
+    },
+    {
       "name": "Experiments, symmetric clues",
       "idPrefix": "experiments7",
       "source": "sym_clues.csv",

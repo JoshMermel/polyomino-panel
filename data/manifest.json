@@ -22,6 +22,10 @@
       "blurb": "Some lines and ✕ marks are already drawn for you."
     },
     {
+      "name": "Bonus: giants",
+      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
+    },
+    {
       "name": "Experiments, symmetric clues",
       "blurb": "Experimental: a symmetric board with symmetric lines and ✕ marks already drawn."
     }
@@ -125,6 +129,15 @@
       "blurb": "Some lines and ✕ marks are already drawn for you.",
       "file": "bonus-clues.csv",
       "count": 121
+    },
+    {
+      "id": "bonus-giants",
+      "group": "Bonus: giants",
+      "title": "Bonus: giants",
+      "label": "Giants",
+      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen.",
+      "file": "bonus-giants.csv",
+      "count": 96
     },
     {
       "id": "experiments7",
