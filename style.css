@@ -258,6 +258,9 @@ select, input[type="number"] {
 .hint-marker circle { fill: var(--color-error); stroke: #fff; stroke-width: 0.04; }
 .hint-marker text { fill: #fff; font-weight: 700; font-family: sans-serif; }
 .hint-marker { pointer-events: none; }
+.hint-unknown circle { fill: #ffe600; stroke: var(--hint-line); stroke-width: 0.05; }   /* yellow, like the cells a hint points at */
+.hint-unknown text { fill: #333; font-weight: 700; font-family: sans-serif; }
+.hint-unknown { pointer-events: none; }
 .hint-x line {
   stroke: var(--hint-line);
   stroke-width: 0.07;

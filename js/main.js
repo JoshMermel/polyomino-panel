@@ -7,7 +7,7 @@ import {
   cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
 import { renderTileInfo, tileShapeSvg } from './tile-view.js';
-import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks, ruleLabel } from './rating.js';
+import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
 const $ = id => document.getElementById(id);
@@ -42,7 +42,7 @@ const state = {
   browseShapes: new Set(),   // Browse's shape filter: the shapes picked (a puzzle shows if it uses any of them); empty = all. Kept across books; shapes a book lacks are ignored
   hint: null,          // the hint on screen: { tier, rule, items, index, stage?, gains? } (see hint())
   lastEdit: null,      // cells beside the edges of the player's latest mark: hints nearest to them come first
-  stepHints: store.get('pp_stepHints') === '1',   // experiment: Hint escalates (where to look, why, the move)
+  stepHints: store.get('pp_stepHints') === '1',   // experiment: Hint escalates (where to look, then the move)
   undo: [],            // each entry: {changes: [{kind,r,c,from,to}]}
   redo: [],
   showTiles: store.get('pp_showTiles') !== '0',
@@ -549,23 +549,23 @@ function pocketWhy(n) {
   return sizes.length === 1 ? `${n} is not a multiple of ${sizes[0]}` : `${n} cells can't be made from tiles of ${sizes.join(' and ')} cells`;
 }
 
-// What the step-by-step hint says on its second press: why the yellow cell is special, without the move.
-function reasonText(h, item) {
-  const why = h.tier === 'lookahead2' || h.tier === 'lookahead3' || h.tier === 'eliminate' ? failureText(item) : { marker: null };
+// What a step-by-step hint says and shows on its first press: where to look and a vague idea why, not the move.
+// When the move is one edge (tryLine, pocket) the edge is marked with a neutral yellow "?" (not yet a line or a ✕).
+function firstHintText(h, item) {
+  const cell = { target: [item.cell] };
   switch (h.tier) {
-    case 'forced': return { text: 'only one tile placement fits over the yellow cell.', marker: null };
-    case 'edges': return { text: 'every possible tile for the yellow cell agrees about an edge: they all have a boundary along it, or they all contain both cells beside it.', marker: null };
-    case 'tryLine': return { text: 'a line on some edge would leave the yellow cell with no possible tile.', marker: null };
-    case 'pocket': return { text: 'a line on some edge would wall off a pocket that tiles cannot fill.', marker: null };
-    case 'lookahead2': return { text: `the yellow cell has just two possible tiles, and one of them would leave ${why.text}.`, marker: why.marker };
-    case 'lookahead3': return { text: `the yellow cell has ${item.ruledOut + 1} possible tiles, and all but one would leave ${why.text}.`, marker: why.marker };
-    case 'eliminate': return { text: `the yellow cell has ${item.ruledOut + item.survivors} possible tiles; ${item.ruledOut === 1 ? 'one' : item.ruledOut} would leave ${why.text}, and the rest agree about an edge.`, marker: why.marker };
-    default: return { text: 'the yellow cell has just two possible tiles; follow what one of them forces and it ends in a contradiction.', marker: null };
+    case 'forced': return { show: cell, text: 'there is only one way to cover the yellow cell.' };
+    case 'lookahead2': return { show: cell, text: 'the yellow cell has just two ways to be covered, and one of them leads to a dead end.' };
+    case 'edges': return { show: cell, text: 'every way to cover the yellow cell agrees about an edge near it.' };
+    case 'tryLine': case 'pocket': return { show: { unknown: item.crosses }, text: `something about ${item.crosses.length === 1 ? 'the yellow edge' : 'each yellow edge'} is certain.` };
+    case 'lookahead3': return { show: cell, text: 'the yellow cell has a few ways to be covered, and all but one lead to a dead end.' };
+    case 'eliminate': return { show: cell, text: 'some ways to cover the yellow cell lead to a dead end, and the ones left agree about an edge.' };
+    default: return { show: cell, text: 'try the two ways to cover the yellow cell and follow what each forces; one of them fails.' };
   }
 }
 
-// Display the current item of a hint set. With step-by-step hints, stage 0 only points at the cell, stage 1
-// says why, and stage 2 (the only one otherwise) shows the move.
+// Display the current item of a hint set. With step-by-step hints, stage 0 only points at the cell to look at
+// and stage 1 (the only one otherwise) shows the move.
 function displayHint(h) {
   const { puzzle } = state;
   const item = h.items[h.index];
@@ -573,14 +573,9 @@ function displayHint(h) {
   let text;
 
   if (h.stage === 0) {
-    board.showHint({ target: [item.cell] });
-    showToast(`${label}: look at the yellow cell (${ruleLabel(h.rule)}). Press Hint again for the reason.`, 'hint', HINT_TOAST_MS);
-    return;
-  }
-  if (h.stage === 1) {
-    const why = reasonText(h, item);
-    board.showHint({ target: [item.cell], marker: why.marker });
-    showToast(`${label}: ${why.text} Press Hint again for the move.`, 'hint', HINT_TOAST_MS);
+    const first = firstHintText(h, item);
+    board.showHint(first.show);
+    showToast(`${label}: ${first.text} Press Hint again for the full explanation.`, 'hint', HINT_TOAST_MS);
     return;
   }
 
@@ -634,7 +629,7 @@ function hint() {
   if (analyze(state.puzzle, state.edges).solved) { showToast('Already solved!', 'success'); return; }
   if (state.hint) {
     const h = state.hint;
-    if (h.stage !== undefined && h.stage < 2) h.stage++;                    // step-by-step: reason, then the move
+    if (h.stage === 0) h.stage = 1;                                         // step-by-step: where to look, then the move
     else {
       h.index = (h.index + 1) % h.items.length;                             // next of the same kind
       if (h.stage !== undefined) h.stage = 0;

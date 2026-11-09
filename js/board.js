@@ -321,7 +321,7 @@ export class Board {
   //   lines   edges [[kind, r, c], ...] to draw, shown as dashed ghost lines
   //   crosses edges [[kind, r, c], ...] that can take a cross, shown as ghost ✕ marks
   //   marker  one cell index to label with a "!" badge (a cell the text refers to)
-  showHint({ target = [], tile = [], lines = [], crosses = [], marker = null }) {
+  showHint({ target = [], tile = [], lines = [], crosses = [], unknown = [], marker = null }) {
     this.clearHint();
     const mark = (cells, cls) => cells.forEach(i => this.cellEls[i].classList.add(cls));
     mark(tile, 'hint-tile');
@@ -336,6 +336,13 @@ export class Board {
       const g = el('g', { class: 'hint-x' }, this.hintLayer);
       el('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d }, g);
       el('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d }, g);
+    }
+    for (const [kind, r, c] of unknown) {                 // an edge to look at: a neutral "?", not yet a line or a ✕
+      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      const g = el('g', { class: 'hint-unknown' }, this.hintLayer);
+      el('circle', { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, r: 0.22 }, g);
+      const t = el('text', { x: (x1 + x2) / 2, y: (y1 + y2) / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 0.34 }, g);
+      t.textContent = '?';
     }
     if (marker !== null) {
       const { cols } = this.puzzle;
