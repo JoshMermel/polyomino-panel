@@ -58,7 +58,7 @@
       "perBook": 150,
       "title": "Intro",
       "label": "Intro: small and easy",
-      "blurb": "A gentle start: small boards and the easiest puzzles, one shape at a time. Every one needs only \"this cell can only be covered one way\"."
+      "blurb": "The easiest puzzles, on small boards."
     },
     {
       "name": "One shape",
@@ -72,7 +72,7 @@
         "10": 400,
         "12": 400
       },
-      "blurb": "Every tile is the same shape, with very few black cells, like the original L-panel puzzles. Mostly Medium and Hard.",
+      "blurb": "Every tile is the same shape. Few black squares.",
       "boardSizes": [
         6,
         8,
@@ -92,7 +92,7 @@
         "10": 400,
         "12": 400
       },
-      "blurb": "Each tile is either of two shapes, with very few black cells. Mostly Hard.",
+      "blurb": "Each puzzle uses two tile shapes. Few black squares.",
       "boardSizes": [
         6,
         8,
@@ -106,7 +106,7 @@
       "source": "sym_voids.csv",
       "title": "Bonus: symmetric voids",
       "label": "Symmetric voids",
-      "blurb": "The black cells are symmetric (a rotation and/or a mirror) and nothing else is drawn: the tiling is unique on its own, so the solution is symmetric too."
+      "blurb": "The black squares are laid out symmetrically."
     },
     {
       "name": "Bonus: clues",
@@ -114,7 +114,7 @@
       "source": "bonus_clues.csv",
       "title": "Bonus: clues",
       "label": "Clues",
-      "blurb": "Few black cells and some pre-drawn clues (lines and ✕ marks) that make the tiling unique, from a handful of clues on a sparse board to an almost empty board held together by the clues alone."
+      "blurb": "Some lines and ✕ marks are already drawn for you."
     },
     {
       "name": "Experiments, symmetric clues",
@@ -122,21 +122,7 @@
       "source": "sym_clues.csv",
       "title": "Experiments: symmetric clues",
       "label": "Symmetric clues",
-      "blurb": "Experimental. Few black cells, placed symmetrically, and pre-drawn clues in symmetric positions: an edge and its mirror image or rotation both carry a clue, but one can be a line and the other a ✕."
-    },
-    {
-      "name": "Dense: one shape",
-      "idPrefix": "dense1",
-      "shapes": 1,
-      "blurb": "Every tile is the same shape; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
-      "secondary": true
-    },
-    {
-      "name": "Dense: two shapes",
-      "idPrefix": "dense2",
-      "shapes": 2,
-      "blurb": "Each tile is either of two shapes; the boards are denser, with more black cells. Each book runs from Beginner to Hard.",
-      "secondary": true
+      "blurb": "Experimental: a symmetric board with symmetric lines and ✕ marks already drawn."
     }
   ],
   "sizeBlurbs": {
@@ -144,27 +130,6 @@
     "8": "Mid-size boards.",
     "10": "Large boards, long solves.",
     "12": "Giant boards, very long solves."
-  },
-  "tour": {
-    "_comment": "The first puzzles of this book are a shape-by-shape introduction: `perShape` easy puzzles of each shape in turn, before the rest of the book in difficulty order.",
-    "book": "dense1-6",
-    "tier": "Beginner",
-    "perShape": 2,
-    "shapes": [
-      "I2",
-      "I3",
-      "V3",
-      "L",
-      "T",
-      "S",
-      "P5",
-      "F5",
-      "N5",
-      "W5",
-      "Y5",
-      "L5",
-      "U5"
-    ]
   },
   "_secondary": "A group with secondary: true is listed under \"More books\" in the book picker; the first two groups (sparse boards, at most 17% blocked) are the main books."
 }

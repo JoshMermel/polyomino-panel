@@ -81,7 +81,7 @@ if (!fresh && existsSync(new URL('manifest.json', dataDir))) {
 }
 const hashOf = p => (p._hash ??= puzzleHash(p));
 // Which book already publishes each puzzle: another book must not take it (the sparse books are built first
-// and would otherwise pick up sparse-enough puzzles that the dense books publish, which then lose them).
+// and would otherwise pick up sparse-enough puzzles that another book publishes, which then loses them).
 const owner = new Map();
 for (const [id, set] of published) for (const h of set) if (!owner.has(h)) owner.set(h, id);
 // Ties (equal scores, equal sparseness) are broken by a hash of the puzzle's CONTENT salted with the seed, as in

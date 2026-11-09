@@ -749,7 +749,7 @@ test('pocket checks: size and chessboard parity contradictions', () => {
   const o = { ...t, tile: 'O' };
   assert.equal(findPocketContradiction(o, e2, 'parity'), null);
   // never a false alarm on the true solution (every region is a tile)
-  for (const file of ['L_6x6.csv', 'T_8x8.csv', 'W5_8x8.csv', 'X5_10x10.csv']) {
+  for (const file of ['L_6x6.csv', 'T_8x8.csv', 'W5_8x8.csv', 'X5_6x6.csv']) {
     for (const q of data(file).slice(0, 10)) {
       assert.equal(findPocketContradiction(q, edgesFromSolution(q, q.solution), 'parity'), null, `${file} ${q.name}`);
     }
@@ -1169,36 +1169,24 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       }
       continue;
     }
-    // id is <one|two|dense1|dense2>-<size>: every puzzle has that many shapes and that board size
+    // id is <one|two>-<size>: every puzzle has that many shapes and that board size
     const [kind, size] = book.id.split('-');
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
-    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' || kind === 'dense2' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
-    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', dense1: 'Dense: one shape', dense2: 'Dense: two shapes' }[kind]);
+    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
+    assert.equal(book.group, { one: 'One shape', two: 'Two shapes' }[kind]);
     // the one- and two-shape books are the sparse ones: they only have puzzles with few blocked cells
-    if (kind === 'one' || kind === 'two') assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
+    assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
     // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
     const tiers = new Set(ps.map(p => p.tier));
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
-    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' || kind === 'dense2' ? 4 : 8), `${book.id}: mixes shapes`);
+    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' ? 4 : 8), `${book.id}: mixes shapes`);
     assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
-  // the L tetromino is an ordinary shape now
-  const oneBooks = manifest.books.filter(b => b.id.startsWith('dense1-'));
-  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'L')), 'L puzzles are in the dense one-shape books');
-  // every single shape is in every one-shape book, including the line pieces. The plus pentomino (X5) is
-  // the exception: its tile boundaries make a swastika almost every time (black outlines count), so few
-  // X5 puzzles survive the filter and the 8x8 book has none.
-  for (const b of oneBooks) {
-    const shapes = new Set(data(b.file).map(p => p.tile));
-    for (const s of ['I2', 'I3', 'I', 'I5', 'L', 'T', 'P5']) assert.ok(shapes.has(s), `${b.id} has ${s}`);
-    assert.ok(shapes.size >= 18, `${b.id}: at least 18 of the 19 single shapes`);
-  }
-  assert.ok(oneBooks.some(b => data(b.file).some(p => p.tile === 'X5')), 'X5 still appears in some one-shape book');
-  // the first one-shape 6x6 puzzles are a shape-by-shape tour starting with the domino
-  const first = data(manifest.books.find(b => b.id === 'dense1-6').file);
-  assert.equal(first[0].tile, 'I2');
-  assert.deepEqual([...new Set(first.slice(0, 6).map(p => p.tile))], ['I2', 'I3', 'V3']);
+  // the book picker lists exactly the groups the manifest names, in order, and no book is left out
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Experiments, symmetric clues']);
+  assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
+  assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });
 
 test('hints never target a cell that is already inside a finished tile', () => {
@@ -1265,7 +1253,7 @@ test('tryLine: a cell whose every possible tile contains an edge makes that edge
 
 test('eliminate: tiles that fail are dropped and the survivors agree on edges; every deduction is sound', () => {
   let found = 0;
-  for (const file of ['L_8x8.csv', 'N5_8x8.csv', 'Y5_8x8.csv', 'L_10x10.csv', 'F5_8x8.csv']) {
+  for (const file of ['L_8x8.csv', 'N5_8x8.csv', 'Y5_8x8.csv', 'L_10x10.csv', 'F5_10x10.csv']) {
     for (const pz of data(file).slice(-12)) {
       const sol = getSolution(pz);
       const e = newEdges(pz);
