@@ -2,7 +2,7 @@
 // how often a shape is tried, and how many of one shape a bucket may hold.
 // The line pieces (domino, I tromino, I tetromino, I pentomino) make dull puzzles (a row of them says
 // little), so they are rare; the rigid pentominoes (T, U, V, Z, X) are down-weighted a little less.
-const LINEAR = new Set(['I2', 'I3', 'I', 'I5']);
+export const LINEAR = new Set(['I2', 'I3', 'I', 'I5']);
 const RIGID = new Set(['T5', 'U5', 'V5', 'Z5', 'X5']);
 
 // A tile spec is one shape or shapes joined by +; a pair weighs as its dullest part.

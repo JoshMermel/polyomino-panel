@@ -23,6 +23,8 @@
 //      book follows the pool's own spread of difficulty from its easy end to its hard end. Sparse puzzles
 //      (few blocked cells) are preferred: the pick only looks at the sparsest `sparseShare` (default half) of
 //      a shape's puzzles in that tier, as long as that leaves at least three times the number needed.
+//   3a. A tier holds at most `maxLineShare` (a fraction of its share) of line-piece puzzles (domino, I tromino, I tetromino,
+//      I pentomino), and the local reshuffle (step 4) treats them as one kind so they never run in a row.
 //   3b. The Hard tier holds at most `maxBeyondHints` (20%) puzzles the hint rules cannot finish; see below.
 //   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
 //      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
@@ -49,6 +51,7 @@ import { parseCsv, toCsv, solveWithGivens, tileSpecs, hasSwastika, openCellsConn
 import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
 import { pickStable, weightedAllocation, spreadByTier, byScoreThenTie, tieHash } from './lib/pick.mjs';
+import { LINEAR } from './lib/tile_weights.mjs';
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -58,6 +61,9 @@ const fresh = flags.has('--fresh');
 const trim = flags.has('--trim');
 
 const root = new URL('..', import.meta.url);
+// What the local reshuffle keeps apart: the line pieces (domino, I tromino, I tetromino, I pentomino) count as ONE
+// kind, so a book never runs a stretch of them even though each is a different shape.
+const spreadKey = p => (LINEAR.has(p.tile) ? 'line' : p.tile);
 const recipes = JSON.parse(readFileSync(new URL('tools/books/recipes.json', root), 'utf8'));
 const config = JSON.parse(readFileSync(new URL('tools/books/collections.json', root), 'utf8'));
 const libDir = new URL('tools/library/', root), stageDir = new URL('tools/books_staging/', root), dataDir = new URL('data/', root);
@@ -94,6 +100,16 @@ for (const tile of recipes.shapes) {
     }
   }
 }
+// Hand-assembled books (the Experiments, from files in tools/books/) are copied as they are, so the pool
+// books must not take a puzzle those hold (the same board up to rotation or mirror, with the same tile).
+// Boards with given edges are different puzzles even on the same layout, so only plain boards are reserved.
+const boardKey = p => `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
+const reserved = new Set();
+for (const g of config.groups) {
+  if (!g.source) continue;
+  for (const p of parseCsv(readFileSync(new URL(`tools/books/${g.source}`, root), 'utf8'))) if (!p.givens?.length) reserved.add(boardKey(p));
+}
+for (let i = pool.length - 1; i >= 0; i--) if (reserved.has(boardKey(pool[i]))) pool.splice(i, 1);
 const shapeCount = p => tileSpecs(p.tile).length;
 
 // The books, in order. A group's perBook (or the global one) is a number or an object by board size.
@@ -172,6 +188,20 @@ function pickAcross(groups, count, isKept, sparseShare = 1) {
     return alloc[i] || !trimmed ? pickStable(g, { count: alloc[i], seed, isKept, keepAll: !trimmed, key: hashOf }).picks : [];
   });
 }
+// The line pieces (domino, I tromino, I tetromino, I pentomino) are the only shapes that make Beginner puzzles on
+// a sparse board, so left alone they would be most of a book's opening. A tier holds at most `maxLineShare` of its
+// puzzles in ones whose pieces are all line pieces (so at most share/(1-share) times as many as the others, never
+// fewer than 2); the rest is not refilled (the tier is just smaller). Like the shape weights, this only drops
+// published puzzles with --trim.
+const isLine = p => p.tile.split('+').every(s => LINEAR.has(s));
+function capLines(picks, isKept) {
+  if (config.maxLineShare == null) return picks;
+  const lines = picks.filter(isLine), s = config.maxLineShare;
+  const max = Math.max(2, Math.floor(s / (1 - s) * (picks.length - lines.length)));
+  if (lines.length <= max) return picks;
+  const keep = pickStable(lines, { count: max, seed, isKept, keepAll: !trim, key: hashOf }).picks;
+  return [...picks.filter(p => !isLine(p)), ...keep];
+}
 const byTile = cands => {
   const m = new Map();
   for (const p of cands) { if (!m.has(p.tile)) m.set(p.tile, []); m.get(p.tile).push(p); }
@@ -195,7 +225,7 @@ for (const spec of buildOrder) {
     const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], isKept, 1) : []));
     picks.forEach(p => used.add(p.name));
     picks.sort((a, b) => a.rows - b.rows || byScore(a, b));      // smallest boards first
-    const spread = spreadByTier(picks, { tierOf: p => p.rows });                                   // shapes mixed within a size
+    const spread = spreadByTier(picks, { tierOf: p => p.rows, key: spreadKey });                  // shapes mixed within a size
     books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before });
     continue;
   }
@@ -220,7 +250,7 @@ for (const spec of buildOrder) {
   // finish ("no logical hints"): they score highest, so rank-based picks would lean heavily on them. Excess
   // ones are cut back to evenly spaced ranks and replaced by solvable Hard puzzles (fewer if there aren't any).
   const rest = perTier.flatMap((c, i) => {
-    const picks = pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare);
+    const picks = capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept);
     const cap = config.maxBeyondHints;
     if (config.tiers[i] !== 'Hard' || cap == null) return picks;
     const stuck = picks.filter(beyondHints), max = Math.floor(cap * alloc[i]);
@@ -236,7 +266,7 @@ for (const spec of buildOrder) {
   });
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || byScore(a, b));
-  const spread = spreadByTier(rest, { recent: tour.map(p => p.tile) });       // no long runs of one shape
+  const spread = spreadByTier(rest, { key: spreadKey, recent: tour.map(spreadKey) });       // no long runs of one shape
   books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
 }
 

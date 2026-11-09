@@ -22,9 +22,12 @@
     "Medium": 450,
     "Hard": 450
   },
-  "_shapeWeights": "Relative share of a book each shape (or pair) gets within a tier; unlisted shapes weigh 1. The 'boring' shapes weigh a third: they can only make Beginner or Medium puzzles that all use the same single technique (the line pieces domino, I tetromino and I pentomino, and the rigid pentominoes T, U, V, Z and X). A rebuild only adds puzzles unless run with --trim, so new weights take full effect with --trim.",
+  "_maxLineShare": "A tier holds at most this fraction of its puzzles in line-piece puzzles (domino, I tromino, I tetromino, I pentomino; pairs of only those). On sparse boards they are almost the only shapes with Beginner puzzles, so a book's opening was mostly them. The tier gets a little smaller instead of refilling. Like shapeWeights, published puzzles are only dropped with --trim.",
+  "maxLineShare": 0.3,
+  "_shapeWeights": "Relative share of a book each shape (or pair) gets within a tier; unlisted shapes weigh 1. The 'boring' shapes weigh a third: they can only make Beginner or Medium puzzles that all use the same single technique (the line pieces domino, I tromino, I tetromino and I pentomino, and the rigid pentominoes T, U, V, Z and X). A rebuild only adds puzzles unless run with --trim, so new weights take full effect with --trim.",
   "shapeWeights": {
     "I2": 0.33,
+    "I3": 0.33,
     "I": 0.33,
     "I5": 0.33,
     "T5": 0.33,
