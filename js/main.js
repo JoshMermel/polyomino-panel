@@ -434,11 +434,13 @@ function placeToast(toast) {
   if (overlap(12) < overlap(window.innerHeight - 30 - h)) toast.classList.add('toast-top');
 }
 
-// Dismiss the hint on screen (toast and highlights) but keep the cycle where it is:
-// only a change to the board restarts it, so the next Hint press shows the next hint.
+// Dismiss the hint on screen (toast and highlights) but keep the cycle where it is: only a change to the
+// board restarts it. A fully shown hint is shown again by the next Hint press (the player probably only
+// moved the toast aside to look at the board); a hint dismissed at its first step goes on to its second.
 function dismissHint() {
   hideToast();
   board.clearHint();
+  if (state.hint && state.hint.stage !== 0) state.hint.repeat = true;
 }
 
 function hideToast() {
@@ -480,8 +482,9 @@ function checkSoFar() {
 //   3. otherwise edges that can take a ✕ (the solution has no line there), random order.
 // The hints of that kind are ordered nearest first to where the player last marked (board order
 // before any mark). Pressing Hint again while one is on screen steps to the next hint of the same
-// kind (wrapping around); with "Step-by-step hints" on (an experiment), each hint takes three presses:
-// where to look (the yellow cell), why, then the move. Colors: yellow = the cell(s) the hint is about, blue =
+// kind (wrapping around); with "Step-by-step hints" on (the default), each hint takes two presses:
+// where to look (the yellow cell or edge), then the move with its explanation. After the toast is dismissed
+// (see dismissHint), Hint shows the same hint again. Colors: yellow = the cell(s) the hint is about, blue =
 // the tile to place, dashed = lines to draw, ✕ = marks to place, "!" = a cell the
 // text refers to. Highlights stay until the board changes or the toast is dismissed.
 const HINT_TOAST_MS = 30000;
@@ -536,14 +539,14 @@ function failureText(item) {
   const stranded = item.sharedDead?.length ? item.sharedDead[0] : null;
   if (stranded !== null && kinds.size === 1 && kinds.has('cell')) return { text: 'the cell marked ! with nowhere to go', marker: stranded };
   if (kinds.size === 1 && kinds.has('size')) {
-    return { text: sizes.length === 1 ? `a walled-off pocket whose size is not a multiple of ${sizes[0]}`
-      : `a walled-off pocket whose size can't be made from tiles of ${sizes.join(' and ')} cells`, marker: null };
+    return { text: sizes.length === 1 ? `an enclosed region whose size is not a multiple of ${sizes[0]}`
+      : `an enclosed region whose size can't be made from tiles of ${sizes.join(' and ')} cells`, marker: null };
   }
-  if (kinds.size === 1 && kinds.has('parity')) return { text: 'a walled-off pocket whose black and white squares (as on a chessboard) can\'t be tiled', marker: null };
-  return { text: 'some cell with nowhere to go, or a pocket that can\'t be tiled', marker: null };
+  if (kinds.size === 1 && kinds.has('parity')) return { text: 'an enclosed region whose black and white squares (as on a chessboard) can\'t be tiled', marker: null };
+  return { text: 'some cell with nowhere to go, or an enclosed region that can\'t be tiled', marker: null };
 }
 
-// Words for a pocket hint: why a region of n cells can't be filled with tiles.
+// Words for an enclosed-region hint: why a region of n cells can't be filled with tiles.
 function pocketWhy(n) {
   const sizes = tileSizes(state.puzzle.tile);
   return sizes.length === 1 ? `${n} is not a multiple of ${sizes[0]}` : `${n} cells can't be made from tiles of ${sizes.join(' and ')} cells`;
@@ -553,13 +556,14 @@ function pocketWhy(n) {
 // When the move is one edge (tryLine, pocket) the edge is marked with a neutral yellow "?" (not yet a line or a ✕).
 function firstHintText(h, item) {
   const cell = { target: [item.cell] };
+  const edge = (item.lines?.length ?? 0) + (item.crosses?.length ?? 0) === 1 ? 'an edge' : 'some edges';   // (edges / eliminate hints)
   switch (h.tier) {
     case 'forced': return { show: cell, text: 'there is only one way to cover the yellow cell.' };
     case 'lookahead2': return { show: cell, text: 'the yellow cell has just two ways to be covered, and one of them leads to a dead end.' };
-    case 'edges': return { show: cell, text: 'every way to cover the yellow cell agrees about an edge near it.' };
+    case 'edges': return { show: cell, text: `every way to cover the yellow cell agrees about ${edge} near it.` };
     case 'tryLine': case 'pocket': return { show: { unknown: item.crosses }, text: `something about ${item.crosses.length === 1 ? 'the yellow edge' : 'each yellow edge'} is certain.` };
     case 'lookahead3': return { show: cell, text: 'the yellow cell has a few ways to be covered, and all but one lead to a dead end.' };
-    case 'eliminate': return { show: cell, text: 'some ways to cover the yellow cell lead to a dead end, and the ones left agree about an edge.' };
+    case 'eliminate': return { show: cell, text: `some ways to cover the yellow cell lead to a dead end, and the ones left agree about ${edge}.` };
     default: return { show: cell, text: 'try the two ways to cover the yellow cell and follow what each forces; one of them fails.' };
   }
 }
@@ -595,9 +599,9 @@ function displayHint(h) {
     board.showHint({ target: [item.cell], crosses: item.crosses });
     text = `a line along the ✕ ${item.crosses.length === 1 ? 'edge' : 'edges'} would leave the yellow cell with no possible tile (every tile that could cover it contains both cells beside the ✕). So there is no line there: mark ${item.crosses.length === 1 ? 'it' : 'them'}.`;
   } else if (h.tier === 'pocket') {
-    const n = item.cells.length, small = n <= 12;           // (a big pocket is not worth colouring in)
+    const n = item.cells.length, small = n <= 12;           // (a big region is not worth colouring in)
     board.showHint({ target: small ? item.cells : edgeCells(puzzle, ...item.crosses[0]), crosses: item.crosses });
-    text = `a line along the ✕ would wall off ${small ? `the ${n} yellow cells` : `a pocket of ${n} cells`} from the rest, and ${pocketWhy(n)}, so no tiles could fill ${small ? 'them' : 'it'}. So there is no line there: mark it.`;
+    text = `a line along the ✕ would wall off ${small ? `the ${n} yellow cells` : `an enclosed region of ${n} cells`} from the rest, and ${pocketWhy(n)}, so no tiles could fill ${small ? 'them' : 'it'}. So there is no line there: mark it.`;
   } else if (h.tier === 'lookahead2' || h.tier === 'lookahead3') {
     const why = failureText(item);
     board.showHint({ target: [item.cell], lines: item.lines, marker: why.marker });
@@ -629,7 +633,8 @@ function hint() {
   if (analyze(state.puzzle, state.edges).solved) { showToast('Already solved!', 'success'); return; }
   if (state.hint) {
     const h = state.hint;
-    if (h.stage === 0) h.stage = 1;                                         // step-by-step: where to look, then the move
+    if (h.repeat) h.repeat = false;                                         // dismissed after the full hint: show it again
+    else if (h.stage === 0) h.stage = 1;                                    // step-by-step: where to look, then the move
     else {
       h.index = (h.index + 1) % h.items.length;                             // next of the same kind
       if (h.stage !== undefined) h.stage = 0;

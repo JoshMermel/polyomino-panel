@@ -7,7 +7,7 @@
 //               some edge (draw it), or contains both cells beside some edge (mark it
 //               with a cross)
 //   tryLine     a line on an edge would leave a cell with no tile (mark it with a cross)
-//   pocket      a line on an edge would wall off a pocket whose size the tiles cannot make up
+//   pocket      a line on an edge would wall off an enclosed region whose size the tiles cannot make up
 //               (mark it with a cross)
 //   lookahead3  a cell has three or more possible tiles; all but one lead to a
 //               contradiction
@@ -39,7 +39,7 @@ export const TIERS = ['Beginner', 'Medium', 'Hard'];
 // How the app presents each tier: its name and what it means.
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
-  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell or wall off a pocket, or trying one of two tiles and seeing it fail' },
+  Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell or wall off an enclosed region, or trying one of two tiles and seeing it fail' },
   Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, dropping the tiles that fail and comparing the rest, or a chain of consequences from a cell with two tiles (a few need more than the hint rules can do)' },
 };
 
@@ -73,7 +73,7 @@ export const RULES = [
     label: 'a line on an edge would leave a cell with no tile' },
   { id: 'pocket', tier: 'Medium', weight: 5, hintKind: 'pocket',
     find: pocketDeduction, findAll: allPocketDeductions,
-    label: 'a line on an edge would wall off a pocket the tiles cannot fill' },
+    label: 'a line on an edge would wall off an enclosed region the tiles cannot fill' },
   { id: 'lookahead3', tier: 'Hard', weight: 16, hintKind: 'lookahead3',
     find: (p, e) => lookaheadTile(p, e, LOOKAHEAD_3), findAll: (p, e) => allLookaheadTiles(p, e, LOOKAHEAD_3),
     label: 'three or more possible tiles, all but one fail' },
