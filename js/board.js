@@ -65,8 +65,14 @@ export class Board {
 
     // Lines are thick with round caps, so one that ends on the grid's outer edge would poke
     // out past it. The line layers are clipped to the grid rectangle to keep them inside.
-    const clip = el('clipPath', { id: 'board-clip' }, el('defs', {}, svg));
+    const defs = el('defs', {}, svg);
+    const clip = el('clipPath', { id: 'board-clip' }, defs);
     el('rect', { x: 0, y: 0, width: cols, height: rows }, clip);
+    // Walled-in regions that can never become a tile are hatched, not just tinted, so they cannot be
+    // mistaken for the (also warm-coloured) shape tints, whatever one's colour vision. Colours: style.css.
+    const hatch = el('pattern', { id: 'bad-hatch', width: 0.2, height: 0.2, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+    el('rect', { class: 'hatch-bg', width: 0.2, height: 0.2 }, hatch);
+    el('line', { class: 'hatch-line', x1: 0.1, y1: 0, x2: 0.1, y2: 0.2 }, hatch);
     const inside = { 'clip-path': 'url(#board-clip)' };
 
     // Layers, bottom to top.

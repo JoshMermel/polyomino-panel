@@ -201,7 +201,9 @@ select, input[type="number"] {
 .cell.shape-1 { --shape-fill: var(--shape-1-bg); }
 .cell.shape-2 { --shape-fill: var(--shape-2-bg); }
 .cell.shape-3 { --shape-fill: var(--shape-3-bg); }
-.cell.tile-bad { fill: var(--tile-bad-bg); }
+.cell.tile-bad { fill: var(--tile-bad-bg); fill: url(#bad-hatch) var(--tile-bad-bg); }   /* hatched: not confusable with the shape tints */
+.hatch-bg { fill: var(--tile-bad-bg); }
+.hatch-line { stroke: var(--color-error); stroke-width: 0.05; opacity: 0.6; }
 
 .dash {
   stroke: var(--cell-border);
@@ -234,7 +236,11 @@ select, input[type="number"] {
 
 /* Hint highlights (the board's marks are never changed by a hint). Later
    rules win, so target > tile when cells overlap. */
-/* Drag-to-draw preview (drag across cells to trace a tile) */
+.cell.hint-tile { fill: var(--hint-blue); }
+.cell.hint-target { fill: var(--hint-yellow); }
+
+/* Drag-to-draw preview (drag across cells to trace a tile). It comes AFTER the hint highlights so it wins
+   on cells a hint has coloured: you always see what you are tracing (the hint's dashed lines and ✕ stay). */
 .cell-hover { fill: var(--cell-hover); pointer-events: none; }
 .cell.drag { fill: var(--drag-bg); }
 .cell.drag-ok { fill: var(--drag-fill, var(--drag-ok-bg)); }   /* cells form a tile: that shape's color (--drag-fill, set below) */
@@ -242,9 +248,6 @@ select, input[type="number"] {
 .cell.drag-shape-1 { --drag-fill: var(--shape-1-drag); }
 .cell.drag-shape-2 { --drag-fill: var(--shape-2-drag); }
 .cell.drag-shape-3 { --drag-fill: var(--shape-3-drag); }
-
-.cell.hint-tile { fill: var(--hint-blue); }
-.cell.hint-target { fill: var(--hint-yellow); }
 .hint-line {
   stroke: var(--hint-line);
   stroke-width: 0.1;
