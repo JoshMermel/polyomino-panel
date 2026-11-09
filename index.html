@@ -153,8 +153,11 @@
       <div class="modal-body browse-modal-body">
         <div id="browse-summary" class="browse-summary"></div>
         <div id="browse-filter-row" class="browse-filter" hidden>
-          <label for="browse-filter">Show</label>
-          <select id="browse-filter" aria-label="Filter puzzles by shape"></select>
+          <div class="browse-filter-head">
+            <span class="browse-filter-label">Shapes <span class="browse-filter-hint">(none picked: all puzzles)</span></span>
+            <button type="button" id="browse-clear-shapes" class="link-btn ghost" hidden>Clear</button>
+          </div>
+          <div id="browse-shapes" class="shape-chips" role="group" aria-label="Filter puzzles by shape"></div>
         </div>
         <div class="browse-toolbar">
           <div class="browse-legend">

@@ -6,7 +6,7 @@ import {
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash, tileErasure,
   cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
 import { Board } from './board.js';
-import { renderTileInfo } from './tile-view.js';
+import { renderTileInfo, tileShapeSvg } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks, ruleLabel } from './rating.js';
 import { parseSelection, planPrint, buildPrintRoot } from './print.js';
 
@@ -39,7 +39,7 @@ const state = {
   puzIdx: 0,
   puzzle: null,
   edges: null,
-  browseFilter: '',    // Browse's shape filter: '' (all), 'tile:<spec>' or 'has:<shape>' (reset when the book changes)
+  browseShapes: new Set(),   // Browse's shape filter: the shapes picked (a puzzle shows if it uses any of them); empty = all. Kept across books; shapes a book lacks are ignored
   hint: null,          // the hint on screen: { tier, rule, items, index, stage?, gains? } (see hint())
   lastEdit: null,      // cells beside the edges of the player's latest mark: hints nearest to them come first
   stepHints: store.get('pp_stepHints') === '1',   // experiment: Hint escalates (where to look, why, the move)
@@ -172,7 +172,6 @@ async function goTo(setIdx, puzIdx) {
   if (!puzzles.length) { showFatal(new Error(`${set.title} has no puzzles`)); return; }
   puzIdx = Math.max(0, Math.min(puzzles.length - 1, puzIdx));
 
-  if (setIdx !== state.setIdx) state.browseFilter = '';
   state.setIdx = setIdx;
   state.puzIdx = puzIdx;
   state.puzzle = puzzles[puzIdx];
@@ -691,40 +690,49 @@ function refresh() {
 // --- Browse puzzles -----------------------------------------------------------
 // A grid of the current book's puzzles, grouped under their difficulty tier and coloured
 // by status: solved (green), in progress (yellow, some marks saved), current (blue ring).
-// A Show menu filters the grid (and "First unsolved") by shape: books mix shapes, so someone who
-// likes one shape can play just those puzzles.
+// A row of shape buttons filters the grid (and "First unsolved") by shape: books mix shapes, so someone
+// who likes some shapes can play just those puzzles. Several can be on at once (a puzzle shows if it
+// uses any of them); none on means every puzzle.
 let closeBrowse = () => {};   // set in bindControls
 const shapeRank = spec => { const i = SHAPE_ORDER.indexOf(spec); return i < 0 ? 999 : i; };
-const matchesFilter = (p, f) => !f || (f.startsWith('has:') ? tileSpecs(p.tile).includes(f.slice(4)) : p.tile === f.slice(5));
+const bookShapes = puzzles => [...new Set(puzzles.flatMap(p => tileSpecs(p.tile)))].sort((a, b) => shapeRank(a) - shapeRank(b) || (a < b ? -1 : 1));
+const matchesShapes = (p, shapes) => !shapes.size || tileSpecs(p.tile).some(s => shapes.has(s));
+
+// The shapes the filter is using in the current book: those picked that the book has (empty = no filter).
+function activeShapes() {
+  const present = new Set(bookShapes(curSet().puzzles ?? []));
+  return new Set([...state.browseShapes].filter(s => present.has(s)));
+}
 
 // The puzzles of the current book that pass the filter, as [puzzle, number] pairs (number = position in the book).
 function browseVisible() {
-  const puzzles = curSet().puzzles ?? [];
-  return puzzles.map((p, i) => [p, i]).filter(([p]) => matchesFilter(p, state.browseFilter));
+  const puzzles = curSet().puzzles ?? [], shapes = activeShapes();
+  return puzzles.map((p, i) => [p, i]).filter(([p]) => matchesShapes(p, shapes));
 }
 
-// Fill the Show menu from the shapes present in the book; hide it when there is only one choice.
+// Build the shape buttons from the shapes present in the book (hidden when there is only one shape).
+// Each shows the piece and how many of the book's puzzles use it.
 function fillBrowseFilter(puzzles) {
-  const sel = $('browse-filter'), row = $('browse-filter-row');
-  const tiles = [...new Set(puzzles.map(p => p.tile))].sort((a, b) => shapeRank(a) - shapeRank(b) || (a < b ? -1 : 1));
-  row.hidden = tiles.length < 2;
-  sel.textContent = '';
-  const add = (parent, value, label) => { const o = document.createElement('option'); o.value = value; o.textContent = label; parent.append(o); };
-  add(sel, '', `All shapes (${puzzles.length})`);
-  const count = f => puzzles.filter(p => matchesFilter(p, f)).length;
-  const pairs = tiles.filter(t => tileSpecs(t).length > 1);
-  if (pairs.length) {                                       // a book of pairs: by pair, or by a shape in any pair
-    const byPair = document.createElement('optgroup'); byPair.label = 'A pair';
-    pairs.forEach(t => add(byPair, `tile:${t}`, `${shapeName(t)} (${count(`tile:${t}`)})`));
-    const members = [...new Set(pairs.flatMap(t => tileSpecs(t)))].sort((a, b) => shapeRank(a) - shapeRank(b));
-    const byShape = document.createElement('optgroup'); byShape.label = 'A shape, in any pair';
-    members.forEach(s => add(byShape, `has:${s}`, `${shapeName(s)} (${count(`has:${s}`)})`));
-    sel.append(byShape, byPair);
-  } else {
-    tiles.forEach(t => add(sel, `tile:${t}`, `${shapeName(t)} (${count(`tile:${t}`)})`));
+  const box = $('browse-shapes'), row = $('browse-filter-row');
+  const shapes = bookShapes(puzzles), on = activeShapes();
+  row.hidden = shapes.length < 2;
+  box.textContent = '';
+  for (const spec of shapes) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'shape-chip';
+    b.dataset.shape = spec;
+    b.setAttribute('aria-pressed', on.has(spec) ? 'true' : 'false');
+    const count = puzzles.filter(p => tileSpecs(p.tile).includes(spec)).length;
+    b.title = `${shapeName(spec)}: ${count} puzzles`;
+    b.setAttribute('aria-label', `${shapeName(spec)}, ${count} puzzles`);
+    const n = document.createElement('span');
+    n.className = 'shape-chip-count';
+    n.textContent = count;
+    b.append(tileShapeSvg(spec, 0), n);
+    box.append(b);
   }
-  if (![...sel.options].some(o => o.value === state.browseFilter)) state.browseFilter = '';
-  sel.value = state.browseFilter;
+  $('browse-clear-shapes').hidden = !on.size;
 }
 
 function renderBrowse() {
@@ -734,7 +742,8 @@ function renderBrowse() {
   grid.textContent = '';
   const visible = browseVisible();
   const solvedAll = puzzles.filter(isSolved).length, solvedShown = visible.filter(([p]) => isSolved(p)).length;
-  $('browse-summary').textContent = state.browseFilter
+  const filtered = activeShapes().size > 0;
+  $('browse-summary').textContent = filtered
     ? `${set.title}: ${solvedShown} of ${visible.length} solved here (${solvedAll} of ${puzzles.length} in the book)`
     : `${set.title}: ${solvedAll} of ${puzzles.length} solved`;
 
@@ -954,12 +963,18 @@ function bindControls() {
   closeBrowse = browse.close;
   setupPrint(setupModal, settings.close);
   $('browse-jump-btn').addEventListener('click', () => {
-    const next = browseVisible().find(([p]) => !isSolved(p));     // respects the Show filter
-    if (!next) { showToast(state.browseFilter ? "You've solved every puzzle with that shape! 🎉" : "You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
+    const next = browseVisible().find(([p]) => !isSolved(p));     // respects the shape filter
+    if (!next) { showToast(activeShapes().size ? "You've solved every puzzle with those shapes! 🎉" : "You've solved every puzzle in this book! 🎉", 'success', 3000); return; }
     browse.close();
     goTo(state.setIdx, next[1]);
   });
-  $('browse-filter').addEventListener('change', e => { state.browseFilter = e.target.value; renderBrowse(); });
+  $('browse-shapes').addEventListener('click', e => {
+    const spec = e.target.closest('.shape-chip')?.dataset.shape;
+    if (!spec) return;
+    if (!state.browseShapes.delete(spec)) state.browseShapes.add(spec);
+    renderBrowse();
+  });
+  $('browse-clear-shapes').addEventListener('click', () => { state.browseShapes.clear(); renderBrowse(); });
 
   const help = setupModal('help-modal', 'help-btn', syncHelpText);
   // Like star battle: show the help modal the very first time, then remember it was seen.
