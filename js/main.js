@@ -42,7 +42,7 @@ const state = {
   browseShapes: new Set(),   // Browse's shape filter: the shapes picked (a puzzle shows if it uses any of them); empty = all. Kept across books; shapes a book lacks are ignored
   hint: null,          // the hint on screen: { tier, rule, items, index, stage?, gains? } (see hint())
   lastEdit: null,      // cells beside the edges of the player's latest mark: hints nearest to them come first
-  stepHints: store.get('pp_stepHints') === '1',   // experiment: Hint escalates (where to look, then the move)
+  stepHints: store.get('pp_stepHints') !== '0',   // on unless turned off: Hint escalates (where to look, then the move)
   undo: [],            // each entry: {changes: [{kind,r,c,from,to}]}
   redo: [],
   showTiles: store.get('pp_showTiles') !== '0',
