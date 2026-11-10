@@ -1,4 +1,4 @@
-# Bonus: symmetric voids. Built by tools/build_books.mjs from a pool of 139638 puzzles (seed 1).
+# Bonus: symmetric voids. Built by tools/build_books.mjs from a pool of 178631 puzzles (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).
 # rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. Sorted by tier, then (roughly) score; shapes are mixed locally so they don't repeat.
 name,rows,cols,tile,grid,solution,rules,tier,score

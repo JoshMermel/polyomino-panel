@@ -868,7 +868,7 @@ test('chains: all-but-one tiles fail after forced steps; first chain matches the
 test('the rules read pre-drawn clues: every step on the clue books agrees with the solution, and chains follow edge steps', () => {
   const bookPuzzles = id => parseCsv(readFileSync(new URL(`../data/${id}.csv`, import.meta.url), 'utf8'));
   let chains = 0;
-  for (const id of ['bonus-clues', 'experiments7']) {
+  for (const id of ['bonus-clues']) {
     for (const pz of bookPuzzles(id).filter((_, i) => i % 5 === 0)) {          // a sample keeps CI fast
       assert.ok(pz.givens.length >= 2, `${id}/${pz.name} has clues`);
       const sol = getSolution(pz);
@@ -1152,19 +1152,19 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       assert.ok(!names.has(p.name), `duplicate puzzle name ${p.name}`);
       names.add(p.name);
     }
-    // the Intro book (small, easy puzzles of one shape, mixed sizes), the Bonus books and the Experiments book
-    // (puzzles with pre-drawn edges or symmetric voids) are special: no size or sparseness rules, but every
+    // the Intro book (small, easy puzzles of one shape, mixed sizes), and the Bonus books
+    // (puzzles with pre-drawn edges, symmetric voids or giant boards) are special: no size or sparseness rules, but every
     // puzzle must be uniquely solvable
-    if (book.id === 'intro' || book.id.startsWith('experiments') || book.id.startsWith('bonus')) {
+    if (book.id === 'intro' || book.id.startsWith('bonus')) {
       assert.equal(book.group, {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        'bonus-giants': 'Bonus: giants', experiments7: 'Experiments, symmetric clues',
+        'bonus-giants': 'Bonus: giants',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
         const sols = solveWithGivens(p, 2);
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
-        if (['bonus-clues', 'experiments7'].includes(book.id)) assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
+        if (book.id === 'bonus-clues') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
         else if (book.id === 'bonus-giants') {
           assert.ok(p.rows === 16 && p.cols === 16, `${p.name}: a 16x16 board`);
@@ -1173,22 +1173,23 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       }
       continue;
     }
-    // id is <one|two>-<size>: every puzzle has that many shapes and that board size
+    // id is <one|two|three>-<size>: every puzzle has that many shapes and that board size
     const [kind, size] = book.id.split('-');
+    const shapesOf = { one: 1, two: 2, three: 3 }[kind];
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
-    assert.ok(ps.every(p => tileSpecs(p.tile).length === (kind === 'two' ? 2 : 1)), `${book.id}: ${kind} shape(s)`);
-    assert.equal(book.group, { one: 'One shape', two: 'Two shapes' }[kind]);
-    // the one- and two-shape books are the sparse ones: they only have puzzles with few blocked cells
+    assert.ok(ps.every(p => tileSpecs(p.tile).length === shapesOf), `${book.id}: ${kind} shape(s)`);
+    assert.equal(book.group, { one: 'One shape', two: 'Two shapes', three: 'Three shapes' }[kind]);
+    // the one-, two- and three-shape books are the sparse ones: they only have puzzles with few blocked cells
     assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
     // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
     const tiers = new Set(ps.map(p => p.tier));
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
-    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'two' ? 4 : 8), `${book.id}: mixes shapes`);
+    assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'one' ? 8 : 4), `${book.id}: mixes shapes`);
     assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: giants', 'Experiments, symmetric clues']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

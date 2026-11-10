@@ -14,6 +14,10 @@
       "blurb": "Each puzzle uses two tile shapes. Few black squares."
     },
     {
+      "name": "Three shapes",
+      "blurb": "Each puzzle uses three tile shapes. Few black squares."
+    },
+    {
       "name": "Bonus: symmetric voids",
       "blurb": "The black squares are laid out symmetrically."
     },
@@ -24,10 +28,6 @@
     {
       "name": "Bonus: giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
-    },
-    {
-      "name": "Experiments, symmetric clues",
-      "blurb": "Experimental: a symmetric board with symmetric lines and ✕ marks already drawn."
     }
   ],
   "books": [
@@ -47,7 +47,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "one-6.csv",
-      "count": 405
+      "count": 392
     },
     {
       "id": "one-8",
@@ -83,7 +83,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "two-6.csv",
-      "count": 412
+      "count": 400
     },
     {
       "id": "two-8",
@@ -92,7 +92,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "two-8.csv",
-      "count": 412
+      "count": 400
     },
     {
       "id": "two-10",
@@ -101,7 +101,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
-      "count": 408
+      "count": 400
     },
     {
       "id": "two-12",
@@ -110,7 +110,34 @@
       "label": "12×12",
       "blurb": "Giant boards, very long solves.",
       "file": "two-12.csv",
-      "count": 405
+      "count": 400
+    },
+    {
+      "id": "three-6",
+      "group": "Three shapes",
+      "title": "Three shapes · 6×6",
+      "label": "6×6",
+      "blurb": "Small boards, quick to solve.",
+      "file": "three-6.csv",
+      "count": 400
+    },
+    {
+      "id": "three-8",
+      "group": "Three shapes",
+      "title": "Three shapes · 8×8",
+      "label": "8×8",
+      "blurb": "Mid-size boards.",
+      "file": "three-8.csv",
+      "count": 400
+    },
+    {
+      "id": "three-10",
+      "group": "Three shapes",
+      "title": "Three shapes · 10×10",
+      "label": "10×10",
+      "blurb": "Large boards, long solves.",
+      "file": "three-10.csv",
+      "count": 274
     },
     {
       "id": "bonus-voids",
@@ -137,16 +164,7 @@
       "label": "Giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen.",
       "file": "bonus-giants.csv",
-      "count": 96
-    },
-    {
-      "id": "experiments7",
-      "group": "Experiments, symmetric clues",
-      "title": "Experiments: symmetric clues",
-      "label": "Symmetric clues",
-      "blurb": "Experimental: a symmetric board with symmetric lines and ✕ marks already drawn.",
-      "file": "experiments7.csv",
-      "count": 85
+      "count": 139
     }
   ]
 }

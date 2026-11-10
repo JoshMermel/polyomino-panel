@@ -17,7 +17,8 @@
 //      and a tier with too few puzzles gives up what it can't fill, the others sharing the difference.
 //      The 6x6 tour's puzzles count toward its Beginner share.
 //   2. Within a tier the puzzles are shared out over the shapes (or pairs) that have puzzles of that tier,
-//      in proportion to their weights (shapeWeights in collections.json; 1 unless listed, so evenly),
+//      in proportion to their weights (shapeWeights in collections.json; 1 unless listed, so evenly; shapeBoost
+//      multiplies the weight of every shape or pair that contains a favourite shape),
 //      again with the shortfall passed on; each such shape gets at least one.
 //   3. Within a shape, puzzles are taken at evenly spaced ranks of their score (pickQuantiles), so a
 //      book follows the pool's own spread of difficulty from its easy end to its hard end. Sparse puzzles
@@ -100,6 +101,14 @@ for (const tile of recipes.shapes) {
     }
   }
 }
+// Triples (three shapes joined with +) are not listed in recipes.json: every library pool named with three shapes counts.
+for (const name of readdirSync(libDir)) {
+  const m = name.match(/^([^_]+\+[^_]+\+[^_]+)_(\d+)x\2\.csv$/);
+  if (!m || ![...recipes.sizes, ...(recipes.extraSizes ?? [])].includes(Number(m[2]))) continue;
+  for (const p of parseCsv(readFileSync(new URL(name, libDir), 'utf8'))) {
+    if (openCellsConnected(p) && !hasSwastika(p, p.solution)) pool.push(p);
+  }
+}
 // Hand-assembled books (the Experiments, from files in tools/books/) are copied as they are, so the pool
 // books must not take a puzzle those hold (the same board up to rotation or mirror, with the same tile).
 // Boards with given edges are different puzzles even on the same layout, so only plain boards are reserved.
@@ -160,7 +169,7 @@ const books = [];
 
 // Share `count` slots over `groups` (an array of candidate arrays) evenly, then take each group's
 // share at evenly spaced score ranks.
-const weightOf = tile => config.shapeWeights?.[tile] ?? 1;
+const weightOf = tile => (config.shapeWeights?.[tile] ?? 1) * Math.max(1, ...tile.split('+').map(s => config.shapeBoost?.[s] ?? 1));
 function pickAcross(groups, count, isKept, sparseShare = 1) {
   const alloc = weightedAllocation(count, groups.map(g => g.length), groups.map(g => weightOf(g[0].tile)));
   // every shape that has puzzles in this tier gets at least one slot (taken from the biggest share), so a

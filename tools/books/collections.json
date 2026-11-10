@@ -25,6 +25,10 @@
   "_maxLineShare": "A tier holds at most this fraction of its puzzles in line-piece puzzles (domino, I tromino, I tetromino, I pentomino; pairs of only those). On sparse boards they are almost the only shapes with Beginner puzzles, so a book's opening was mostly them. The tier gets a little smaller instead of refilling. Like shapeWeights, published puzzles are only dropped with --trim.",
   "maxLineShare": 0.3,
   "_shapeWeights": "Relative share of a book each shape (or pair) gets within a tier; unlisted shapes weigh 1. The 'boring' shapes weigh a third: they can only make Beginner or Medium puzzles that all use the same single technique (the line pieces domino, I tromino, I tetromino and I pentomino, and the rigid pentominoes T, U, V, Z and X). A rebuild only adds puzzles unless run with --trim, so new weights take full effect with --trim.",
+  "_shapeBoost": "Multiplies the weight of every puzzle whose tile spec contains the shape (a single shape or a pair with it), on top of shapeWeights: the L tetromino is a favourite, so it gets twice the share of an ordinary shape.",
+  "shapeBoost": {
+    "L": 2
+  },
   "shapeWeights": {
     "I2": 0.33,
     "I3": 0.33,
@@ -101,6 +105,24 @@
       ]
     },
     {
+      "name": "Three shapes",
+      "idPrefix": "three",
+      "shapes": 3,
+      "maxBlocked": 0.17,
+      "sparseShare": 1,
+      "perBook": {
+        "6": 400,
+        "8": 400,
+        "10": 400
+      },
+      "blurb": "Each puzzle uses three tile shapes. Few black squares.",
+      "boardSizes": [
+        6,
+        8,
+        10
+      ]
+    },
+    {
       "name": "Bonus: symmetric voids",
       "idPrefix": "bonus-voids",
       "source": "sym_voids.csv",
@@ -123,14 +145,6 @@
       "title": "Bonus: giants",
       "label": "Giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
-    },
-    {
-      "name": "Experiments, symmetric clues",
-      "idPrefix": "experiments7",
-      "source": "sym_clues.csv",
-      "title": "Experiments: symmetric clues",
-      "label": "Symmetric clues",
-      "blurb": "Experimental: a symmetric board with symmetric lines and ✕ marks already drawn."
     }
   ],
   "sizeBlurbs": {
