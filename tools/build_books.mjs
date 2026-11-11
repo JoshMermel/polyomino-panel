@@ -9,7 +9,7 @@
 //   --trim                                     also trim shapes whose weight is below 1 down to their share (drops published
 //                                              puzzles of those shapes; use after lowering a shapeWeight). Other shapes only grow.
 //
-// There is one book per (number of tile shapes, board size): "One shape" and "Two shapes", each on
+// There is one book per (number of tile shapes, board size): "Polyomino" and "Polyomino pair", each on
 // 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard, Expert; see
 // js/rating.js), easiest first. How a book is made:
 //   1. The book's size is split over the tiers in proportion to their weights (tierWeights in

@@ -91,7 +91,7 @@
       ]
     },
     {
-      "name": "Two shapes",
+      "name": "Polyomino pair",
       "idPrefix": "two",
       "shapes": 2,
       "maxBlocked": 0.17,
@@ -110,7 +110,7 @@
       ]
     },
     {
-      "name": "Three shapes",
+      "name": "Polyomino triple",
       "idPrefix": "three",
       "shapes": 3,
       "maxBlocked": 0.22,

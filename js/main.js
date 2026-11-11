@@ -847,7 +847,7 @@ function syncHelpText() {
 
 // --- Controls ---------------------------------------------------------------
 // The book picker: a button showing the current book opens a modal listing every book, in
-// sections (Start here, Classical L-panel, One shape, Two shapes; files loaded from disk get their
+// sections (Start here, Classical L-panel, Polyomino, Polyomino pair; files loaded from disk get their
 // own). Each row shows the book's name, what it holds, and how many puzzles you have solved in it.
 function syncBookButton() {
   const btn = $('book-btn');

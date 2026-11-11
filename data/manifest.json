@@ -10,11 +10,11 @@
       "blurb": "Every tile is the same shape."
     },
     {
-      "name": "Two shapes",
+      "name": "Polyomino pair",
       "blurb": "Each puzzle uses two tile shapes."
     },
     {
-      "name": "Three shapes",
+      "name": "Polyomino triple",
       "blurb": "Each puzzle uses three tile shapes."
     },
     {
@@ -84,8 +84,8 @@
     },
     {
       "id": "two-6",
-      "group": "Two shapes",
-      "title": "Two shapes · Small (6×6)",
+      "group": "Polyomino pair",
+      "title": "Polyomino pair · Small (6×6)",
       "label": "Small",
       "blurb": "",
       "dims": "6×6",
@@ -94,8 +94,8 @@
     },
     {
       "id": "two-8",
-      "group": "Two shapes",
-      "title": "Two shapes · Medium (8×8)",
+      "group": "Polyomino pair",
+      "title": "Polyomino pair · Medium (8×8)",
       "label": "Medium",
       "blurb": "",
       "dims": "8×8",
@@ -104,8 +104,8 @@
     },
     {
       "id": "two-10",
-      "group": "Two shapes",
-      "title": "Two shapes · Large (10×10)",
+      "group": "Polyomino pair",
+      "title": "Polyomino pair · Large (10×10)",
       "label": "Large",
       "blurb": "",
       "dims": "10×10",
@@ -114,8 +114,8 @@
     },
     {
       "id": "three-6",
-      "group": "Three shapes",
-      "title": "Three shapes · Small (6×6)",
+      "group": "Polyomino triple",
+      "title": "Polyomino triple · Small (6×6)",
       "label": "Small",
       "blurb": "",
       "dims": "6×6",
@@ -124,8 +124,8 @@
     },
     {
       "id": "three-8",
-      "group": "Three shapes",
-      "title": "Three shapes · Medium (8×8)",
+      "group": "Polyomino triple",
+      "title": "Polyomino triple · Medium (8×8)",
       "label": "Medium",
       "blurb": "",
       "dims": "8×8",
@@ -134,8 +134,8 @@
     },
     {
       "id": "three-10",
-      "group": "Three shapes",
-      "title": "Three shapes · Large (10×10)",
+      "group": "Polyomino triple",
+      "title": "Polyomino triple · Large (10×10)",
       "label": "Large",
       "blurb": "",
       "dims": "10×10",

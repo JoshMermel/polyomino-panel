@@ -1146,9 +1146,9 @@ test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks nev
   }
 });
 
-test('book picker: Polyomino, Two shapes, Three shapes, Hexes and Triangles each have Small, Medium and Large (with their real size as dims); no 12x12 books', () => {
+test('book picker: Polyomino, Polyomino pair, Polyomino triple, Hexes and Triangles each have Small, Medium and Large (with their real size as dims); no 12x12 books', () => {
   const { books } = manifestOf();
-  for (const g of ['Polyomino', 'Two shapes', 'Three shapes', 'Hexes', 'Triangles']) {
+  for (const g of ['Polyomino', 'Polyomino pair', 'Polyomino triple', 'Hexes', 'Triangles']) {
     const mine = books.filter(b => b.group === g);
     assert.deepEqual(mine.map(b => b.label), ['Small', 'Medium', 'Large'], g);
     assert.ok(mine.every(b => b.dims), `${g}: every size says what it is`);
@@ -1247,7 +1247,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     const shapesOf = { one: 1, two: 2, three: 3 }[kind];
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
     assert.ok(ps.every(p => tileSpecs(p.tile).length === shapesOf), `${book.id}: ${kind} shape(s)`);
-    assert.equal(book.group, { one: 'Polyomino', two: 'Two shapes', three: 'Three shapes' }[kind]);
+    assert.equal(book.group, { one: 'Polyomino', two: 'Polyomino pair', three: 'Polyomino triple' }[kind]);
     assert.equal(book.label, { 6: 'Small', 8: 'Medium', 10: 'Large' }[size], `${book.id}: sizes are Small, Medium, Large (no 12x12 books)`);
     assert.equal(book.dims, `${size}×${size}`);
     // the one-, two- and three-shape books are the sparse ones: Medium and Hard puzzles have at most 17% blocked cells (22% in the
@@ -1330,7 +1330,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'Polyomino', 'Two shapes', 'Three shapes', 'Hexes', 'Triangles', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: giants']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'Polyomino', 'Polyomino pair', 'Polyomino triple', 'Hexes', 'Triangles', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });
