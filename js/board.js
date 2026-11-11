@@ -55,7 +55,7 @@ export class Board {
     const pad = 0.08;
     const svg = el('svg', {
       viewBox: `${bx0 - pad} ${by0 - pad} ${width + 2 * pad} ${height + 2 * pad}`,
-      class: 'board-svg',
+      class: `board-svg topo-${topo.name}`,
       role: 'img',
       'aria-label': `${rows} by ${cols} puzzle board`,
     });
@@ -79,13 +79,6 @@ export class Board {
     let outsideD = `M${bx0 - 3} ${by0 - 3}H${bx1 + 3}V${by1 + 3}H${bx0 - 3}Z`;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (puzzle.outside?.[r * cols + c] !== 'x') outsideD += `M${pointsOf(topo.polygon(r, c))}Z`;
     el('path', { d: outsideD, 'clip-rule': 'evenodd' }, outsideClip);
-    // The blocked cells are drawn a little oversized (a stroke, see style.css). A sharp corner of one on the board's edge (the 60
-    // degree corner of a triangle) would poke past the frame as a spike, so that layer is masked to the cells of the shape grown by the
-    // frame's half width (0.04) with round corners, which is exactly what the frame covers.
-    let shapeD = '';
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (puzzle.outside?.[r * cols + c] !== 'x') shapeD += `M${pointsOf(topo.polygon(r, c))}Z`;
-    const mask = el('mask', { id: 'board-mask', maskUnits: 'userSpaceOnUse', x: bx0 - 1, y: by0 - 1, width: width + 2, height: height + 2 }, defs);
-    el('path', { d: shapeD, fill: '#fff', stroke: '#fff', 'stroke-width': 0.08, 'stroke-linejoin': 'round' }, mask);
     const inside = { 'clip-path': 'url(#board-clip)' };
 
     // Layers, bottom to top.
@@ -93,7 +86,7 @@ export class Board {
     const dashLayer = el('g', { class: 'layer-dash', ...inside }, svg);
     // above the open cells and the dashed grid lines, so a blocked cell's stroke (see style.css) is never covered by a neighbour or
     // crossed by a dash that ends at its corner
-    const blockedLayer = el('g', { class: 'layer-blocked', mask: 'url(#board-mask)' }, svg);
+    const blockedLayer = el('g', { class: 'layer-blocked' }, svg);
     const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
     this.hintLayer = el('g', { class: 'layer-hint', ...inside }, svg);   // ghost lines / cross for hints

@@ -205,7 +205,9 @@ select, input[type="number"] {
 }
 
 .cell { fill: var(--cell-bg); }
-.cell.blocked { fill: var(--blocked-bg); stroke: var(--blocked-bg); stroke-width: 0.08; }   /* (the layer is masked to the board's shape plus the frame's half width: js/board.js, so a sharp corner on the edge does not poke out past the frame) */   /* a little oversized, like a tile's thick walls: it then meets the board's frame (also 0.08) without a step */
+.cell.blocked { fill: var(--blocked-bg); stroke: var(--blocked-bg); stroke-width: 0.08; }
+/* the oversize stroke has round joins on the hex and triangle grids: a mitered 60 degree corner is a spike (a nub past the frame at the board's edge, and two spikes at the point where two blocked triangles meet); round is a 0.04 bulge the frame covers */
+.board-svg:not(.topo-square) .cell.blocked { stroke-linejoin: round; }   /* a little oversized, like a tile's thick walls: it then meets the board's frame (also 0.08) without a step */
 .cell.outside { fill: none; pointer-events: none; }   /* outside a shaped board (a plus sign...): not drawn */
 .cell.tile-ok { fill: var(--shape-fill, var(--shape-0-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
 .cell.shape-1 { --shape-fill: var(--shape-1-bg); }
