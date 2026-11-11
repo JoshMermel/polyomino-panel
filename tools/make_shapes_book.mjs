@@ -3,7 +3,7 @@
 // Drops duplicates (up to rotation and reflection), keeps the same number of puzzles per (shape, tile) as far as it
 // can, sorts by tier then score with the board shapes mixed locally, and marks the cells outside each board's shape.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { parseCsv, toCsv, solveWithGivens, openCellsConnected, hasSwastika } from '../js/logic.js';
+import { parseCsv, toCsv, solveWithGivens, openCellsConnected, hasSwastika, tileSpecs } from '../js/logic.js';
 import { canonicalGrid } from '../js/generator.js';
 import { TIERS } from '../js/rating.js';
 import { spreadByTier, weightedAllocation } from './lib/pick.mjs';
@@ -24,29 +24,43 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.csv') && !f.startsWith
 console.log('candidates', all.length);
 const bad = all.filter(p => solveWithGivens(p, 2).length !== 1 || !openCellsConnected(p) || hasSwastika(p, p.solution));
 if (bad.length) throw new Error('bad puzzles: ' + bad.map(p => p.name));
-// Trim to `max`: the same number of puzzles for every board shape (as far as its pool goes; a short shape's slots go to
-// the others), and inside a shape round after round over its tile specs, so each combination is as even as the pools allow.
-// A tile spec's weight is how often it gets a turn: the L tetromino counts double (a favourite) and pairs of tiles
-// 0.75 (they are the harder puzzles, and there are more of them to choose from).
+// Pick `max` puzzles: every tier gets the main books' share (10% Beginner, 45% Medium, 32% Hard, 12.5% Expert) and, inside
+// a tier, 70% single-tile and 30% two-tile puzzles (Beginner has no pairs: they hardly exist). A tier or kind the pools
+// cannot fill makes that tier smaller in proportion. Inside each (tier, kind) the same number of puzzles for every board
+// shape (as far as its pool goes; a short shape's slots go to the others), and inside a shape round after round over its
+// tile specs, so each combination is as even as the pools allow. A tile spec's weight is how often it gets a turn: the L
+// tetromino counts double (a favourite) and pairs of tiles 0.75.
 const weightOf = tile => { const parts = tile.split('+'); return (parts.includes('L') ? 2 : 1) * (parts.length > 1 ? 0.75 : 1); };
-let picks = all;
-if (picks.length > max) {
-  const shapes = [...new Set(all.map(p => p.shape))].sort();
-  const perShape = weightedAllocation(max, shapes.map(sh => all.filter(p => p.shape === sh).length));
-  picks = [];
+const pickBalanced = (list, n) => {
+  const shapes = [...new Set(list.map(p => p.shape))].sort();
+  const perShape = weightedAllocation(n, shapes.map(sh => list.filter(p => p.shape === sh).length));
+  const out = [];
   shapes.forEach((sh, k) => {
     const by = new Map();
-    for (const p of all.filter(q => q.shape === sh)) { if (!by.has(p.tile)) by.set(p.tile, { list: [], credit: 0, w: weightOf(p.tile) }); by.get(p.tile).list.push(p); }
+    for (const p of list.filter(q => q.shape === sh).sort((a, b) => a.score - b.score)) { if (!by.has(p.tile)) by.set(p.tile, { list: [], credit: 0, w: weightOf(p.tile) }); by.get(p.tile).list.push(p); }
     let left = perShape[k];
     const groups = [...by.values()];
     const turn = [...groups.slice((k * 7) % groups.length), ...groups.slice(0, (k * 7) % groups.length)];     // who goes first differs by shape, so a tile that misses out in one shape gets in in another
     for (let guard = 0; left > 0 && guard < 1000; guard++) {
       for (const g of turn) {
         g.credit += g.w;
-        while (g.credit >= 1 && g.list.length && left > 0) { picks.push(g.list.shift()); g.credit -= 1; left--; }
+        while (g.credit >= 1 && g.list.length && left > 0) { out.push(g.list.shift()); g.credit -= 1; left--; }
       }
     }
   });
+  return out;
+};
+const TIER_SHARE = { Beginner: 0.10, Medium: 0.45, Hard: 0.32, Expert: 0.125 }, PAIR_SHARE = 0.3;
+const isPair = p => tileSpecs(p.tile).length === 2;
+let picks = [];
+for (const tier of TIERS) {
+  const cands = all.filter(p => p.tier === tier), singles = cands.filter(p => !isPair(p)), pairs = cands.filter(isPair);
+  const ps = tier === 'Beginner' ? 0 : PAIR_SHARE;
+  let n = Math.round(max * TIER_SHARE[tier]);
+  n = ps === 0 ? Math.min(n, singles.length) : Math.floor(Math.min(n, singles.length / (1 - ps), pairs.length / ps));
+  const nPairs = Math.round(n * ps);
+  picks.push(...pickBalanced(singles, n - nPairs), ...pickBalanced(pairs, nPairs));
+  console.log(`${tier.padEnd(9)} ${n} (${n - nPairs} single + ${nPairs} pair; candidates ${singles.length}/${pairs.length})`);
 }
 picks.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
 const spread = spreadByTier(picks, { key: p => p.shape });

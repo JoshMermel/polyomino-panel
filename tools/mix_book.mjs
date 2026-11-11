@@ -2,15 +2,19 @@
 // with every tier's share fixed and, inside each tier, a fixed share of one-shape puzzles and of two-shape puzzles.
 //
 //   node tools/mix_book.mjs --base tools/books/sym_voids.csv --add new1.csv,new2.csv --out tools/books/sym_voids.csv
-//        [--size 150] [--tiers 0.10,0.45,0.32,0.13] [--pair-share 0.3] [--no-pair-beginner 1]
+//        [--size 150] [--tiers 0.10,0.45,0.32,0.13] [--pair-share 0.3]
+//        [--min-tier Medium] [--max-blocked 0.2] [--prefer sparse] [--fill-tiers Medium]
 //
 // --tiers      the share of Beginner, Medium, Hard and Expert in the book (the main books' 10/45/32/12.5).
 // --pair-share the share of two-shape puzzles in each tier; Beginner has none (two-shape Beginner puzzles hardly exist).
 // A tier (or a kind inside it) that the candidates cannot fill makes that tier smaller, in proportion, rather than
 // breaking the mix. The base puzzles are taken first, then the new ones, each kind spread evenly over the tile specs.
+// --fill-tiers  tiers that keep their size when one kind runs short: the other kind makes it up, and the pair share drops.
+// --min-tier and --max-blocked drop candidates that are too easy or too dense; --prefer sparse takes the sparsest new
+// puzzles first (the default is the lowest score first). Candidates must have connected open cells and no swastika.
 // Duplicates (the same board up to rotation and reflection, with the same tile and pre-drawn edges) are dropped.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { parseCsv, toCsv, tileSpecs, puzzleHash } from '../js/logic.js';
+import { parseCsv, toCsv, tileSpecs, puzzleHash, openCellsConnected, hasSwastika } from '../js/logic.js';
 import { canonicalGrid } from '../js/generator.js';
 import { TIERS } from '../js/rating.js';
 import { spreadByTier } from './lib/pick.mjs';
@@ -21,18 +25,23 @@ const tierShare = (args.tiers ?? '0.10,0.45,0.32,0.13').split(',').map(Number);
 const read = f => readFileSync(f, 'utf8');
 const header = read(args.base).split('\n').filter(l => l.startsWith('#')).join('\n') + '\n';
 const base = parseCsv(read(args.base)), added = (args.add ?? '').split(',').filter(Boolean).flatMap(f => parseCsv(read(f)));
+const minTier = TIERS.indexOf(args['min-tier'] ?? 'Beginner'), maxBlocked = Number(args['max-blocked'] ?? 1);
+const blockedCount = p => [...p.grid].filter(c => c === '#').length;
+const ok = p => TIERS.indexOf(p.tier) >= minTier && blockedCount(p) <= maxBlocked * p.grid.length && openCellsConnected(p) && !hasSwastika(p, p.solution);
 const keyOf = p => (p.givens?.length ? puzzleHash(p) : `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`);
 const seen = new Set(), pool = [];
-for (const [list, isBase] of [[base, true], [added, false]]) for (const p of list) { const k = keyOf(p); if (!seen.has(k)) { seen.add(k); pool.push({ p, isBase }); } }
+for (const [list, isBase] of [[base, true], [added, false]]) for (const p of list) {
+  if (!isBase && !ok(p)) continue; const k = keyOf(p); if (!seen.has(k)) { seen.add(k); pool.push({ p, isBase }); } }
 const isPair = p => tileSpecs(p.tile).length === 2;
 // each kind spread evenly over its tile specs, base puzzles first
 const take = (cands, n) => {
   const by = new Map();
-  for (const c of cands.sort((a, b) => (b.isBase - a.isBase) || a.p.score - b.p.score)) { if (!by.has(c.p.tile)) by.set(c.p.tile, []); by.get(c.p.tile).push(c); }
+  for (const c of cands.sort((a, b) => (b.isBase - a.isBase) || (args.prefer === 'sparse' ? blockedCount(a.p) - blockedCount(b.p) : 0) || a.p.score - b.p.score)) { if (!by.has(c.p.tile)) by.set(c.p.tile, []); by.get(c.p.tile).push(c); }
   const lists = [...by.values()], out = [];
   for (let r = 0; out.length < n && lists.some(l => l.length); r++) for (const l of lists) if (l.length && out.length < n) out.push(l.shift());
   return out;
 };
+const fill = new Set((args['fill-tiers'] ?? '').split(',').filter(Boolean));
 const picks = [];
 TIERS.forEach((tier, i) => {
   const cands = pool.filter(c => c.p.tier === tier);
@@ -41,8 +50,10 @@ TIERS.forEach((tier, i) => {
   let n = Math.round(size * tierShare[i]);
   // base puzzles that would not fit the shares are still kept: they were chosen before
   if (ps === 0) n = Math.min(n, singles.length);
+  else if (fill.has(tier)) n = Math.min(n, singles.length + pairs.length);
   else n = Math.floor(Math.min(n, singles.length / (1 - ps), pairs.length / ps));
-  const nPairs = Math.round(n * ps), nSingles = n - nPairs;
+  let nPairs = Math.round(n * ps), nSingles = n - nPairs;
+  if (fill.has(tier)) { nPairs = Math.min(nPairs, pairs.length); nSingles = Math.min(n - nPairs, singles.length); nPairs = n - nSingles; }
   picks.push(...take(singles, nSingles), ...take(pairs, nPairs));
   console.log(`${tier.padEnd(9)} wanted ${Math.round(size * tierShare[i])}, got ${n}: ${nSingles} single + ${nPairs} pair (candidates ${singles.length}/${pairs.length})`);
 });

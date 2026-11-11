@@ -150,7 +150,7 @@
       "label": "Symmetric voids",
       "blurb": "The black squares are laid out symmetrically.",
       "file": "bonus-voids.csv",
-      "count": 73
+      "count": 170
     },
     {
       "id": "bonus-clues",
@@ -159,7 +159,7 @@
       "label": "Clues",
       "blurb": "Some lines and ✕ marks are already drawn for you.",
       "file": "bonus-clues.csv",
-      "count": 121
+      "count": 211
     },
     {
       "id": "bonus-shapes",
@@ -168,7 +168,7 @@
       "label": "Shapes",
       "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L.",
       "file": "bonus-shapes.csv",
-      "count": 400
+      "count": 398
     },
     {
       "id": "bonus-giants",
@@ -177,7 +177,7 @@
       "label": "Giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen.",
       "file": "bonus-giants.csv",
-      "count": 139
+      "count": 297
     }
   ]
 }
