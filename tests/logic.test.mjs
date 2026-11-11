@@ -1158,7 +1158,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     if (book.id === 'intro' || book.id.startsWith('bonus')) {
       assert.equal(book.group, {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        'bonus-giants': 'Bonus: giants',
+        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: shapes',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
@@ -1166,11 +1166,13 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
         if (book.id === 'bonus-clues') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
+        else if (book.id === 'bonus-shapes') assert.ok(p.rows >= 5 && p.cols >= 5 && p.rows <= 12 && p.cols <= 12, `${p.name}: a board of a sensible size`);
         else if (book.id === 'bonus-giants') {
           assert.ok(p.rows === 16 && p.cols === 16, `${p.name}: a 16x16 board`);
           assert.ok(tileSpecs(p.tile).length <= 2, `${p.name}: one or two shapes`);
         }
       }
+      if (book.id === 'bonus-shapes') assert.ok(ps.some(p => p.rows !== p.cols), 'the shapes book has rectangles');
       continue;
     }
     // id is <one|two|three>-<size>: every puzzle has that many shapes and that board size
@@ -1246,7 +1248,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: giants']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

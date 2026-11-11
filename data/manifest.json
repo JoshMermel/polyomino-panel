@@ -26,6 +26,10 @@
       "blurb": "Some lines and ✕ marks are already drawn for you."
     },
     {
+      "name": "Bonus: shapes",
+      "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L."
+    },
+    {
       "name": "Bonus: giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
     }
@@ -156,6 +160,15 @@
       "blurb": "Some lines and ✕ marks are already drawn for you.",
       "file": "bonus-clues.csv",
       "count": 121
+    },
+    {
+      "id": "bonus-shapes",
+      "group": "Bonus: shapes",
+      "title": "Bonus: shapes",
+      "label": "Shapes",
+      "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L.",
+      "file": "bonus-shapes.csv",
+      "count": 150
     },
     {
       "id": "bonus-giants",

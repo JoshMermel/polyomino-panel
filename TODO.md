@@ -4,4 +4,4 @@ Ideas that are wanted but not scheduled. Trimmed 2026-11-10: finished items were
 
 ## Ideas for more experiments
 
-- **Non-square boards (a plus sign, a rectangle, other shapes).** Rectangles are close: the generator and most of the code take separate rows and columns. A plus sign or other outline is the same thing as blocking the cells outside the shape, so it only needs generation work (fixed blocked cells) and a book.
+- **Shapes book follow-ups.** `bonus-shapes` is a first pass (150 puzzles, 7 board shapes, 8 tiles). Ideas: draw the outline differently from the puzzle's own blocked cells (a frame around the real board), more outlines (a heart, a staircase, a cross with arms of unequal length), bigger plus and ring boards, sparser puzzles, a pool-based pipeline like the main books.
