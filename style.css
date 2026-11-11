@@ -578,6 +578,14 @@ select, input[type="number"] {
 .bp-size:hover { border-color: var(--border-strong); }
 .bp-size.bp-current { background: var(--primary-blue-hover-bg); border-color: var(--primary-blue); }
 .bp-size-done { color: var(--color-solved); }
+.bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+.bp-tile {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 52px; padding: 6px 10px; text-align: left;
+  border: 1px solid var(--border-light); border-radius: 8px; background: transparent; color: var(--text-primary);
+}
+.bp-tile:hover { border-color: var(--border-strong); }
+.bp-tile.bp-current { background: var(--primary-blue-hover-bg); border-color: var(--primary-blue); }
+.bp-tile-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .bp-blurb { margin: 0 0 6px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
 .bp-book {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;

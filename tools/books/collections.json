@@ -69,7 +69,7 @@
       "perBook": 100,
       "title": "Intro",
       "label": "Intro: small and easy",
-      "blurb": "The easiest puzzles, on small boards."
+      "blurb": "Start here to learn the rules."
     },
     {
       "name": "Polyomino",
@@ -155,7 +155,7 @@
       "source": "sym_voids.csv",
       "title": "Bonus: symmetric voids",
       "label": "Symmetry",
-      "blurb": "The boards are symmetric."
+      "blurb": "Symmetric boards."
     },
     {
       "name": "Bonus: clues",
@@ -163,15 +163,15 @@
       "source": "bonus_clues.csv",
       "title": "Bonus: clues",
       "label": "Clues",
-      "blurb": "Some lines and ✕ marks are already drawn for you."
+      "blurb": "Some lines already drawn."
     },
     {
-      "name": "Bonus: shapes",
+      "name": "Bonus: outlines",
       "idPrefix": "bonus-shapes",
       "source": "shapes.csv",
-      "title": "Bonus: shapes",
-      "label": "Shapes",
-      "blurb": "Boards that aren't plain squares."
+      "title": "Bonus: outlines",
+      "label": "Outlines",
+      "blurb": "Boards that aren't squares."
     },
     {
       "name": "Bonus: giants",
@@ -179,7 +179,7 @@
       "source": "giants.csv",
       "title": "Bonus: giants",
       "label": "Giants",
-      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
+      "blurb": "16×16, best on a big screen."
     }
   ],
   "_secondary": "A group with secondary: true is listed under \"More books\" in the book picker; the first two groups (sparse boards, at most 17% blocked) are the main books."

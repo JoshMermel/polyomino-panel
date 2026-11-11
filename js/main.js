@@ -885,6 +885,7 @@ function renderBookPicker() {
     const blurb = name === 'Bonus' ? '' : info?.blurb;
     const blurbShownByBook = idxs.length === 1 && state.sets[idxs[0]].blurb === blurb;     // "Start here"
     const sizesOnly = idxs.length > 1 && idxs.every(i => state.sets[i].dims);
+    const tiles = name === 'Bonus' && idxs.length > 1;
     if (sizesOnly) {
       sec.append(el('h3', '', name));                     // a header like the others, then one button per board size across the row
       const row = el('div', 'bp-multi');
@@ -906,7 +907,27 @@ function renderBookPicker() {
       sec.append(el('h3', '', name));
       if (blurb && !blurbShownByBook) sec.append(el('p', 'bp-blurb', blurb));
     }
-    for (const i of sizesOnly ? [] : idxs) {
+    if (tiles) {                                          // the Bonus books: a compact grid, each with its name, solved count and a few words
+      const grid = el('div', 'bp-grid');
+      for (const i of idxs) {
+        const set = state.sets[i];
+        const tile = el('button', 'bp-tile' + (i === state.setIdx ? ' bp-current' : ''));
+        tile.type = 'button';
+        if (i === state.setIdx) tile.setAttribute('aria-current', 'true');
+        const count = el('span', 'bp-count', String(set.count ?? set.puzzles?.length ?? ''));
+        const head = el('span', 'bp-tile-head');
+        head.append(el('span', 'bp-book-title', set.label ?? set.title), count);
+        tile.append(head);
+        if (set.blurb) tile.append(el('span', 'bp-book-blurb', set.blurb));
+        const tip = solved => `${set.title}: ${set.blurb} ${solved ? `${solved.n} / ${solved.of} solved` : `${set.count ?? ''} puzzles`}`;
+        tile.title = tip(null);
+        tile.addEventListener('click', () => chooseBook(i));
+        grid.append(tile);
+        progress.push({ i, show: (solved, total) => { count.textContent = solved ? `${solved} / ${total}` : String(total); count.classList.toggle('bp-count-done', solved === total); tile.title = tip(solved ? { n: solved, of: total } : null); } });
+      }
+      sec.append(grid);
+    }
+    for (const i of sizesOnly || tiles ? [] : idxs) {
       const set = state.sets[i];
       const row = el('button', 'bp-book' + (i === state.setIdx ? ' bp-current' : ''));
       row.type = 'button';

@@ -3,7 +3,7 @@
   "groups": [
     {
       "name": "Intro",
-      "blurb": "The easiest puzzles, on small boards."
+      "blurb": "Start here to learn the rules."
     },
     {
       "name": "Polyomino",
@@ -27,19 +27,19 @@
     },
     {
       "name": "Bonus: symmetric voids",
-      "blurb": "The boards are symmetric."
+      "blurb": "Symmetric boards."
     },
     {
       "name": "Bonus: clues",
-      "blurb": "Some lines and ✕ marks are already drawn for you."
+      "blurb": "Some lines already drawn."
     },
     {
-      "name": "Bonus: shapes",
-      "blurb": "Boards that aren't plain squares."
+      "name": "Bonus: outlines",
+      "blurb": "Boards that aren't squares."
     },
     {
       "name": "Bonus: giants",
-      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
+      "blurb": "16×16, best on a big screen."
     }
   ],
   "books": [
@@ -48,7 +48,7 @@
       "group": "Intro",
       "title": "Intro",
       "label": "Intro: small and easy",
-      "blurb": "The easiest puzzles, on small boards.",
+      "blurb": "Start here to learn the rules.",
       "file": "intro.csv",
       "count": 100
     },
@@ -207,7 +207,7 @@
       "group": "Bonus: symmetric voids",
       "title": "Bonus: symmetric voids",
       "label": "Symmetry",
-      "blurb": "The boards are symmetric.",
+      "blurb": "Symmetric boards.",
       "file": "bonus-voids.csv",
       "count": 400
     },
@@ -216,16 +216,16 @@
       "group": "Bonus: clues",
       "title": "Bonus: clues",
       "label": "Clues",
-      "blurb": "Some lines and ✕ marks are already drawn for you.",
+      "blurb": "Some lines already drawn.",
       "file": "bonus-clues.csv",
       "count": 400
     },
     {
       "id": "bonus-shapes",
-      "group": "Bonus: shapes",
-      "title": "Bonus: shapes",
-      "label": "Shapes",
-      "blurb": "Boards that aren't plain squares.",
+      "group": "Bonus: outlines",
+      "title": "Bonus: outlines",
+      "label": "Outlines",
+      "blurb": "Boards that aren't squares.",
       "file": "bonus-shapes.csv",
       "count": 400
     },
@@ -234,7 +234,7 @@
       "group": "Bonus: giants",
       "title": "Bonus: giants",
       "label": "Giants",
-      "blurb": "16×16 boards with one or two tile shapes. Best on a large screen.",
+      "blurb": "16×16, best on a big screen.",
       "file": "bonus-giants.csv",
       "count": 398
     }
