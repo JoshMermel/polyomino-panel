@@ -13,6 +13,7 @@ const INK = '#111', GRID = '#9a9a9a', SWATCH = '#cfcfcf';
 export const MAX_PRINT = 500;
 export const SITE_URL = 'https://joshmermelstein.com/polyomino-panel/';   // linked from every page, so a PDF leads back to the puzzles (and a paper copy shows where)
 
+let maskCount = 0;       // (mask ids must be unique on a page)
 const svgEl = (tag, attrs, parent) => {
   const el = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -133,11 +134,19 @@ function shapedBoardSvg(puzzle, solution) {
   const svg = svgEl('svg', { viewBox: `${x0 - pad} ${y0 - pad} ${x1 - x0 + 2 * pad} ${y1 - y0 + 2 * pad}`, class: 'print-board' });
   const outside = i => puzzle.outside?.[i] === 'x';
   const pts = poly => poly.map(([x, y]) => `${x},${y}`).join(' ');
+  // blocked cells are drawn a little oversized; masked to the shape grown by the frame's half width, so a sharp corner on the
+  // board's edge does not poke past the frame (as on screen: js/board.js)
+  const maskId = `print-mask-${++maskCount}`;
+  const mask = svgEl('mask', { id: maskId, maskUnits: 'userSpaceOnUse', x: x0 - 1, y: y0 - 1, width: x1 - x0 + 2, height: y1 - y0 + 2 }, svgEl('defs', {}, svg));
+  let shapeD = '';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!outside(r * cols + c)) shapeD += `M${pts(topo.polygon(r, c))}Z`;
+  svgEl('path', { d: shapeD, fill: '#fff', stroke: '#fff', 'stroke-width': 0.08, 'stroke-linejoin': 'round' }, mask);
+  const cellsG = svgEl('g', { mask: `url(#${maskId})` }, svg);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
       if (outside(i)) continue;
-      svgEl('polygon', { points: pts(topo.polygon(r, c)), fill: puzzle.grid[i] === '#' ? INK : '#fff', stroke: puzzle.grid[i] === '#' ? INK : 'none', 'stroke-width': 0.08, 'stroke-linejoin': 'miter', 'stroke-miterlimit': 1.5 }, svg);
+      svgEl('polygon', { points: pts(topo.polygon(r, c)), fill: puzzle.grid[i] === '#' ? INK : '#fff', stroke: puzzle.grid[i] === '#' ? INK : 'none', 'stroke-width': 0.08, 'stroke-linejoin': 'miter' }, cellsG);
     }
   }
   for (const [kind, r, c] of playableEdges(puzzle)) {
