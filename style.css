@@ -281,10 +281,10 @@ select, input[type="number"] {
 .frame {
   fill: none;
   stroke: var(--frame);
-  stroke-width: 0.05;
+  stroke-width: 0.1;            /* as thick as a drawn line: lines along the board's edge are clipped to the board, so a tile placed there would otherwise look thinner than the rest of its outline */
   pointer-events: none;
 }
-.board-svg.solved .frame { stroke: var(--color-solved); stroke-width: 0.08; }
+.board-svg.solved .frame { stroke: var(--color-solved); }
 
 
 
