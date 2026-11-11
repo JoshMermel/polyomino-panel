@@ -78,8 +78,10 @@ export class Board {
 
     // Layers, bottom to top.
     const cellLayer = el('g', { class: 'layer-cells' }, svg);
-    const blockedLayer = el('g', { class: 'layer-blocked' }, svg);     // above the open cells, so a blocked cell's stroke (see style.css) is never covered by a neighbour
     const dashLayer = el('g', { class: 'layer-dash', ...inside }, svg);
+    // above the open cells and the dashed grid lines, so a blocked cell's stroke (see style.css) is never covered by a neighbour or
+    // crossed by a dash that ends at its corner
+    const blockedLayer = el('g', { class: 'layer-blocked' }, svg);
     const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
     this.hintLayer = el('g', { class: 'layer-hint', ...inside }, svg);   // ghost lines / cross for hints
