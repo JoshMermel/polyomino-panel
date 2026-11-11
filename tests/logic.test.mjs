@@ -1177,7 +1177,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     if (book.id === 'intro' || book.id.startsWith('bonus') || gridKind) {
       assert.equal(book.group, gridKind ? { hexes: 'Hexes', triangles: 'Triangles' }[gridKind] : {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: outlines',
+        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: cutouts',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       const sizeKey = book.id.split('-')[1];                  // s, m or l (Hexes and Triangles)
@@ -1330,7 +1330,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'Polyomino', 'Polyomino pair', 'Polyomino triple', 'Hexes', 'Triangles', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: outlines', 'Bonus: giants']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'Polyomino', 'Polyomino pair', 'Polyomino triple', 'Hexes', 'Triangles', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: cutouts', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

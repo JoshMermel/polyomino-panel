@@ -34,8 +34,8 @@
       "blurb": "Some lines already drawn."
     },
     {
-      "name": "Bonus: outlines",
-      "blurb": "Boards that aren't squares."
+      "name": "Bonus: cutouts",
+      "blurb": "Plus signs, donuts, diamonds."
     },
     {
       "name": "Bonus: giants",
@@ -222,10 +222,10 @@
     },
     {
       "id": "bonus-shapes",
-      "group": "Bonus: outlines",
-      "title": "Bonus: outlines",
-      "label": "Outlines",
-      "blurb": "Boards that aren't squares.",
+      "group": "Bonus: cutouts",
+      "title": "Bonus: cutouts",
+      "label": "Cutouts",
+      "blurb": "Plus signs, donuts, diamonds.",
       "file": "bonus-shapes.csv",
       "count": 400
     },

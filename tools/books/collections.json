@@ -166,12 +166,12 @@
       "blurb": "Some lines already drawn."
     },
     {
-      "name": "Bonus: outlines",
+      "name": "Bonus: cutouts",
       "idPrefix": "bonus-shapes",
       "source": "shapes.csv",
-      "title": "Bonus: outlines",
-      "label": "Outlines",
-      "blurb": "Boards that aren't squares."
+      "title": "Bonus: cutouts",
+      "label": "Cutouts",
+      "blurb": "Plus signs, donuts, diamonds."
     },
     {
       "name": "Bonus: giants",
