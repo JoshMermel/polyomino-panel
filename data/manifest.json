@@ -6,7 +6,7 @@
       "blurb": "The easiest puzzles, on small boards."
     },
     {
-      "name": "One shape",
+      "name": "Polyomino",
       "blurb": "Every tile is the same shape."
     },
     {
@@ -54,8 +54,8 @@
     },
     {
       "id": "one-6",
-      "group": "One shape",
-      "title": "One shape · Small (6×6)",
+      "group": "Polyomino",
+      "title": "Polyomino · Small (6×6)",
       "label": "Small",
       "blurb": "",
       "dims": "6×6",
@@ -64,8 +64,8 @@
     },
     {
       "id": "one-8",
-      "group": "One shape",
-      "title": "One shape · Medium (8×8)",
+      "group": "Polyomino",
+      "title": "Polyomino · Medium (8×8)",
       "label": "Medium",
       "blurb": "",
       "dims": "8×8",
@@ -74,8 +74,8 @@
     },
     {
       "id": "one-10",
-      "group": "One shape",
-      "title": "One shape · Large (10×10)",
+      "group": "Polyomino",
+      "title": "Polyomino · Large (10×10)",
       "label": "Large",
       "blurb": "",
       "dims": "10×10",

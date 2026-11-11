@@ -72,7 +72,7 @@
       "blurb": "The easiest puzzles, on small boards."
     },
     {
-      "name": "One shape",
+      "name": "Polyomino",
       "idPrefix": "one",
       "shapes": 1,
       "maxBlocked": 0.17,
