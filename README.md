@@ -19,7 +19,7 @@ then open <http://localhost:8765>. (Opening `index.html` via `file://` won't wor
 
 ## Controls
 
-The main view is deliberately sparse: a title bar (⚙ settings, **?** help), the book button (current shape(s) and board size; it opens the book picker) with the puzzle pager, one info line (the tile shape on the left, progress or "Solved!" on the right), the action buttons and the board. The rules and controls are in the **?** "How to play" dialog. Summary:
+The main view is deliberately sparse: a title bar (⚙ settings, **?** help), the book button (current shape(s) and board size; it opens the book picker) with the puzzle pager, one info line (the tile shape on the left, "Solved!" on the right once the puzzle is done), the action buttons and the board. The rules and controls are in the **?** "How to play" dialog. Summary:
 
 - **Where a press lands decides the gesture** (all deterministic, nothing depends on timing, and it works with mouse, touch and pen):
   - **On an edge:** a tap cycles it empty → line → small ✕ → empty. A press on an edge that moves more than a small slop is not a tap: it becomes a cell drag (below) that starts in the cell the press landed in, so a drag that happens to start on an edge still works.

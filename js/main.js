@@ -683,7 +683,7 @@ function refresh() {
     }
   } else {
     st.className = 'status';
-    st.textContent = a.total === null ? `${a.validCount} tiles` : `${a.validCount} / ${a.total} tiles`;
+    st.textContent = '';          // nothing until the puzzle is solved (a count of finished tiles was tried and dropped)
   }
 }
 
