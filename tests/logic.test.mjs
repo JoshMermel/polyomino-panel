@@ -1454,7 +1454,7 @@ test('pocket: a line that would wall off a region the tiles cannot fill takes a 
   assert.ok(seen > 0, 'the sample has pocket deductions');
 });
 
-test('tileErasure: dragging over a closed tile takes its outline off, keeping lines a finished neighbour shares', () => {
+test('tileErasure: dragging over a closed tile takes off only the lines it alone uses, keeping any a finished neighbour shares', () => {
   const p = { rows: 1, cols: 6, tile: 'I2', grid: '.'.repeat(6), solution: '' };
   const e = newEdges(p);
   assert.equal(tileErasure(p, e, [0, 1]), null, 'outline not drawn yet: that is a draw, not an erase');
@@ -1464,11 +1464,16 @@ test('tileErasure: dragging over a closed tile takes its outline off, keeping li
   setEdge(p, e, 'v', 0, 4, EDGE_LINE);
   setEdge(p, e, 'v', 0, 3, EDGE_EMPTY);
   assert.deepEqual(tileErasure(p, e, [0, 1]), [], 'shared with the finished tile on cells 2 and 3');
-  // a neighbour that only this tile's line closes off (nothing else walls it) does not keep the line
+  // a neighbour that only this tile's line closes off (the board edge walls the rest) is a finished tile too: it keeps the line
   const corner = { rows: 1, cols: 4, tile: 'I2', grid: '....', solution: '' };
   const ce = newEdges(corner);
   setEdge(corner, ce, 'v', 0, 2, EDGE_LINE);
-  assert.deepEqual(tileErasure(corner, ce, [0, 1]), [['v', 0, 2]]);
+  assert.deepEqual(tileErasure(corner, ce, [0, 1]), []);
+  // a neighbour closed in the wrong shape is not a finished tile: the shared line goes
+  const wrong = { rows: 1, cols: 5, tile: 'I2', grid: '.....', solution: '' };
+  const we = newEdges(wrong);
+  setEdge(wrong, we, 'v', 0, 2, EDGE_LINE);
+  assert.deepEqual(tileErasure(wrong, we, [0, 1]), [['v', 0, 2]]);
   // a line cutting through the shape: not an erase
   const q = newEdges(p);
   setEdge(p, q, 'v', 0, 1, EDGE_LINE); setEdge(p, q, 'v', 0, 2, EDGE_LINE);

@@ -1348,23 +1348,20 @@ export function tileInterior(puzzle, cells) {
 // Erasing a finished tile: dragging over exactly the cells of a tile whose outline is already drawn takes
 // that outline off again. Returns the [kind, r, c] edges whose lines to remove, or null when this is not
 // an erase (the outline is not complete, or lines inside the cells cut the shape: drawing it is then the
-// job). A line the tile shares with a finished neighbouring tile stays when that neighbour has lines of its
-// own elsewhere (it was drawn as a tile in its own right); a neighbour that only the erased tile's lines
-// close off (it sits in a corner, say) does not hold the line.
+// job). Only lines that belong to this tile alone go: a line shared with a finished (valid) neighbouring
+// tile stays, whatever else walls that neighbour in. A line shared with a region that is not a finished
+// tile (open, or closed in a wrong shape) goes, since only the erased tile used it.
 
 export function tileErasure(puzzle, edges, cells) {
   const outline = tileOutline(puzzle, cells);
   if (!outline.length || !outline.every(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) === EDGE_LINE)) return null;
   if (tileInterior(puzzle, cells).some(([kind, r, c]) => getEdge(puzzle, edges, kind, r, c) === EDGE_LINE)) return null;
   const inside = new Set(cells);
-  const regionOf = new Map();
-  for (const region of analyze(puzzle, edges).regions) if (region.valid) for (const i of region.cells) regionOf.set(i, region.cells);
+  const finished = new Set();
+  for (const region of analyze(puzzle, edges).regions) if (region.valid) for (const i of region.cells) finished.add(i);
   return outline.filter(([kind, r, c]) => {
     const [a, b] = edgeCells(puzzle, kind, r, c);
-    const neighbour = regionOf.get(inside.has(a) ? b : a);
-    if (!neighbour) return true;
-    const own = new Set(neighbour);
-    return !tileOutline(puzzle, neighbour).some(e => edgeCells(puzzle, ...e).some(x => !own.has(x) && !inside.has(x)));   // a line of its own
+    return !finished.has(inside.has(a) ? b : a);
   });
 }
 
