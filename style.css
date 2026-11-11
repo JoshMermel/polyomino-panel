@@ -206,6 +206,7 @@ select, input[type="number"] {
 
 .cell { fill: var(--cell-bg); }
 .cell.blocked { fill: var(--blocked-bg); }
+.cell.outside { fill: none; pointer-events: none; }   /* outside a shaped board (a plus sign...): not drawn */
 .cell.tile-ok { fill: var(--shape-fill, var(--shape-0-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
 .cell.shape-1 { --shape-fill: var(--shape-1-bg); }
 .cell.shape-2 { --shape-fill: var(--shape-2-bg); }

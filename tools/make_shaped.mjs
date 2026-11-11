@@ -3,7 +3,7 @@
 //
 //   node tools/make_shaped.mjs --shape plus9 --tile L [--count 6] [--minutes 3] [--out data/tmp.csv] [--append]
 //
-// Shapes: rect6x10, rect8x12 (any rect<R>x<C>), plus9 (arms 3 wide, 3 long), octagon8, ring8, lshape8.
+// Shapes: rect6x10, rect8x12 (any rect<R>x<C>), plus9 (arms 3 wide, 3 long), octagon8, ring8, lshape8 (tools/lib/board_shapes.mjs).
 // The puzzle's rows and cols are the bounding box; the fixed cells are blocked cells in its grid, so the app and the
 // rating need nothing new. Writes the scored puzzles (data/tmp.csv is the app's local-only scratch book).
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -11,22 +11,13 @@ import { parseCsv, toCsv, minTileSize, sizeFeasible } from '../js/logic.js';
 import './lib/wasm_counter.mjs';
 import { generatePuzzle, mulberry32, canonicalGrid } from '../js/generator.js';
 import { ratePuzzle } from '../js/rating.js';
+import { boardShape } from './lib/board_shapes.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => { if (a.startsWith('--')) acc.push([a.slice(2), all[i + 1]?.startsWith('--') ? '1' : all[i + 1]]); return acc; }, []));
 const shape = args.shape ?? 'plus9', tile = args.tile ?? 'L', count = Number(args.count ?? 6), maxMs = Number(args.minutes ?? 3) * 60000;
 const out = new URL(args.out ?? '../data/tmp.csv', import.meta.url);
 
-const SHAPES = {
-  plus9: () => ({ rows: 9, cols: 9, keep: (r, c) => (r >= 3 && r < 6) || (c >= 3 && c < 6) }),
-  octagon8: () => ({ rows: 8, cols: 8, keep: (r, c) => r + c >= 3 && r + (7 - c) >= 3 && (7 - r) + c >= 3 && (7 - r) + (7 - c) >= 3 }),
-  ring8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r >= 3 && r < 5 && c >= 3 && c < 5) }),
-  lshape8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r < 4 && c >= 4) }),
-};
-const m = /^rect(\d+)x(\d+)$/.exec(shape);
-const spec = m ? { rows: +m[1], cols: +m[2], keep: () => true } : SHAPES[shape]?.();
-if (!spec) throw new Error(`unknown shape ${shape}`);
-const { rows, cols } = spec;
-const fixed = Array.from({ length: rows * cols }, (_, i) => !spec.keep(Math.floor(i / cols), i % cols));
+const { rows, cols, fixed, outside } = boardShape(shape);
 const openBase = fixed.filter(f => !f).length;
 
 const pool = args.append && existsSync(out) ? parseCsv(readFileSync(out, 'utf8')) : [];
@@ -45,6 +36,7 @@ for (let holes = Math.max(0, Math.round(openBase * 0.06)); Date.now() - t0 < max
     seen.add(key);
     const r = ratePuzzle(p);
     Object.assign(p, { name: `${shape}_${tile}_${pool.length + 1}`, rules: r.rules, tier: r.tier, score: r.score });
+    if (outside) p.outside = outside;
     pool.push(p); found++;
     console.error(`${shape} ${tile}: ${holes} extra blocked, ${r.tier} (${r.rules}), ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }

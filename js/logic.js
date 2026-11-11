@@ -288,6 +288,13 @@ export function parseCsv(text) {
       score: rec.score === undefined || rec.score === '' ? null : Number(rec.score),
     };
     if (rec.given) puzzle.givens = parseGivens(rec.given, puzzle);
+    // Optional `outside` column: a string like the grid, 'x' for a cell outside the board's shape (a plus sign, an octagon...
+    // cut out of a rectangle). Those cells are blocked in the grid and play no part; they are just not drawn.
+    if (rec.outside) {
+      if (rec.outside.length !== grid.length || /[^.x]/.test(rec.outside)) throw new Error(`Puzzle "${rec.name}": bad outside column`);
+      for (let i = 0; i < grid.length; i++) if (rec.outside[i] === 'x' && grid[i] !== '#') throw new Error(`Puzzle "${rec.name}": an outside cell must be blocked`);
+      puzzle.outside = rec.outside;
+    }
     puzzles.push(puzzle);
   }
   return puzzles;
@@ -299,13 +306,15 @@ export function toCsv(puzzles) {
   const withTier = puzzles.some(p => p.tier);
   const withScore = puzzles.some(p => p.score !== undefined && p.score !== null);
   const withGiven = puzzles.some(p => p.givens?.length);
-  const lines = [`name,rows,cols,tile,grid,solution${withRules ? ',rules' : ''}${withTier ? ',tier' : ''}${withScore ? ',score' : ''}${withGiven ? ',given' : ''}`];
+  const withOutside = puzzles.some(p => p.outside);
+  const lines = [`name,rows,cols,tile,grid,solution${withRules ? ',rules' : ''}${withTier ? ',tier' : ''}${withScore ? ',score' : ''}${withGiven ? ',given' : ''}${withOutside ? ',outside' : ''}`];
   for (const p of puzzles) {
     const row = [p.name, p.rows, p.cols, p.tile, p.grid, p.solution || ''];
     if (withRules) row.push(p.rules || '');
     if (withTier) row.push(p.tier || '');
     if (withScore) row.push(p.score ?? '');
     if (withGiven) row.push(givensString(p));
+    if (withOutside) row.push(p.outside || '');
     lines.push(row.join(','));
   }
   return lines.join('\n') + '\n';

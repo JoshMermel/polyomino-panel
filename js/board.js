@@ -82,14 +82,31 @@ export class Board {
     const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
     this.hintLayer = el('g', { class: 'layer-hint', ...inside }, svg);   // ghost lines / cross for hints
-    el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
+    if (puzzle.outside) {
+      // a board with an outline: the frame follows the shape, one segment for every side of a cell on the shape's edge
+      const inShape = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && puzzle.outside[r * cols + c] !== 'x';
+      let d = '';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!inShape(r, c)) continue;
+          if (!inShape(r - 1, c)) d += `M${c} ${r}L${c + 1} ${r}`;
+          if (!inShape(r + 1, c)) d += `M${c} ${r + 1}L${c + 1} ${r + 1}`;
+          if (!inShape(r, c - 1)) d += `M${c} ${r}L${c} ${r + 1}`;
+          if (!inShape(r, c + 1)) d += `M${c + 1} ${r}L${c + 1} ${r + 1}`;
+        }
+      }
+      el('path', { class: 'frame', d, 'stroke-linecap': 'square' }, svg);
+    } else {
+      el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
+    }
 
     this.cellEls = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const open = puzzle.grid[r * cols + c] === OPEN;
+        const outside = puzzle.outside?.[r * cols + c] === 'x';      // not part of the board's shape: not drawn at all
         this.cellEls.push(el('rect', {
-          class: open ? 'cell' : 'cell blocked',
+          class: open ? 'cell' : outside ? 'cell outside' : 'cell blocked',
           x: c, y: r, width: 1, height: 1,
         }, cellLayer));
       }

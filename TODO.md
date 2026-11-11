@@ -4,4 +4,4 @@ Ideas that are wanted but not scheduled. Trimmed 2026-11-10: finished items were
 
 ## Ideas for more experiments
 
-- **Shapes book follow-ups.** `bonus-shapes` is a first pass (150 puzzles, 7 board shapes, 8 tiles). Ideas: draw the outline differently from the puzzle's own blocked cells (a frame around the real board), more outlines (a heart, a staircase, a cross with arms of unequal length), bigger plus and ring boards, sparser puzzles, a pool-based pipeline like the main books.
+- **Shapes book follow-ups.** `bonus-shapes` is a first pass (150 puzzles, 7 board shapes, 8 tiles). Ideas: print shaped boards without the outside cells, more outlines (a heart, a staircase, a cross with arms of unequal length), bigger plus and ring boards, sparser puzzles, a pool-based pipeline like the main books.

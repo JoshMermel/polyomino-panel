@@ -1172,7 +1172,11 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
           assert.ok(tileSpecs(p.tile).length <= 2, `${p.name}: one or two shapes`);
         }
       }
-      if (book.id === 'bonus-shapes') assert.ok(ps.some(p => p.rows !== p.cols), 'the shapes book has rectangles');
+      if (book.id === 'bonus-shapes') {
+        assert.ok(ps.some(p => p.rows !== p.cols), 'the shapes book has rectangles');
+        assert.ok(ps.some(p => p.outside), 'the shapes book has boards with an outline');
+        for (const p of ps.filter(q => q.outside)) assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
+      }
       continue;
     }
     // id is <one|two|three>-<size>: every puzzle has that many shapes and that board size
@@ -1448,4 +1452,13 @@ test('tileErasure: dragging over a closed tile takes its outline off, keeping li
   assert.equal(tileErasure(p, q, [0, 1]), null);
   // a tile with no outline to speak of (the whole board) is not an erase either
   assert.equal(tileErasure({ rows: 1, cols: 2, tile: 'I2', grid: '..', solution: '' }, newEdges({ rows: 1, cols: 2, tile: 'I2', grid: '..', solution: '' }), [0, 1]), null);
+});
+
+test('the outside column: cells outside the board shape round-trip through CSV and must be blocked', () => {
+  const p = { name: 'o1', rows: 2, cols: 3, tile: 'I2', grid: '#.#.#.', solution: '', outside: 'x.x...' };
+  const back = parseCsv(toCsv([p]))[0];
+  assert.equal(back.outside, 'x.x...');
+  assert.equal(puzzleHash(back), puzzleHash({ ...p, outside: undefined }), 'the outline is only a drawing hint: same puzzle, same saves');
+  assert.throws(() => parseCsv('name,rows,cols,tile,grid,solution,outside\no2,1,2,I2,.#,,x.'), /outside cell must be blocked/);
+  assert.throws(() => parseCsv('name,rows,cols,tile,grid,solution,outside\no3,1,2,I2,.#,,x'), /bad outside/);
 });
