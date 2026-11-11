@@ -13,7 +13,7 @@
 // Difficulty is not considered at all; only uniqueness.
 import {
   BLOCKED, OPEN, minTileSize, allOrientations, sizeFeasible, solutionShapeCounts, countSolutions, labelString, solve,
-  hasSwastika, openCellsConnected,
+  hasSwastika, openCellsConnected, topologyOfTile,
 } from './logic.js';
 
 // Small seedable PRNG (mulberry32) so runs are reproducible.
@@ -47,9 +47,27 @@ export function defaultHoles(rows, cols, tile, ratio = 0.15) {
   return best;
 }
 
-// Smallest grid (over the 8 symmetries of a rectangle that apply) string, so
-// that rotated / mirrored copies of a puzzle can be recognised as the same.
-export function canonicalGrid(grid, rows, cols) {
+// Smallest grid (over the symmetries of the grid that apply) string, so that rotated / mirrored copies of a
+// puzzle can be recognised as the same. `tile` says which kind of grid it is (default: square, where the 8
+// symmetries of a rectangle apply). On other grids (hex) a symmetry turns the whole array, so the copies are
+// compared as cell lists after sliding them to the origin: right for boards whose shape the symmetry keeps
+// (a regular hexagon). `outside` (the puzzle's outside column) leaves the cells that are not part of the board
+// out of the comparison, which a turned array needs, since its corners do not land on the same array cells.
+export function canonicalGrid(grid, rows, cols, tile = 'L', outside = '') {
+  const topo = topologyOfTile(tile);
+  if (topo.name !== 'square') {
+    let cells = [...grid].map((ch, i) => [Math.floor(i / cols), i % cols, ch]).filter(([, , , ], i) => outside[i] !== 'x');
+    const variants = [];
+    for (let flip = 0; flip < 2; flip++) {
+      for (let rot = 0; rot < topo.rotations; rot++) {
+        const minR = Math.min(...cells.map(p => p[0])), minC = Math.min(...cells.map(p => p[1]));
+        variants.push(cells.map(([r, c, ch]) => [r - minR, c - minC, ch]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(p => p.join(',')).join(';'));
+        cells = cells.map(([r, c, ch]) => [...topo.rotate([r, c]), ch]);
+      }
+      cells = cells.map(([r, c, ch]) => [...topo.reflect([r, c]), ch]);
+    }
+    return `${topo.name}:${variants.sort()[0]}`;
+  }
   const at = (r, c) => grid[r * cols + c];
   const variants = [];
   for (let t = 0; t < 8; t++) {
@@ -169,13 +187,14 @@ function proposeMove(state, rows, cols, tile, rng, delta = 0, fixed = null) {
   }
   const cr = Math.floor(centre / cols), cc = centre % cols;
   const radius = [1, 2, 2, 3][Math.floor(rng() * 4)];
+  const dist = topologyOfTile(tile).dist;
 
-  // Tiles and blocked cells within `radius` (Manhattan) of the centre.
+  // Tiles and blocked cells within `radius` (the grid's own distance: Manhattan on squares) of the centre.
   const tileIds = new Set();
   const holesIn = new Set();
   for (let i = 0; i < n; i++) {
     const r = Math.floor(i / cols), c = i % cols;
-    if (Math.abs(r - cr) + Math.abs(c - cc) > radius) continue;
+    if (dist(r - cr, c - cc) > radius) continue;
     if (fixed?.[i]) continue;                          // the board's outline never moves
     if (mask[i]) holesIn.add(i); else tileIds.add(assign[i]);
   }

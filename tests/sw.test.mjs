@@ -77,7 +77,7 @@ function loadWorker() {
   return { caches, dispatch, get };
 }
 
-const SHELL = ['', 'index.html', 'style.css', 'js/main.js', 'js/logic.js', 'js/rating.js', 'js/board.js', 'js/tile-view.js', 'js/print.js'];
+const SHELL = ['', 'index.html', 'style.css', 'js/main.js', 'js/logic.js', 'js/topology.js', 'js/hex_shapes.js', 'js/rating.js', 'js/board.js', 'js/tile-view.js', 'js/print.js'];
 function resetNetwork(version = 'v1') {
   network.online = true; network.failing.clear(); network.files.clear();
   for (const f of SHELL) network.files.set(BASE + f, `${f || 'index.html'} ${version}`);

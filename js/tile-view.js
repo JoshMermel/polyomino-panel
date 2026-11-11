@@ -1,7 +1,7 @@
 // Shows the tile shape a puzzle must be cut into: a small picture plus its
 // name. The picture uses one canonical orientation; the rules text explains
 // that rotations and reflections are allowed.
-import { resolveShape, shapeName, tileSizes, tileSpecs } from './logic.js';
+import { resolveShape, shapeName, tileSizes, tileSpecs, topologyOfTile } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 // the colour of the cells to be tiled: they are light in the light theme and dark in the dark one
@@ -12,22 +12,22 @@ const openCells = () => (document.documentElement.getAttribute('data-theme') ===
 // shapes each gets its own, and finished tiles on the board are filled with the same color.
 export function tileShapeSvg(spec, shapeIndex = 0) {
   const cells = resolveShape(spec);
-  const rows = Math.max(...cells.map(([r]) => r)) + 1;
-  const cols = Math.max(...cells.map(([, c]) => c)) + 1;
+  const topo = topologyOfTile(spec);
+  const polys = cells.map(([r, c]) => topo.polygon(r, c));
+  const xs = polys.flat().map(p => p[0]), ys = polys.flat().map(p => p[1]);
+  const [x0, y0, x1, y1] = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  const cols = x1 - x0, rows = y1 - y0;                        // (cell units; a hex picture is not a whole number of cells)
   const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${cols} ${rows}`);
+  svg.setAttribute('viewBox', `${x0} ${y0} ${cols} ${rows}`);
   svg.setAttribute('class', `tile-shape-svg shape-${shapeIndex}`);
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', shapeName(spec));
   svg.style.setProperty('--tile-cols', cols);
   svg.style.setProperty('--tile-rows', rows);
-  for (const [r, c] of cells) {
-    const rect = document.createElementNS(NS, 'rect');
-    rect.setAttribute('x', c);
-    rect.setAttribute('y', r);
-    rect.setAttribute('width', 1);
-    rect.setAttribute('height', 1);
-    svg.appendChild(rect);
+  for (const poly of polys) {
+    const cell = document.createElementNS(NS, 'polygon');
+    cell.setAttribute('points', poly.map(([x, y]) => `${x},${y}`).join(' '));
+    svg.appendChild(cell);
   }
   return svg;
 }

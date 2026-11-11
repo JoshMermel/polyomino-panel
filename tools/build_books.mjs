@@ -112,7 +112,7 @@ for (const name of readdirSync(libDir)) {
 // Hand-assembled books (the Experiments, from files in tools/books/) are copied as they are, so the pool
 // books must not take a puzzle those hold (the same board up to rotation or mirror, with the same tile).
 // Boards with given edges are different puzzles even on the same layout, so only plain boards are reserved.
-const boardKey = p => `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
+const boardKey = p => `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols, p.tile)}`;
 const reserved = new Set();
 for (const g of config.groups) {
   if (!g.source) continue;
@@ -343,7 +343,7 @@ for (const b of books) {
     const sols = solveWithGivens(p, 2);
     if (sols.length !== 1 || sols[0] !== p.solution) throw new Error(`${b.meta.id}: ${p.name} is not uniquely solvable`);
     // (a board with given edges is a different puzzle: the clue books reuse near-empty boards)
-    const key = p.givens?.length ? puzzleHash(p) : `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;
+    const key = p.givens?.length ? puzzleHash(p) : `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols, p.tile)}`;
     if (seenKeys.has(key)) throw new Error(`${b.meta.id}: duplicate puzzle ${p.name}`);
     seenKeys.add(key);
   }

@@ -441,10 +441,10 @@ select, input[type="number"] {
 }
 /* cells are separated by a thin gap in the page background */
 /* the picture matches a finished tile (same fill), outlined in the shape's colour */
-.tile-shape-svg.shape-1 rect { fill: var(--shape-1-bg); stroke: var(--shape-1); }
-.tile-shape-svg.shape-2 rect { fill: var(--shape-2-bg); stroke: var(--shape-2); }
-.tile-shape-svg.shape-3 rect { fill: var(--shape-3-bg); stroke: var(--shape-3); }
-.tile-shape-svg rect {
+.tile-shape-svg.shape-1 :is(rect, polygon) { fill: var(--shape-1-bg); stroke: var(--shape-1); }
+.tile-shape-svg.shape-2 :is(rect, polygon) { fill: var(--shape-2-bg); stroke: var(--shape-2); }
+.tile-shape-svg.shape-3 :is(rect, polygon) { fill: var(--shape-3-bg); stroke: var(--shape-3); }
+.tile-shape-svg :is(rect, polygon) {
   fill: var(--shape-0-bg);
   stroke: var(--shape-0);
   stroke-width: 0.08;
@@ -494,10 +494,10 @@ select, input[type="number"] {
   background: var(--bg-white); border: 1px solid var(--border-strong); border-radius: 16px;
 }
 .shape-chip .tile-shape-svg { --unit: 8px; }
-.shape-chip .tile-shape-svg rect { fill: var(--text-muted); }
+.shape-chip .tile-shape-svg :is(rect, polygon) { fill: var(--text-muted); }
 .shape-chip-count { font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .shape-chip[aria-pressed="true"] { background: var(--tile-bg); border-color: var(--primary-blue); }
-.shape-chip[aria-pressed="true"] .tile-shape-svg rect { fill: var(--primary-blue); }
+.shape-chip[aria-pressed="true"] .tile-shape-svg :is(rect, polygon) { fill: var(--primary-blue); }
 .shape-chip[aria-pressed="true"] .shape-chip-count { color: var(--text-primary); font-weight: 600; }
 .shape-chip:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
 .browse-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }

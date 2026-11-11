@@ -21,6 +21,12 @@ const SHAPES = {
   ring8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r >= 3 && r < 5 && c >= 3 && c < 5) }),
   lshape8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r < 4 && c >= 4) }),
 };
+// Hex boards (see js/topology.js): a hexagon with sides of n cells is a (2n-1) x (2n-1) array of axial coordinates
+// with the two corners (and nothing else) cut off; a rhombus is the whole array.
+const hexDist = (dr, dc) => Math.max(Math.abs(dr), Math.abs(dc), Math.abs(dr + dc));
+for (const n of [3, 4, 5, 6, 7]) {
+  SHAPES[`hexagon${n}`] = () => ({ rows: 2 * n - 1, cols: 2 * n - 1, keep: (r, c) => hexDist(r - (n - 1), c - (n - 1)) <= n - 1 });
+}
 // -> { rows, cols, fixed: [bool per cell], outside: string ('x' = outside, '.' = in the shape) or '' for a rectangle }
 export function boardShape(name) {
   const m = /^rect(\d+)x(\d+)$/.exec(name);

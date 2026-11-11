@@ -4,7 +4,8 @@ import {
   EDGE_EMPTY, EDGE_LINE, EDGE_CROSS,
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges, isGivenEdge,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash, tileErasure,
-  cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, SHAPE_ORDER, } from './logic.js';
+  cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, shapeOrder, topologyOf, } from './logic.js';
+import { SQUARE, HEX } from './topology.js';
 import { Board } from './board.js';
 import { renderTileInfo, tileShapeSvg } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks } from './rating.js';
@@ -19,14 +20,14 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } },
 };
 
-// Edges <-> string for storage: "<h digits>|<v digits>".
-const packEdges = e => `${e.h.join('')}|${e.v.join('')}`;
+// Edges <-> string for storage: the digits of each edge kind, joined with "|" (square: "<h digits>|<v digits>").
+const packEdges = e => Object.values(e).map(a => a.join('')).join('|');
 function unpackEdges(puzzle, s) {
   const edges = newEdges(puzzle);
-  const [h, v] = (s || '').split('|');
-  if (!h || v === undefined || h.length !== edges.h.length || v.length !== edges.v.length) return null;
-  for (let i = 0; i < h.length; i++) edges.h[i] = +h[i];
-  for (let i = 0; i < v.length; i++) edges.v[i] = +v[i];
+  const kinds = Object.keys(edges);
+  const parts = (s || '').split('|');
+  if (parts.length !== kinds.length || kinds.some((k, i) => !parts[i] || parts[i].length !== edges[k].length)) return null;
+  kinds.forEach((k, i) => { for (let j = 0; j < parts[i].length; j++) edges[k][j] = +parts[i][j]; });
   for (const [type, kind, r, c] of puzzle.givens ?? []) setEdge(puzzle, edges, kind, r, c, type === 'L' ? EDGE_LINE : EDGE_CROSS);   // never lose a given
   return edges;
 }
@@ -465,8 +466,7 @@ function checkSoFar() {
     showToast("Can't check: this puzzle has no unique solution.", 'error', 3000);
     return;
   }
-  const marks = state.edges.h.reduce((n, v) => n + (v ? 1 : 0), 0) +
-                state.edges.v.reduce((n, v) => n + (v ? 1 : 0), 0);
+  const marks = Object.values(state.edges).reduce((total, a) => total + a.reduce((n, v) => n + (v ? 1 : 0), 0), 0);
   if (marks === 0) { showToast('Nothing to check yet.', 'info'); return; }
   const wrong = checkMarks(state.puzzle, state.edges, solution);
   if (wrong.length === 0) showToast('So far so good!', 'success');
@@ -525,8 +525,9 @@ function nearestFirst(items, cellsOf) {
   const near = state.lastEdit;
   if (!near?.length) return items;
   const { cols } = state.puzzle;
+  const gridDist = topologyOf(state.puzzle).dist;
   const dist = item => Math.min(...cellsOf(item).flatMap(a => near.map(b =>
-    Math.abs(Math.floor(a / cols) - Math.floor(b / cols)) + Math.abs((a % cols) - (b % cols)))));
+    gridDist(Math.floor(a / cols) - Math.floor(b / cols), (a % cols) - (b % cols)))));
   return items.map((item, i) => ({ item, i, d: dist(item) })).sort((x, y) => x.d - y.d || x.i - y.i).map(x => x.item);
 }
 
@@ -659,7 +660,7 @@ function refresh() {
 
   const set = curSet();
   const blank = newEdges(state.puzzle);                  // (a puzzle's given edges don't count as the player's marks)
-  const hasMarks = state.edges.h.some((x, i) => x !== blank.h[i]) || state.edges.v.some((x, i) => x !== blank.v[i]);
+  const hasMarks = Object.keys(blank).some(k => state.edges[k].some((x, i) => x !== blank[k][i]));
 
   if (hasMarks) store.set(saveKey(state.puzzle), packEdges(state.edges));
   else store.del(saveKey(state.puzzle));
@@ -694,7 +695,8 @@ function refresh() {
 // who likes some shapes can play just those puzzles. Several can be on at once (a puzzle shows if it
 // uses any of them); none on means every puzzle.
 let closeBrowse = () => {};   // set in bindControls
-const shapeRank = spec => { const i = SHAPE_ORDER.indexOf(spec); return i < 0 ? 999 : i; };
+const ALL_SHAPES = [...shapeOrder(SQUARE), ...shapeOrder(HEX)];
+const shapeRank = spec => { const i = ALL_SHAPES.indexOf(spec); return i < 0 ? 999 : i; };
 const bookShapes = puzzles => [...new Set(puzzles.flatMap(p => tileSpecs(p.tile)))].sort((a, b) => shapeRank(a) - shapeRank(b) || (a < b ? -1 : 1));
 const matchesShapes = (p, shapes) => !shapes.size || tileSpecs(p.tile).some(s => shapes.has(s));
 

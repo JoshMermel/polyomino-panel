@@ -1,7 +1,8 @@
 // Experiment: puzzles on non-square boards (rectangles) and on boards with an outline (a plus sign, an octagon, a ring,
 // an L), which are an ordinary square board with some cells always blocked (the generator's `fixed` option).
 //
-//   node tools/make_shaped.mjs --shape plus9 --tile L [--count 6] [--minutes 3] [--out data/tmp.csv] [--append]
+//   node tools/make_shaped.mjs --shape plus9 --tile L [--count 6] [--minutes 3] [--out data/tmp.csv] [--append 1]
+//     [--from 0.06] [--to 0.5] (the blocked-cell fractions to try, from..to) [--per-level 4] [--level-ms 8000] [--seed N]
 //
 // Shapes: rect6x10, rect8x12 (any rect<R>x<C>), plus9 (arms 3 wide, 3 long), octagon8, ring8, lshape8 (tools/lib/board_shapes.mjs).
 // The puzzle's rows and cols are the bounding box; the fixed cells are blocked cells in its grid, so the app and the
@@ -22,17 +23,17 @@ const { rows, cols, fixed, outside } = boardShape(shape);
 const openBase = fixed.filter(f => !f).length;
 
 const pool = args.append && existsSync(out) ? parseCsv(readFileSync(out, 'utf8')) : [];
-const seen = new Set(pool.map(p => canonicalGrid(p.grid, rows, cols)));
+const seen = new Set(pool.map(p => canonicalGrid(p.grid, rows, cols, tile, outside)));
 const rng = mulberry32(Number(args.seed ?? Date.now() % 2 ** 31));
 const t0 = Date.now();
 let found = 0;
-// holes (extra blocked cells) from about 6% of the open cells upward, whatever leaves whole tiles
-for (let holes = Math.max(0, Math.round(openBase * 0.06)); Date.now() - t0 < maxMs && found < count && holes < openBase / 2; holes++) {
+// holes (extra blocked cells) from about 6% of the open cells upward (--from, --to: other fractions), whatever leaves whole tiles
+for (let holes = Math.max(0, Math.round(openBase * Number(args.from ?? 0.06))); Date.now() - t0 < maxMs && found < count && holes < openBase * Number(args.to ?? 0.5); holes++) {
   if (openBase - holes < minTileSize(tile) || !sizeFeasible(tile, openBase - holes)) continue;
   for (let k = 0; k < perLevel && found < count && Date.now() - t0 < maxMs; k++) {
-    const res = generatePuzzle({ rows, cols, tile, holes, fixed, rng, maxMs: 8000 });
+    const res = generatePuzzle({ rows, cols, tile, holes, fixed, rng, maxMs: Number(args['level-ms'] ?? 8000) });
     if (!res) { console.error(`${shape} ${tile}: no puzzle at ${holes} extra blocked cells`); break; }
-    const p = res.puzzle, key = canonicalGrid(p.grid, rows, cols);
+    const p = res.puzzle, key = canonicalGrid(p.grid, rows, cols, tile, outside);
     if (seen.has(key)) continue;
     seen.add(key);
     const r = ratePuzzle(p);

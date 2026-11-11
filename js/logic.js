@@ -18,6 +18,13 @@
 //   Only "interior" edges (between two open cells) are playable; edges next to
 //   a blocked cell or the outer border are implicit walls.
 
+import { SQUARE, topologyOfTile, specBody, edgeBetween as topoEdgeBetween, edgeCellsOf } from './topology.js';
+import { HEX_PATTERNS, HEX_LABELS, HEX_ORDER } from './hex_shapes.js';
+
+export { topologyOfTile };
+// The topology (square, hex...) a puzzle lives on, from its tile spec: see topology.js.
+export const topologyOf = puzzle => topologyOfTile(puzzle.tile);
+
 export const BLOCKED = '#';
 export const OPEN = '.';
 
@@ -84,12 +91,13 @@ const shapeCache = new Map();
 // inline pattern: rows of 'X' (tile cell) and '.' (empty) separated by '/',
 // e.g. "X./X./XX" is the L tetromino and "XX/XX/X." is the P pentomino. The
 // pattern form contains no commas, so it can sit in a CSV column. Patterns
-// must be 4-connected.
+// must be connected (on the spec's own grid: a "hex:" spec lists axial rows, see topology.js).
 export function resolveShape(spec) {
-  if (SHAPES[spec]) return SHAPES[spec];
   if (shapeCache.has(spec)) return shapeCache.get(spec);
-  if (!/^[Xx.]+(\/[Xx.]+)*$/.test(spec)) throw new Error(`Unknown tile shape "${spec}"`);
-  const cells = patternCells(spec);
+  const topo = topologyOfTile(spec), body = specBody(spec);
+  const named = topo === SQUARE ? NAMED_PATTERNS[body] : HEX_PATTERNS[body];
+  if (!named && !/^[Xx.]+(\/[Xx.]+)*$/.test(body)) throw new Error(`Unknown tile shape "${spec}"`);
+  const cells = patternCells(named ?? body);
   if (!cells.length) throw new Error(`Tile pattern "${spec}" has no cells`);
   // connectivity check
   const key = ([r, c]) => `${r},${c}`;
@@ -98,7 +106,8 @@ export function resolveShape(spec) {
   const stack = [cells[0]];
   while (stack.length) {
     const [r, c] = stack.pop();
-    for (const n of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) {
+    for (const d of topo.dirs) {
+      const n = [r + d.dr, c + d.dc];
       if (all.has(key(n)) && !seenCells.has(key(n))) { seenCells.add(key(n)); stack.push(n); }
     }
   }
@@ -114,15 +123,16 @@ const orientationCache = new Map();
 export function getOrientations(spec) {
   if (orientationCache.has(spec)) return orientationCache.get(spec);
   const base = resolveShape(spec);
+  const topo = topologyOfTile(spec);
   const seen = new Map();
   let cur = base;
   for (let flip = 0; flip < 2; flip++) {
-    for (let rot = 0; rot < 4; rot++) {
+    for (let rot = 0; rot < topo.rotations; rot++) {
       const norm = normalize(cur);
       seen.set(cellsKey(norm), norm);
-      cur = cur.map(([r, c]) => [c, -r]); // rotate 90 degrees
+      cur = cur.map(topo.rotate);
     }
-    cur = cur.map(([r, c]) => [r, -c]); // reflect
+    cur = cur.map(topo.reflect);
   }
   const result = [...seen.values()];
   orientationCache.set(spec, result);
@@ -142,7 +152,8 @@ const specsCache = new Map();
 // The shape specs of a (possibly multi-shape) tile spec, validated and pairwise different.
 export function tileSpecs(spec) {
   if (specsCache.has(spec)) return specsCache.get(spec);
-  const specs = spec.split('+');
+  const topo = topologyOfTile(spec);
+  const specs = spec.split('+').map(sp => (topo.prefix && !sp.startsWith(topo.prefix) ? topo.prefix + sp : sp));
   const keys = new Set();
   for (const sp of specs) {
     resolveShape(sp);
@@ -213,18 +224,25 @@ function canonicalKey(spec) {
   return getOrientations(spec).map(cellsKey).sort()[0];
 }
 
-let labelByCanonical = null;
+const labelsByCanonical = new Map();     // topology name -> Map(canonical key -> label)
 
 // Display name for a tile spec: a name from the library if the shape matches
 // one (in any orientation), else "N-cell shape".
 export function shapeName(spec) {
   if (spec.includes('+')) return tileSpecs(spec).map(shapeName).join(' + ');
-  if (!labelByCanonical) {
-    labelByCanonical = new Map(Object.keys(SHAPE_LABELS).map(n => [canonicalKey(n), SHAPE_LABELS[n]]));
+  const topo = topologyOfTile(spec);
+  let labels = labelsByCanonical.get(topo.name);
+  if (!labels) {
+    const table = topo === SQUARE ? SHAPE_LABELS : HEX_LABELS;
+    labels = new Map(Object.keys(table).map(n => [canonicalKey(topo.prefix + n), table[n]]));
+    labelsByCanonical.set(topo.name, labels);
   }
   const n = tileSize(spec);
-  return labelByCanonical.get(canonicalKey(spec)) ?? (n === 1 ? 'monomino' : `${n}-cell shape`);
+  return labels.get(canonicalKey(spec)) ?? (n === 1 ? (topo === SQUARE ? 'monomino' : 'monohex') : `${n}-cell shape`);
 }
+
+// The named shapes of a topology in menu order, as full specs ("L", "hex:h4a").
+export const shapeOrder = topo => (topo === SQUARE ? SHAPE_ORDER : HEX_ORDER.map(n => topo.prefix + n));
 
 // --- Parsing ---------------------------------------------------------------
 
@@ -338,42 +356,41 @@ export function puzzleHash(puzzle) {
 
 // --- Edges -----------------------------------------------------------------
 
-// A blank set of marks: nothing drawn except the puzzle's given edges, if it has any.
+// A blank set of marks: nothing drawn except the puzzle's given edges, if it has any. The marks are one
+// Uint8Array per edge kind of the puzzle's topology (square: h and v).
 export function newEdges(puzzle) {
-  const edges = {
-    h: new Uint8Array((puzzle.rows + 1) * puzzle.cols),
-    v: new Uint8Array(puzzle.rows * (puzzle.cols + 1)),
-  };
-  for (const [type, kind, r, c] of puzzle.givens ?? []) edges[kind][kind === 'h' ? r * puzzle.cols + c : r * (puzzle.cols + 1) + c] = type === 'L' ? EDGE_LINE : EDGE_CROSS;
+  const topo = topologyOf(puzzle);
+  const edges = {};
+  for (const kind of topo.kinds) edges[kind] = new Uint8Array(topo.edgeLength(puzzle.rows, puzzle.cols, kind));
+  for (const [type, kind, r, c] of puzzle.givens ?? []) edges[kind][topo.edgeIndex(puzzle.cols, kind, r, c)] = type === 'L' ? EDGE_LINE : EDGE_CROSS;
   return edges;
 }
 
 export function cloneEdges(e) {
-  return { h: e.h.slice(), v: e.v.slice() };
+  const out = {};
+  for (const kind in e) out[kind] = e[kind].slice();
+  return out;
 }
 
-export const edgeIndex = (puzzle, kind, r, c) =>
-  kind === 'h' ? r * puzzle.cols + c : r * (puzzle.cols + 1) + c;
+export const edgeIndex = (puzzle, kind, r, c) => topologyOf(puzzle).edgeIndex(puzzle.cols, kind, r, c);
 
 export const isOpen = (puzzle, r, c) =>
   r >= 0 && r < puzzle.rows && c >= 0 && c < puzzle.cols &&
   puzzle.grid[r * puzzle.cols + c] === OPEN;
 
-// An edge is playable when both cells it separates are open.
-// kind 'h': edge above (r,c) separates (r-1,c) and (r,c).
-// kind 'v': edge left of (r,c) separates (r,c-1) and (r,c).
+// An edge is playable when both cells it separates are open: the cell (r, c) it is named for and the
+// neighbour across it (square 'h': the cell above, 'v': the cell to the left; see topology.js).
 export function isPlayableEdge(puzzle, kind, r, c) {
-  return kind === 'h'
-    ? isOpen(puzzle, r - 1, c) && isOpen(puzzle, r, c)
-    : isOpen(puzzle, r, c - 1) && isOpen(puzzle, r, c);
+  const [dr, dc] = topologyOf(puzzle).kindOffset[kind];
+  return isOpen(puzzle, r + dr, c + dc) && isOpen(puzzle, r, c);
 }
 
 export function getEdge(puzzle, edges, kind, r, c) {
-  return edges[kind][edgeIndex(puzzle, kind, r, c)];
+  return edges[kind][topologyOf(puzzle).edgeIndex(puzzle.cols, kind, r, c)];
 }
 
 export function setEdge(puzzle, edges, kind, r, c, state) {
-  edges[kind][edgeIndex(puzzle, kind, r, c)] = state;
+  edges[kind][topologyOf(puzzle).edgeIndex(puzzle.cols, kind, r, c)] = state;
 }
 
 // --- Checking --------------------------------------------------------------
@@ -387,6 +404,7 @@ export function setEdge(puzzle, edges, kind, r, c, state) {
 // shape has the same size, else the number in the stored solution (null if there is none).
 export function analyze(puzzle, edges) {
   const { rows, cols, tile } = puzzle;
+  const topo = topologyOf(puzzle);
   const sizes = tileSizes(tile);
   const specs = tileSpecs(tile);
   const minSize = sizes[0];
@@ -406,18 +424,15 @@ export function analyze(puzzle, edges) {
       const i = stack.pop();
       cells.push(i);
       const r = Math.floor(i / cols), c = i % cols;
-      const visit = (nr, nc, kind, er, ec) => {
-        if (!isOpen(puzzle, nr, nc)) return;
+      for (const d of topo.dirsAt(r, c)) {
+        const nr = r + d.dr, nc = c + d.dc;
+        if (!isOpen(puzzle, nr, nc)) continue;
         const j = nr * cols + nc;
-        if (seen[j]) return;
-        if (getEdge(puzzle, edges, kind, er, ec) === EDGE_LINE) return;
+        if (seen[j]) continue;
+        if (edges[d.kind][topo.edgeIndex(cols, d.kind, r + d.kr, c + d.kc)] === EDGE_LINE) continue;
         seen[j] = 1;
         stack.push(j);
-      };
-      visit(r, c + 1, 'v', r, c + 1);
-      visit(r, c - 1, 'v', r, c);
-      visit(r + 1, c, 'h', r + 1, c);
-      visit(r - 1, c, 'h', r, c);
+      }
     }
     let valid = false, shape = -1;               // shape: which allowed shape (index into tileSpecs) a valid tile is
     if (sizes.includes(cells.length)) {
@@ -443,15 +458,13 @@ export function analyze(puzzle, edges) {
 export function edgesFromSolution(puzzle, solution) {
   const edges = newEdges(puzzle);
   const { rows, cols } = puzzle;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (c > 0 && isPlayableEdge(puzzle, 'v', r, c) &&
-          solution[r * cols + c] !== solution[r * cols + c - 1]) {
-        setEdge(puzzle, edges, 'v', r, c, EDGE_LINE);
-      }
-      if (r > 0 && isPlayableEdge(puzzle, 'h', r, c) &&
-          solution[r * cols + c] !== solution[(r - 1) * cols + c]) {
-        setEdge(puzzle, edges, 'h', r, c, EDGE_LINE);
+  const topo = topologyOf(puzzle);
+  for (const kind of topo.kinds) {
+    const [dr, dc] = topo.kindOffset[kind];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!isPlayableEdge(puzzle, kind, r, c)) continue;
+        if (solution[r * cols + c] !== solution[(r + dr) * cols + c + dc]) setEdge(puzzle, edges, kind, r, c, EDGE_LINE);
       }
     }
   }
@@ -541,7 +554,7 @@ export function searchTilings(puzzle, { limit = 2, rng = null, budget = Infinity
 
   // All placements of the tile on open cells, as lists of cell indices.
   const pls = [];
-  const rules = (givens ?? []).map(([type, kind, r, c]) => [type === 'L', kind === 'v' ? r * cols + c - 1 : (r - 1) * cols + c, r * cols + c]);
+  const rules = (givens ?? []).map(([type, kind, r, c]) => [type === 'L', ...edgeCells(puzzle, kind, r, c)]);
   for (const cells of boardPlacements(tile, rows, cols)) {
     let open = true;
     for (let k = 0; k < cells.length; k++) if (itemOf[cells[k]] < 0) { open = false; break; }
@@ -631,10 +644,8 @@ export function solve(puzzle, limit = 2) {
 // Does a solution agree with the puzzle's given edges (a line where the solution has a tile boundary,
 // a cross where both cells are in the same tile)?
 export function matchesGivens(puzzle, solution) {
-  const { cols } = puzzle;
   return (puzzle.givens ?? []).every(([type, kind, r, c]) => {
-    const a = kind === 'v' ? r * cols + c - 1 : (r - 1) * cols + c;
-    const b = r * cols + c;
+    const [a, b] = edgeCells(puzzle, kind, r, c);
     return type === 'L' ? solution[a] !== solution[b] : solution[a] === solution[b];
   });
 }
@@ -663,11 +674,12 @@ export function countSolutions(puzzle, cap = 2, budget = Infinity) {
 // Every playable edge as [kind, r, c].
 export function playableEdges(puzzle) {
   const out = [];
-  for (const kind of ['h', 'v']) {
-    const rMax = kind === 'h' ? puzzle.rows : puzzle.rows - 1;
-    const cMax = kind === 'h' ? puzzle.cols - 1 : puzzle.cols;
-    for (let r = 0; r <= rMax; r++) {
-      for (let c = 0; c <= cMax; c++) {
+  const topo = topologyOf(puzzle);
+  for (const kind of topo.kinds) {
+    const [dr, dc] = topo.kindOffset[kind];
+    // every cell (r, c) of the board owns the edge on its `kind` side (when the neighbour across it exists)
+    for (let r = Math.max(0, -dr); r < puzzle.rows; r++) {
+      for (let c = Math.max(0, -dc); c < puzzle.cols; c++) {
         if (isPlayableEdge(puzzle, kind, r, c)) out.push([kind, r, c]);
       }
     }
@@ -699,10 +711,9 @@ export function checkMarks(puzzle, edges, solution) {
   return wrong;
 }
 
-// The two cell indices an interior edge separates.
+// The two cell indices an interior edge separates (the neighbour first, then cell (r, c)).
 export function edgeCells(puzzle, kind, r, c) {
-  const { cols } = puzzle;
-  return kind === 'h' ? [(r - 1) * cols + c, r * cols + c] : [r * cols + c - 1, r * cols + c];
+  return edgeCellsOf(topologyOf(puzzle), puzzle.cols, kind, r, c);
 }
 
 // Edges where the solution has no line and the player has made no mark:
@@ -725,29 +736,25 @@ export function crossHints(puzzle, edges, solution) {
   });
 }
 
-// The edge between two orthogonally adjacent cells (cell indices), as
-// [kind, r, c], or null if they aren't adjacent.
+// The edge between two adjacent cells (cell indices), as [kind, r, c], or null if they aren't adjacent.
 function edgeBetween(puzzle, a, b) {
-  const { cols } = puzzle;
-  const ar = Math.floor(a / cols), ac = a % cols, br = Math.floor(b / cols), bc = b % cols;
-  if (ar === br && Math.abs(ac - bc) === 1) return ['v', ar, Math.max(ac, bc)];
-  if (ac === bc && Math.abs(ar - br) === 1) return ['h', Math.max(ar, br), ac];
-  return null;
+  return topoEdgeBetween(topologyOf(puzzle), puzzle.cols, a, b);
 }
 
 // --- Placements covering a cell --------------------------------------------
 // The geometry of "every way the tile can sit on the board so that it covers
 // this cell" never changes for a puzzle, so it is computed once per puzzle and
 // cell (lazily) and reused. Each placement is
-//   { cells, outline, inner, innerH, innerV, outH, outV }
+//   { cells, outline, inner, innerIdx, outIdx }
 // where outline = edges between the placement and the open cells around it,
 // inner = edges between two of its own cells, both as [kind, r, c], and the
-// four typed arrays hold the same edges as indices into edges.h / edges.v for
-// fast checking.
+// typed arrays (one per edge kind) hold the same edges as indices into edges[kind]
+// for fast checking.
 const placementCache = new WeakMap();   // puzzle -> per-cell placement lists
 
 function buildPlacements(puzzle, cell) {
   const { cols, tile } = puzzle;
+  const topo = topologyOf(puzzle);
   const r0 = Math.floor(cell / cols), c0 = cell % cols;
   const seen = new Set();
   const out = [];
@@ -770,17 +777,19 @@ function buildPlacements(puzzle, cell) {
       const outline = [], inner = [];
       for (const a of cells) {
         const ra = Math.floor(a / cols), ca = a % cols;
-        for (const [nr, nc] of [[ra - 1, ca], [ra + 1, ca], [ra, ca - 1], [ra, ca + 1]]) {
+        for (const d of topo.dirsAt(ra, ca)) {
+          const nr = ra + d.dr, nc = ca + d.dc;
           if (!isOpen(puzzle, nr, nc)) continue;       // blocked / border: implicit wall
           const b = nr * cols + nc;
-          if (!inside.has(b)) outline.push(edgeBetween(puzzle, a, b));
-          else if (b > a) inner.push(edgeBetween(puzzle, a, b));   // each inner edge once
+          const edge = [d.kind, ra + d.kr, ca + d.kc];
+          if (!inside.has(b)) outline.push(edge);
+          else if (b > a) inner.push(edge);   // each inner edge once
         }
       }
-      const idx = (list, kind) => Int32Array.from(list.filter(e => e[0] === kind).map(([k, r, c]) => edgeIndex(puzzle, k, r, c)));
+      const idx = (list, kind) => Int32Array.from(list.filter(e => e[0] === kind).map(([k, r, c]) => topo.edgeIndex(cols, k, r, c)));
       out.push({
         cells, outline, inner,
-        innerH: idx(inner, 'h'), innerV: idx(inner, 'v'), outH: idx(outline, 'h'), outV: idx(outline, 'v'),
+        innerIdx: topo.kinds.map(k => idx(inner, k)), outIdx: topo.kinds.map(k => idx(outline, k)),   // per edge kind (topo.kinds order), as indices into edges[kind]
       });
     }
   }
@@ -798,14 +807,15 @@ function placementsFor(puzzle, cell) {
 // Returns [{cells, outline, inner, ...}] (shared, read-only objects: see above).
 // With `firstOnly`, stops after finding one (enough to test whether any fits).
 export function consistentPlacements(puzzle, edges, cell, firstOnly = false) {
-  const { h, v } = edges;
+  const kinds = topologyOf(puzzle).kinds;
   const out = [];
   for (const p of placementsFor(puzzle, cell)) {
     let ok = true;
-    for (let i = 0; ok && i < p.innerH.length; i++) if (h[p.innerH[i]] === EDGE_LINE) ok = false;
-    for (let i = 0; ok && i < p.innerV.length; i++) if (v[p.innerV[i]] === EDGE_LINE) ok = false;
-    for (let i = 0; ok && i < p.outH.length; i++) if (h[p.outH[i]] === EDGE_CROSS) ok = false;
-    for (let i = 0; ok && i < p.outV.length; i++) if (v[p.outV[i]] === EDGE_CROSS) ok = false;
+    for (let k = 0; ok && k < kinds.length; k++) {
+      const marks = edges[kinds[k]], inner = p.innerIdx[k], outer = p.outIdx[k];
+      for (let i = 0; ok && i < inner.length; i++) if (marks[inner[i]] === EDGE_LINE) ok = false;
+      for (let i = 0; ok && i < outer.length; i++) if (marks[outer[i]] === EDGE_CROSS) ok = false;
+    }
     if (ok) {
       out.push(p);
       if (firstOnly) return out;
@@ -901,7 +911,8 @@ function reachableImbalances(spec, n) {
 // The first region (see above) that cannot be tiled, as {kind, cells}, or null.
 export function findPocketContradiction(puzzle, edges, mode = 'size') {
   const { rows, cols, tile } = puzzle;
-  const { h, v } = edges;
+  const topo = topologyOf(puzzle);
+  const parity = mode === 'parity' && topo.twoColor;     // (a grid without a two-colouring only has the size test)
   const seen = new Uint8Array(rows * cols);
   const stack = [];
   for (let start = 0; start < rows * cols; start++) {
@@ -914,13 +925,16 @@ export function findPocketContradiction(puzzle, edges, mode = 'size') {
       cells.push(i);
       const r = (i / cols) | 0, c = i % cols;
       balance += ((r + c) & 1) === 0 ? 1 : -1;
-      if (c + 1 < cols && puzzle.grid[i + 1] === OPEN && !seen[i + 1] && v[r * (cols + 1) + c + 1] !== EDGE_LINE) { seen[i + 1] = 1; stack.push(i + 1); }
-      if (c > 0 && puzzle.grid[i - 1] === OPEN && !seen[i - 1] && v[r * (cols + 1) + c] !== EDGE_LINE) { seen[i - 1] = 1; stack.push(i - 1); }
-      if (r + 1 < rows && puzzle.grid[i + cols] === OPEN && !seen[i + cols] && h[(r + 1) * cols + c] !== EDGE_LINE) { seen[i + cols] = 1; stack.push(i + cols); }
-      if (r > 0 && puzzle.grid[i - cols] === OPEN && !seen[i - cols] && h[r * cols + c] !== EDGE_LINE) { seen[i - cols] = 1; stack.push(i - cols); }
+      for (const d of topo.dirsAt(r, c)) {
+        const nr = r + d.dr, nc = c + d.dc;
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        const j = nr * cols + nc;
+        if (puzzle.grid[j] !== OPEN || seen[j] || edges[d.kind][topo.edgeIndex(cols, d.kind, r + d.kr, c + d.kc)] === EDGE_LINE) continue;
+        seen[j] = 1; stack.push(j);
+      }
     }
     if (!sizeFeasible(tile, cells.length)) return { kind: 'size', cells };
-    if (mode === 'parity' && !reachableImbalances(tile, cells.length).has(balance)) {
+    if (parity && !reachableImbalances(tile, cells.length).has(balance)) {
       return { kind: 'parity', cells };
     }
   }
@@ -943,11 +957,12 @@ export function findContradiction(puzzle, edges, nearCells, mode = 'size') {
 // examined. (Stops at the first one found; see findDeadCellsNear for all.)
 function findDeadCellNear(puzzle, edges, cells, reach) {
   const { rows, cols } = puzzle;
+  const dist = topologyOf(puzzle).dist;
   const pts = cells.map(i => [Math.floor(i / cols), i % cols]);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (!isOpen(puzzle, r, c)) continue;
-      if (!pts.some(([pr, pc]) => Math.abs(pr - r) + Math.abs(pc - c) <= reach)) continue;
+      if (!pts.some(([pr, pc]) => dist(pr - r, pc - c) <= reach)) continue;
       if (consistentPlacements(puzzle, edges, r * cols + c, true).length === 0) return r * cols + c;
     }
   }
@@ -957,12 +972,13 @@ function findDeadCellNear(puzzle, edges, cells, reach) {
 // All open cells near `cells` that are left with no placement fitting the marks.
 function findDeadCellsNear(puzzle, edges, cells, reach) {
   const { rows, cols } = puzzle;
+  const dist = topologyOf(puzzle).dist;
   const pts = cells.map(i => [Math.floor(i / cols), i % cols]);
   const dead = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (!isOpen(puzzle, r, c)) continue;
-      if (!pts.some(([pr, pc]) => Math.abs(pr - r) + Math.abs(pc - c) <= reach)) continue;
+      if (!pts.some(([pr, pc]) => dist(pr - r, pc - c) <= reach)) continue;
       if (consistentPlacements(puzzle, edges, r * cols + c, true).length === 0) dead.push(r * cols + c);
     }
   }
@@ -987,6 +1003,7 @@ function findDeadCellsNear(puzzle, edges, cells, reach) {
 export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = Infinity, mode = 'size' } = {}) {
   const reach = maxTileSize(puzzle.tile);
   const { cols } = puzzle;
+  const dist = topologyOf(puzzle).dist;
   const seen = new Set();                     // several origin cells can lead to one tile
   const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
@@ -1021,8 +1038,7 @@ export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = In
     const [or, oc] = [Math.floor(cell / cols), cell % cols];
     const sharedDead = [...candidates]
       .filter(c => failed.every(f => consistentPlacements(puzzle, f.trial, c, true).length === 0))
-      .sort((a, b) => (Math.abs(Math.floor(a / cols) - or) + Math.abs(a % cols - oc)) -
-                      (Math.abs(Math.floor(b / cols) - or) + Math.abs(b % cols - oc)) || a - b);
+      .sort((a, b) => dist(Math.floor(a / cols) - or, a % cols - oc) - dist(Math.floor(b / cols) - or, b % cols - oc) || a - b);
     yield { cell, cells, lines, ruledOut: alternatives.length, alternatives, sharedDead };
   }
 }
@@ -1036,6 +1052,7 @@ export function* lookaheadTiles(puzzle, edges, { minOptions = 2, maxOptions = In
 export function* eliminateTiles(puzzle, edges, { mode = 'size' } = {}) {
   const reach = maxTileSize(puzzle.tile);
   const { cols } = puzzle;
+  const dist = topologyOf(puzzle).dist;
   const seen = new Set();
   const done = finishedTileCells(puzzle, edges);
   const keyOf = ([kind, r, c]) => `${kind}${r}:${c}`;
@@ -1072,8 +1089,7 @@ export function* eliminateTiles(puzzle, edges, { mode = 'size' } = {}) {
     const [or, oc] = [Math.floor(cell / cols), cell % cols];
     const sharedDead = [...candidates]
       .filter(c => failed.every(f => consistentPlacements(puzzle, f.trial, c, true).length === 0))
-      .sort((a, b) => (Math.abs(Math.floor(a / cols) - or) + Math.abs(a % cols - oc)) -
-                      (Math.abs(Math.floor(b / cols) - or) + Math.abs(b % cols - oc)) || a - b);
+      .sort((a, b) => dist(Math.floor(a / cols) - or, a % cols - oc) - dist(Math.floor(b / cols) - or, b % cols - oc) || a - b);
     yield { cell, lines, crosses, ruledOut: failed.length, survivors: survivors.length, alternatives, sharedDead };
   }
 }
@@ -1117,6 +1133,8 @@ export const LOOKAHEAD_PARITY = { minOptions: 2, mode: 'parity' };
 // possible tiles they have. Yields { cell, lines, crosses, options } where lines/crosses are [[kind, r, c]]
 // edges that aren't marked that way yet, one item per distinct set of edges.
 export function* edgeDeductions(puzzle, edges, { minOptions = 2, maxOptions = Infinity } = {}) {
+  const topo = topologyOf(puzzle), { cols } = puzzle;
+  const kindNumber = Object.fromEntries(topo.kinds.map((k, i) => [k, i]));
   const seen = new Set();
   const done = finishedTileCells(puzzle, edges);
   for (let cell = 0; cell < puzzle.rows * puzzle.cols; cell++) {
@@ -1125,9 +1143,8 @@ export function* edgeDeductions(puzzle, edges, { minOptions = 2, maxOptions = In
     // (one option is forcedTile's job)
     if (options.length < Math.max(2, minOptions) || options.length > maxOptions) continue;
     // count, per edge, how many of the options have it on their outline / inside
-    // (numeric keys: h edges 0.., v edges offset by 1e6)
-    const { cols } = puzzle;
-    const keyOf = ([kind, r, c]) => (kind === 'h' ? r * cols + c : 1e6 + r * (cols + 1) + c);
+    // (numeric keys: each edge kind's edges offset by a multiple of 1e6)
+    const keyOf = ([kind, r, c]) => kindNumber[kind] * 1e6 + topo.edgeIndex(cols, kind, r, c);
     const outCount = new Map(), inCount = new Map(), edgeOf = new Map();
     const bump = (m, e) => { const k = keyOf(e); m.set(k, (m.get(k) ?? 0) + 1); edgeOf.set(k, e); };
     for (const o of options) { o.outline.forEach(e => bump(outCount, e)); o.inner.forEach(e => bump(inCount, e)); }
@@ -1222,6 +1239,7 @@ export const EDGES_WIDE = { minOptions: 4 };
 function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
   const reach = maxTileSize(puzzle.tile);
   const { rows, cols } = puzzle;
+  const dist = topologyOf(puzzle).dist;
   const trial = cloneEdges(edges);
   for (const [kind, r, c] of option.outline) setEdge(puzzle, trial, kind, r, c, EDGE_LINE);
   let near = option.cells;
@@ -1237,7 +1255,7 @@ function propagateHypothesis(puzzle, edges, option, mode, maxSteps) {
     for (let r = 0; r < rows && !next; r++) {
       for (let c = 0; c < cols && !next; c++) {
         if (!isOpen(puzzle, r, c)) continue;
-        if (!pts.some(([pr, pc]) => Math.abs(pr - r) + Math.abs(pc - c) <= reach)) continue;
+        if (!pts.some(([pr, pc]) => dist(pr - r, pc - c) <= reach)) continue;
         const opts = consistentPlacements(puzzle, trial, r * cols + c);
         if (opts.length === 1 && opts[0].outline.some(([k, er, ec]) => getEdge(puzzle, trial, k, er, ec) !== EDGE_LINE)) {
           next = opts[0];
@@ -1315,14 +1333,15 @@ export function cellsFormTile(puzzle, cells) {
 // i.e. the outline you would draw around that tile. Returns [[kind, r, c], ...].
 export function tileOutline(puzzle, cells) {
   const { cols } = puzzle;
+  const topo = topologyOf(puzzle);
   const inside = new Set(cells);
   const out = [];
   for (const a of cells) {
     const ra = Math.floor(a / cols), ca = a % cols;
-    for (const [nr, nc] of [[ra - 1, ca], [ra + 1, ca], [ra, ca - 1], [ra, ca + 1]]) {
+    for (const d of topo.dirsAt(ra, ca)) {
+      const nr = ra + d.dr, nc = ca + d.dc;
       if (!isOpen(puzzle, nr, nc)) continue;          // blocked / border: implicit wall
-      const b = nr * cols + nc;
-      if (!inside.has(b)) out.push(edgeBetween(puzzle, a, b));
+      if (!inside.has(nr * cols + nc)) out.push([d.kind, ra + d.kr, ca + d.kc]);
     }
   }
   return out;
@@ -1332,14 +1351,16 @@ export function tileOutline(puzzle, cells) {
 // here would cut the tile in two. Returns [[kind, r, c], ...].
 export function tileInterior(puzzle, cells) {
   const { cols } = puzzle;
+  const topo = topologyOf(puzzle);
   const inside = new Set(cells);
   const out = [];
   for (const a of cells) {
     const ra = Math.floor(a / cols), ca = a % cols;
-    for (const [nr, nc] of [[ra + 1, ca], [ra, ca + 1]]) {   // down and right only: each pair once
+    for (const d of topo.dirsAt(ra, ca)) {
+      const nr = ra + d.dr, nc = ca + d.dc;
       if (!isOpen(puzzle, nr, nc)) continue;
       const b = nr * cols + nc;
-      if (inside.has(b)) out.push(edgeBetween(puzzle, a, b));
+      if (b > a && inside.has(b)) out.push([d.kind, ra + d.kr, ca + d.kc]);   // each pair once
     }
   }
   return out;
@@ -1369,13 +1390,15 @@ export function tileErasure(puzzle, edges, cells) {
 // islands cut off from the rest by blocked cells. Puzzles that fail this are not generated or published.
 export function openCellsConnected(puzzle) {
   const { rows, cols } = puzzle;
+  const topo = topologyOf(puzzle);
   let first = -1, total = 0;
   for (let i = 0; i < rows * cols; i++) if (puzzle.grid[i] === OPEN) { total++; if (first < 0) first = i; }
   if (total === 0) return false;
   const seen = new Set([first]), stack = [first];
   while (stack.length) {
     const a = stack.pop(), r = Math.floor(a / cols), c = a % cols;
-    for (const [nr, nc] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
+    for (const d of topo.dirsAt(r, c)) {
+      const nr = r + d.dr, nc = c + d.dc;
       if (!isOpen(puzzle, nr, nc)) continue;
       const b = nr * cols + nc;
       if (!seen.has(b)) { seen.add(b); stack.push(b); }
@@ -1426,6 +1449,7 @@ const SWASTIKA_VARIANTS = (() => {
 // pattern. (An edge between two blocked cells is invisible inside the black, and the board's own
 // border is not part of any pattern.)
 export function hasSwastika(puzzle, solution) {
+  if (topologyOf(puzzle) !== SQUARE) return false;        // (a pattern of the square grid)
   const { rows, cols } = puzzle;
   const n = SWASTIKA_WINDOW;
   if (rows < n || cols < n) return false;

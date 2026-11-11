@@ -4,7 +4,8 @@
 //
 // buildPrintRoot() fills the hidden #print-root element; style.css shows only that element
 // when printing (see "Printing" there).
-import { resolveShape, tileSpecs, edgesFromSolution, playableEdges, getEdge, EDGE_LINE } from './logic.js';
+import { resolveShape, tileSpecs, edgesFromSolution, playableEdges, getEdge, EDGE_LINE, topologyOf, topologyOfTile } from './logic.js';
+import { SQUARE, edgeEnds, shapeBox } from './topology.js';
 import { TIER_INFO } from './rating.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -47,6 +48,7 @@ export function planPrint({ count, perPage, includeKey }) {
 
 // One board as an SVG. With `solution`, the solution's tile boundaries are drawn bold.
 function boardSvg(puzzle, solution) {
+  if (topologyOf(puzzle) !== SQUARE) return shapedBoardSvg(puzzle, solution);
   const { rows, cols } = puzzle;
   const pad = 0.06;
   const svg = svgEl('svg', { viewBox: `${-pad} ${-pad} ${cols + 2 * pad} ${rows + 2 * pad}`, class: 'print-board' });
@@ -80,14 +82,72 @@ function boardSvg(puzzle, solution) {
   return svg;
 }
 
+// A board on a grid that is not square (hex...): every cell is a polygon, the grid lines are the playable
+// edges, and cells outside the board's shape are not drawn.
+function shapedBoardSvg(puzzle, solution) {
+  const { rows, cols } = puzzle;
+  const topo = topologyOf(puzzle);
+  const [x0, y0, x1, y1] = shapeBox(topo, rows, cols, puzzle.outside);
+  const pad = 0.06;
+  const svg = svgEl('svg', { viewBox: `${x0 - pad} ${y0 - pad} ${x1 - x0 + 2 * pad} ${y1 - y0 + 2 * pad}`, class: 'print-board' });
+  const outside = i => puzzle.outside?.[i] === 'x';
+  const pts = poly => poly.map(([x, y]) => `${x},${y}`).join(' ');
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (outside(i)) continue;
+      svgEl('polygon', { points: pts(topo.polygon(r, c)), fill: puzzle.grid[i] === '#' ? INK : '#fff', stroke: puzzle.grid[i] === '#' ? INK : 'none', 'stroke-width': 0.08, 'stroke-linejoin': 'miter' }, svg);
+    }
+  }
+  for (const [kind, r, c] of playableEdges(puzzle)) {
+    const { x1, y1, x2, y2 } = edgeEnds(topo, kind, r, c);
+    svgEl('line', { x1, y1, x2, y2, stroke: GRID, 'stroke-width': 0.025, 'stroke-dasharray': '0.07 0.06' }, svg);
+  }
+  const bold = (kind, r, c) => {
+    const { x1, y1, x2, y2 } = edgeEnds(topo, kind, r, c);
+    svgEl('line', { x1, y1, x2, y2, stroke: INK, 'stroke-width': 0.08, 'stroke-linecap': 'round' }, svg);
+  };
+  if (solution) {
+    const edges = edgesFromSolution(puzzle, solution);
+    for (const [kind, r, c] of playableEdges(puzzle)) if (getEdge(puzzle, edges, kind, r, c) === EDGE_LINE) bold(kind, r, c);
+  }
+  for (const [type, kind, r, c] of puzzle.givens ?? []) {
+    if (type === 'L') { bold(kind, r, c); continue; }
+    const { x1, y1, x2, y2 } = edgeEnds(topo, kind, r, c);
+    const [mx, my, d] = [(x1 + x2) / 2, (y1 + y2) / 2, 0.11];
+    svgEl('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d, stroke: INK, 'stroke-width': 0.05, 'stroke-linecap': 'round' }, svg);
+    svgEl('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d, stroke: INK, 'stroke-width': 0.05, 'stroke-linecap': 'round' }, svg);
+  }
+  // the frame: one segment for every side of a cell that faces outside the board's shape
+  const inShape = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && !outside(r * cols + c);
+  let d = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!inShape(r, c)) continue;
+      const poly = topo.polygon(r, c);
+      for (const dir of topo.dirsAt(r, c)) {
+        if (inShape(r + dir.dr, c + dir.dc)) continue;
+        const [x1, y1] = poly[dir.side], [x2, y2] = poly[(dir.side + 1) % poly.length];
+        d += `M${x1} ${y1}L${x2} ${y2}`;
+      }
+    }
+  }
+  svgEl('path', { d, fill: 'none', stroke: INK, 'stroke-width': 0.08, 'stroke-linecap': 'round' }, svg);
+  return svg;
+}
+
 // A picture of one allowed shape, `cellMm` millimetres per cell.
 function swatchSvg(spec, cellMm = 1.7) {
   const cells = resolveShape(spec);
-  const rows = Math.max(...cells.map(([r]) => r)) + 1, cols = Math.max(...cells.map(([, c]) => c)) + 1;
-  const svg = svgEl('svg', { viewBox: `-0.05 -0.05 ${cols + 0.1} ${rows + 0.1}`, class: 'print-swatch' });
+  const topo = topologyOfTile(spec);
+  const polys = cells.map(([r, c]) => topo.polygon(r, c));
+  const xs = polys.flat().map(p => p[0]), ys = polys.flat().map(p => p[1]);
+  const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
+  const cols = Math.max(...xs) - x0, rows = Math.max(...ys) - y0;
+  const svg = svgEl('svg', { viewBox: `${x0 - 0.05} ${y0 - 0.05} ${cols + 0.1} ${rows + 0.1}`, class: 'print-swatch' });
   svg.style.height = `${(rows + 0.1) * cellMm}mm`;
   svg.style.width = `${(cols + 0.1) * cellMm}mm`;
-  for (const [r, c] of cells) svgEl('rect', { x: c, y: r, width: 1, height: 1, fill: SWATCH, stroke: INK, 'stroke-width': 0.06 }, svg);
+  for (const poly of polys) svgEl('polygon', { points: poly.map(([x, y]) => `${x},${y}`).join(' '), fill: SWATCH, stroke: INK, 'stroke-width': 0.06 }, svg);
   return svg;
 }
 

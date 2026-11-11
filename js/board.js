@@ -7,18 +7,18 @@
 // Input: pointer events on the whole SVG, decoded geometrically. Where a press
 // lands decides the kind of gesture:
 //   on an edge  -> a tap: onEdgePress when the pointer is released without having moved
-//                  more than TAP_SLOP (cell units). A press that does move turns into a "cell"
+//                  more than the topology's tapSlop (cell units). A press that does move turns into a "cell"
 //                  gesture (below) that starts in the cell the press landed in, so a drag that
 //                  happens to start on an edge still works.
 //   on a cell   -> a "cell" gesture: onCellPress, then onCellEnter for every
 //                  other open cell dragged across, then onRelease (or onCancel if the
 //                  browser cancels the pointer).
 import {
-  EDGE_LINE, EDGE_CROSS, OPEN, isPlayableEdge, isOpen, getEdge, isGivenEdge,
+  EDGE_LINE, EDGE_CROSS, OPEN, isOpen, getEdge, isGivenEdge, playableEdges, topologyOf,
 } from './logic.js';
+import { edgeEnds as topoEdgeEnds, shapeBox } from './topology.js';
 
 const NS = 'http://www.w3.org/2000/svg';
-const TAP_SLOP = 0.25;    // a press on an edge counts as a tap if the pointer moves less than this (cell units)
 const SHAPE_COLORS = 4;     // how many shapes have their own color (--shape-N in style.css)
 const BAD_DELAY_MS = 300; // how long a wrong-shape (red) tint waits, so a double-click can finish first
 
@@ -30,12 +30,8 @@ function el(tag, attrs = {}, parent = null) {
   return node;
 }
 
-// Endpoints of an edge in cell units.
-function edgeEnds(kind, r, c) {
-  return kind === 'h'
-    ? { x1: c, y1: r, x2: c + 1, y2: r }
-    : { x1: c, y1: r, x2: c, y2: r + 1 };
-}
+// The points of a polygon as an SVG `points` / path string.
+const pointsOf = poly => poly.map(([x, y]) => `${x},${y}`).join(' ');
 
 export class Board {
   // callbacks: { onEdgePress(kind, r, c),
@@ -51,23 +47,26 @@ export class Board {
     clearTimeout(this._badTimer);
     this.puzzle = puzzle;
     const { rows, cols } = puzzle;
+    const topo = this.topo = topologyOf(puzzle);
+    const [bx0, by0, bx1, by1] = shapeBox(topo, rows, cols, puzzle.outside);   // the board's box in cell units (a hex board is not cols x rows)
+    const width = bx1 - bx0, height = by1 - by0;
     this.container.textContent = '';
 
     const pad = 0.08;
     const svg = el('svg', {
-      viewBox: `${-pad} ${-pad} ${cols + 2 * pad} ${rows + 2 * pad}`,
+      viewBox: `${bx0 - pad} ${by0 - pad} ${width + 2 * pad} ${height + 2 * pad}`,
       class: 'board-svg',
       role: 'img',
       'aria-label': `${rows} by ${cols} puzzle board`,
     });
-    svg.style.setProperty('--grid-cols', cols);
-    svg.style.setProperty('--grid-rows', rows);
+    svg.style.setProperty('--grid-cols', width);
+    svg.style.setProperty('--grid-rows', height);
 
     // Lines are thick with round caps, so one that ends on the grid's outer edge would poke
     // out past it. The line layers are clipped to the grid rectangle to keep them inside.
     const defs = el('defs', {}, svg);
     const clip = el('clipPath', { id: 'board-clip' }, defs);
-    el('rect', { x: 0, y: 0, width: cols, height: rows }, clip);
+    el('rect', { x: bx0, y: by0, width, height }, clip);
     // Walled-in regions that can never become a tile are hatched, not just tinted, so they cannot be
     // mistaken for the (also warm-coloured) shape tints, whatever one's colour vision. Colours: style.css.
     const hatch = el('pattern', { id: 'bad-hatch', width: 0.2, height: 0.2, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
@@ -77,8 +76,8 @@ export class Board {
     // The green glow of a solved board is clipped to the OUTSIDE of the board's shape (the whole plane minus its cells), so it
     // only glows outward and never over the blocked cells inside.
     const outsideClip = el('clipPath', { id: 'board-outside' }, defs);
-    let outsideD = `M-3 -3H${cols + 3}V${rows + 3}H-3Z`;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (puzzle.outside?.[r * cols + c] !== 'x') outsideD += `M${c} ${r}h1v1h-1Z`;
+    let outsideD = `M${bx0 - 3} ${by0 - 3}H${bx1 + 3}V${by1 + 3}H${bx0 - 3}Z`;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (puzzle.outside?.[r * cols + c] !== 'x') outsideD += `M${pointsOf(topo.polygon(r, c))}Z`;
     el('path', { d: outsideD, 'clip-rule': 'evenodd' }, outsideClip);
     const inside = { 'clip-path': 'url(#board-clip)' };
 
@@ -91,21 +90,24 @@ export class Board {
     const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
     this.hintLayer = el('g', { class: 'layer-hint', ...inside }, svg);   // ghost lines / cross for hints
-    if (puzzle.outside) {
-      // a board with an outline: the frame follows the shape, one segment for every side of a cell on the shape's edge
-      const inShape = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && puzzle.outside[r * cols + c] !== 'x';
+    if (puzzle.outside || topo.name !== 'square') {
+      // a board with an outline (or a hex board): the frame follows the shape, one segment for every side of a cell on the shape's edge
+      const inShape = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && puzzle.outside?.[r * cols + c] !== 'x';
       let d = '';
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (!inShape(r, c)) continue;
-          if (!inShape(r - 1, c)) d += `M${c} ${r}L${c + 1} ${r}`;
-          if (!inShape(r + 1, c)) d += `M${c} ${r + 1}L${c + 1} ${r + 1}`;
-          if (!inShape(r, c - 1)) d += `M${c} ${r}L${c} ${r + 1}`;
-          if (!inShape(r, c + 1)) d += `M${c + 1} ${r}L${c + 1} ${r + 1}`;
+          const poly = topo.polygon(r, c);
+          for (const dir of topo.dirsAt(r, c)) {
+            if (inShape(r + dir.dr, c + dir.dc)) continue;
+            const [x1, y1] = poly[dir.side], [x2, y2] = poly[(dir.side + 1) % poly.length];
+            d += `M${x1} ${y1}L${x2} ${y2}`;
+          }
         }
       }
-      el('path', { class: 'frame-glow', d, 'stroke-linecap': 'square', 'clip-path': 'url(#board-outside)' }, svg);          // shown only on a solved board (style.css)
-      el('path', { class: 'frame', d, 'stroke-linecap': 'square' }, svg);
+      const cap = topo.name === 'square' ? 'square' : 'round';       // square corners meet at right angles; other angles need round caps
+      el('path', { class: 'frame-glow', d, 'stroke-linecap': cap, 'clip-path': 'url(#board-outside)' }, svg);          // shown only on a solved board (style.css)
+      el('path', { class: 'frame', d, 'stroke-linecap': cap }, svg);
     } else {
       el('rect', { class: 'frame-glow', x: 0, y: 0, width: cols, height: rows, 'clip-path': 'url(#board-outside)' }, svg);
       el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
@@ -116,9 +118,9 @@ export class Board {
       for (let c = 0; c < cols; c++) {
         const open = puzzle.grid[r * cols + c] === OPEN;
         const outside = puzzle.outside?.[r * cols + c] === 'x';      // not part of the board's shape: not drawn at all
-        this.cellEls.push(el('rect', {
+        this.cellEls.push(el('polygon', {
           class: open ? 'cell' : outside ? 'cell outside' : 'cell blocked',
-          x: c, y: r, width: 1, height: 1,
+          points: pointsOf(topo.polygon(r, c)),
         }, open || outside ? cellLayer : blockedLayer));
       }
     }
@@ -126,19 +128,10 @@ export class Board {
     // Per-edge elements, keyed "h:r:c" / "v:r:c".
     this.segs = new Map();
     this.xs = new Map();
-    for (const kind of ['h', 'v']) {
-      const rMax = kind === 'h' ? rows : rows - 1;
-      const cMax = kind === 'h' ? cols - 1 : cols;
-      for (let r = 0; r <= rMax; r++) {
-        for (let c = 0; c <= cMax; c++) {
-          if (!isPlayableEdge(puzzle, kind, r, c)) continue;
-          this._buildEdge(kind, r, c, { dashLayer, segLayer, xLayer });
-        }
-      }
-    }
+    for (const [kind, r, c] of playableEdges(puzzle)) this._buildEdge(kind, r, c, { dashLayer, segLayer, xLayer });
 
     // a single rectangle that follows the pointer over open cells (hover hint: cells can be dragged across)
-    this.cellHoverEl = el('rect', { class: 'cell-hover', width: 1, height: 1, visibility: 'hidden' }, cellLayer);
+    this.cellHoverEl = el('polygon', { class: 'cell-hover', visibility: 'hidden' }, cellLayer);
     this.container.appendChild(svg);
     this.svg = svg;
     this._hoverKey = null;
@@ -148,7 +141,7 @@ export class Board {
 
   _buildEdge(kind, r, c, layers) {
     const key = `${kind}:${r}:${c}`;
-    const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+    const { x1, y1, x2, y2 } = topoEdgeEnds(this.topo, kind, r, c);
     el('line', { class: 'dash', x1, y1, x2, y2 }, layers.dashLayer);
 
     const seg = el('line', { class: 'seg', x1, y1, x2, y2 }, layers.segLayer);
@@ -174,21 +167,20 @@ export class Board {
 
   // The playable edge at a point, or null. An edge's target area is a thin
   // strip along its middle, inset from the vertices so neighbours never overlap.
+  // (A playable edge lies between two open cells, so the point is in one of them.)
   _edgeAt(x, y) {
-    const { rows, cols } = this.puzzle;
-    const half = 0.17, inset = 0.16;
-    const rr = Math.round(y), cc = Math.round(x);
-    if (Math.abs(y - rr) <= half && rr >= 0 && rr <= rows) {
-      const c = Math.floor(x), f = x - c;
-      if (c >= 0 && c < cols && f >= inset && f <= 1 - inset && isPlayableEdge(this.puzzle, 'h', rr, c)) {
-        return ['h', rr, c];
-      }
-    }
-    if (Math.abs(x - cc) <= half && cc >= 0 && cc <= cols) {
-      const r = Math.floor(y), f = y - r;
-      if (r >= 0 && r < rows && f >= inset && f <= 1 - inset && isPlayableEdge(this.puzzle, 'v', r, cc)) {
-        return ['v', r, cc];
-      }
+    const { puzzle, topo } = this;
+    const [r, c] = topo.cellAt(x, y);
+    if (!isOpen(puzzle, r, c)) return null;
+    const { half, inset } = topo.hit;
+    for (const d of topo.dirsAt(r, c)) {
+      if (!isOpen(puzzle, r + d.dr, c + d.dc)) continue;
+      const kind = d.kind, er = r + d.kr, ec = c + d.kc;
+      const { x1, y1, x2, y2 } = topoEdgeEnds(topo, kind, er, ec);
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      const along = (x - x1) * ux + (y - y1) * uy, across = Math.abs(-(x - x1) * uy + (y - y1) * ux);
+      if (across <= half && along >= inset && along <= len - inset) return [kind, er, ec];
     }
     return null;
   }
@@ -196,7 +188,7 @@ export class Board {
   // Index of the open cell at a point, or -1.
   _cellAt(x, y) {
     const { rows, cols } = this.puzzle;
-    const r = Math.floor(y), c = Math.floor(x);
+    const [r, c] = this.topo.cellAt(x, y);
     return isOpen(this.puzzle, r, c) && r < rows && c < cols ? r * cols + c : -1;
   }
 
@@ -213,8 +205,7 @@ export class Board {
     if (!this.cellHoverEl) return;
     if (cell < 0) { this.cellHoverEl.setAttribute('visibility', 'hidden'); return; }
     const { cols } = this.puzzle;
-    this.cellHoverEl.setAttribute('x', cell % cols);
-    this.cellHoverEl.setAttribute('y', Math.floor(cell / cols));
+    this.cellHoverEl.setAttribute('points', pointsOf(this.topo.polygon(Math.floor(cell / cols), cell % cols)));
     this.cellHoverEl.setAttribute('visibility', 'visible');
   }
 
@@ -258,7 +249,7 @@ export class Board {
       }
       if (mode === 'edge') {
         tap.moved = Math.max(tap.moved, Math.hypot(x - tap.from[0], y - tap.from[1]));
-        if (tap.moved < TAP_SLOP || tap.cell < 0) return;
+        if (tap.moved < this.topo.tapSlop || tap.cell < 0) return;
         // it is a drag, not a tap: carry on as a cell drag that started where the press landed
         mode = 'cell';
         lastCell = tap.cell;
@@ -286,7 +277,7 @@ export class Board {
       if (wasEdge) {
         const t = tap;
         tap = null;
-        if (!cancelled && t.moved < TAP_SLOP) this.cb.onEdgePress(...t.edge);
+        if (!cancelled && t.moved < this.topo.tapSlop) this.cb.onEdgePress(...t.edge);
         return;
       }
       if (cancelled) this.cb.onCancel(); else this.cb.onRelease();
@@ -356,18 +347,18 @@ export class Board {
     mark(tile, 'hint-tile');
     mark(target, 'hint-target');
     for (const [kind, r, c] of lines) {
-      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      const { x1, y1, x2, y2 } = topoEdgeEnds(this.topo, kind, r, c);
       el('line', { class: 'hint-line', x1, y1, x2, y2 }, this.hintLayer);
     }
     for (const [kind, r, c] of crosses) {
-      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      const { x1, y1, x2, y2 } = topoEdgeEnds(this.topo, kind, r, c);
       const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, d = 0.15;
       const g = el('g', { class: 'hint-x' }, this.hintLayer);
       el('line', { x1: mx - d, y1: my - d, x2: mx + d, y2: my + d }, g);
       el('line', { x1: mx - d, y1: my + d, x2: mx + d, y2: my - d }, g);
     }
     for (const [kind, r, c] of unknown) {                 // an edge to look at: a neutral "?", not yet a line or a ✕
-      const { x1, y1, x2, y2 } = edgeEnds(kind, r, c);
+      const { x1, y1, x2, y2 } = topoEdgeEnds(this.topo, kind, r, c);
       const g = el('g', { class: 'hint-unknown' }, this.hintLayer);
       el('circle', { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, r: 0.22 }, g);
       const t = el('text', { x: (x1 + x2) / 2, y: (y1 + y2) / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 0.34 }, g);
@@ -375,7 +366,7 @@ export class Board {
     }
     if (marker !== null) {
       const { cols } = this.puzzle;
-      const cx = (marker % cols) + 0.5, cy = Math.floor(marker / cols) + 0.5;
+      const [cx, cy] = this.topo.center(Math.floor(marker / cols), marker % cols);
       const g = el('g', { class: 'hint-marker' }, this.hintLayer);
       el('circle', { cx, cy, r: 0.26 }, g);
       const t = el('text', {

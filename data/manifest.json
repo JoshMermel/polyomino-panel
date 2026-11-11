@@ -30,6 +30,10 @@
       "blurb": "Boards that aren't plain squares."
     },
     {
+      "name": "Bonus: hexes",
+      "blurb": "Hexagonal cells."
+    },
+    {
       "name": "Bonus: giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
     }
@@ -169,6 +173,15 @@
       "blurb": "Boards that aren't plain squares.",
       "file": "bonus-shapes.csv",
       "count": 400
+    },
+    {
+      "id": "bonus-hexes",
+      "group": "Bonus: hexes",
+      "title": "Bonus: hexes",
+      "label": "Hexes",
+      "blurb": "Hexagonal cells.",
+      "file": "bonus-hexes.csv",
+      "count": 301
     },
     {
       "id": "bonus-giants",

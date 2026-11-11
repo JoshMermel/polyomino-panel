@@ -1145,7 +1145,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
   for (const book of manifest.books) {
     const ps = parseCsv(readFileSync(new URL(`../data/${book.file}`, import.meta.url), 'utf8'));
     for (const p of ps) {
-      const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols)}`;      // rotations and mirror images count as the same puzzle
+      const key = `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols, p.tile, p.outside)}`;      // rotations and mirror images count as the same puzzle
       if (!p.givens?.length) {       // (a board with given edges is a different puzzle: the clue books reuse near-empty boards)
         assert.ok(!seen.has(key), `${book.id}/${p.name} appears in more than one book`);
         seen.add(key);
@@ -1159,7 +1159,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     if (book.id === 'intro' || book.id.startsWith('bonus')) {
       assert.equal(book.group, {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: shapes',
+        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: shapes', 'bonus-hexes': 'Bonus: hexes',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
       for (const p of ps) {
@@ -1168,10 +1168,26 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         if (book.id === 'bonus-clues') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
         else if (book.id === 'bonus-shapes') assert.ok(p.rows >= 5 && p.cols >= 5 && p.rows <= 12 && p.cols <= 12, `${p.name}: a board of a sensible size`);
+        else if (book.id === 'bonus-hexes') {
+          assert.ok(p.tile.startsWith('hex:') && tileSpecs(p.tile).length === 1, `${p.name}: one hex tile`);
+          assert.ok(p.rows === p.cols && p.rows >= 7 && p.rows <= 11 && p.outside, `${p.name}: a hexagon of side 4 to 6 (a ${p.rows}x${p.cols} array with its corners outside)`);
+        }
         else if (book.id === 'bonus-giants') {
           assert.ok(p.rows === 16 && p.cols === 16, `${p.name}: a 16x16 board`);
           assert.ok(tileSpecs(p.tile).length <= 2, `${p.name}: one or two shapes`);
         }
+      }
+      if (book.id === 'bonus-hexes') {
+        assert.ok(ps.length >= 200, 'the hex book is a good size');
+        for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
+          const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
+          const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;
+          assert.ok(share <= (p.tier === 'Beginner' || p.tier === 'Expert' ? 0.25 : 0.17) + 1e-9, `${p.name}: ${p.tier} puzzle with ${Math.round(share * 100)}% blocked`);
+          assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
+        }
+        assert.ok(new Set(ps.map(p => p.tile)).size >= 20, 'the hex book mixes many tiles');
+        assert.ok(['Beginner', 'Medium', 'Hard', 'Expert'].every(t => ps.some(p => p.tier === t)), 'the hex book runs through every tier');
+        assert.ok(ps.every(p => !hasSwastika(p, p.solution)), 'no swastika filter on hexes: it just returns false');
       }
       if (book.id === 'bonus-shapes') {
         assert.ok(ps.length >= 300, 'the shapes book is a good size');
@@ -1275,7 +1291,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: giants']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: hexes', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

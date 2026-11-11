@@ -155,6 +155,14 @@
       "blurb": "Boards that aren't plain squares."
     },
     {
+      "name": "Bonus: hexes",
+      "idPrefix": "bonus-hexes",
+      "source": "hexes.csv",
+      "title": "Bonus: hexes",
+      "label": "Hexes",
+      "blurb": "Hexagonal cells."
+    },
+    {
       "name": "Bonus: giants",
       "idPrefix": "bonus-giants",
       "source": "giants.csv",
