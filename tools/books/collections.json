@@ -12,6 +12,8 @@
     8,
     10
   ],
+  "_sizeLabels": "What the book picker calls each board size (the real size is the book's dims, shown as a tooltip). Hexes and Triangles have the same three names, by number of cells.",
+  "sizeLabels": { "6": "Small", "8": "Medium", "10": "Large" },
   "perBook": 400,
   "_sparseShare": "Within each shape and tier a book only draws from the sparsest share of the puzzles (fewest blocked cells), as far as that leaves enough: the original L-panel puzzles have few black squares, and a book that takes puzzles by difficulty alone is mostly dense.",
   "sparseShare": 0.5,
@@ -25,7 +27,7 @@
   "_minBoardDistance": "A book keeps only one of a family of siblings: puzzles with the same tile spec whose blocked cells differ in at most this share of the board (0.08 = 5 cells on 8x8), after any rotation or reflection. Short books are topped up with other puzzles.",
   "minBoardDistance": 0.08,
   "_sharedTileShare": "The other sibling test, by board size: two puzzles with the same tile spec are siblings when at least this share of their tiles sit in exactly the same cells (after any rotation or reflection of the board). Higher on small boards, where a few tiles repeat by chance. Two Beginner puzzles are never siblings by this test.",
-  "sharedTileShare": { "6": 0.85, "8": 0.6, "10": 0.5, "12": 0.5 },
+  "sharedTileShare": { "6": 0.85, "8": 0.6, "10": 0.5 },
   "_groupKeys": "A group may override tierWeights, and may set tierMaxBlocked: a looser blocked-cell cap for some tiers (the Beginner and Expert puzzles of the sparse books need more blocked cells than the 17% the rest use, so every book can have the same share of each tier).",
   "_maxLineShare": "A tier holds at most this fraction of its puzzles in line-piece puzzles (domino, I tromino, I tetromino, I pentomino; pairs of only those). On sparse boards they are almost the only shapes with Beginner puzzles, so a book's opening was mostly them. The tier gets a little smaller instead of refilling. Like shapeWeights, published puzzles are only dropped with --trim.",
   "maxLineShare": 0.3,
@@ -78,16 +80,14 @@
       "perBook": {
         "6": 250,
         "8": 500,
-        "10": 500,
-        "12": 500
+        "10": 500
       },
       "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
       "blurb": "Every tile is the same shape.",
       "boardSizes": [
         6,
         8,
-        10,
-        12
+        10
       ]
     },
     {
@@ -99,16 +99,14 @@
       "perBook": {
         "6": 250,
         "8": 500,
-        "10": 500,
-        "12": 500
+        "10": 500
       },
       "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
       "blurb": "Each puzzle uses two tile shapes.",
       "boardSizes": [
         6,
         8,
-        10,
-        12
+        10
       ]
     },
     {
@@ -129,6 +127,27 @@
         8,
         10
       ]
+    },
+    {
+      "name": "Hexes",
+      "idPrefix": "hexes",
+      "_sources": "Books assembled by hand (tools/make_grid_book.mjs) and copied as they are: one per size, Small, Medium and Large.",
+      "sources": [
+        { "id": "s", "label": "Small", "source": "hexes-s.csv", "dims": "hexagon of 4" },
+        { "id": "m", "label": "Medium", "source": "hexes-m.csv", "dims": "hexagon of 5" },
+        { "id": "l", "label": "Large", "source": "hexes-l.csv", "dims": "hexagon of 6" }
+      ],
+      "blurb": "Hexagonal cells, cut into polyhex tiles."
+    },
+    {
+      "name": "Triangles",
+      "idPrefix": "triangles",
+      "sources": [
+        { "id": "s", "label": "Small", "source": "triangles-s.csv", "dims": "50 to 64 triangles" },
+        { "id": "m", "label": "Medium", "source": "triangles-m.csv", "dims": "72 to 100 triangles" },
+        { "id": "l", "label": "Large", "source": "triangles-l.csv", "dims": "144 to 216 triangles" }
+      ],
+      "blurb": "Triangular cells, cut into polyiamond tiles."
     },
     {
       "name": "Bonus: symmetric voids",
@@ -153,22 +172,6 @@
       "title": "Bonus: shapes",
       "label": "Shapes",
       "blurb": "Boards that aren't plain squares."
-    },
-    {
-      "name": "Bonus: hexes",
-      "idPrefix": "bonus-hexes",
-      "source": "hexes.csv",
-      "title": "Bonus: hexes",
-      "label": "Hexes",
-      "blurb": "Hexagonal cells."
-    },
-    {
-      "name": "Bonus: triangles",
-      "idPrefix": "bonus-triangles",
-      "source": "triangles.csv",
-      "title": "Bonus: triangles",
-      "label": "Triangles",
-      "blurb": "Triangular cells."
     },
     {
       "name": "Bonus: giants",

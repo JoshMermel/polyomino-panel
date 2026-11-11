@@ -870,7 +870,7 @@ function renderBookPicker() {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
   // Sections in the manifest's order, then any group a book names that the manifest doesn't list. All the Bonus groups
-  // are one section, "Bonus". A section whose books are only board sizes (6×6, 8×8, ...) is one row of size buttons.
+  // are one section, "Bonus". A section whose books are only board sizes (Small, Medium, Large) is one row of size buttons.
   const sectionOf = g => (g.startsWith('Bonus') ? 'Bonus' : g);
   const names = [];
   for (const n of [...state.groups.map(g => g.name), ...state.sets.map(s => s.group)]) if (!names.includes(sectionOf(n))) names.push(sectionOf(n));
@@ -884,7 +884,7 @@ function renderBookPicker() {
     const info = state.groups.find(g => sectionOf(g.name) === name);
     const blurb = name === 'Bonus' ? '' : info?.blurb;
     const blurbShownByBook = idxs.length === 1 && state.sets[idxs[0]].blurb === blurb;     // "Start here"
-    const sizesOnly = idxs.length > 1 && idxs.every(i => /^\d+×\d+$/.test(state.sets[i].label ?? ''));
+    const sizesOnly = idxs.length > 1 && idxs.every(i => state.sets[i].dims);
     if (sizesOnly) {
       sec.append(el('h3', '', name));                     // a header like the others, then one button per board size across the row
       const row = el('div', 'bp-multi');
@@ -895,10 +895,10 @@ function renderBookPicker() {
         const btn = el('button', 'bp-size' + (i === state.setIdx ? ' bp-current' : ''), set.label);
         btn.type = 'button';
         if (i === state.setIdx) btn.setAttribute('aria-current', 'true');
-        btn.title = `${name}, ${set.label}: ${set.count ?? set.puzzles?.length ?? ''} puzzles`;
+        btn.title = `${name}, ${set.label} (${set.dims}): ${set.count ?? set.puzzles?.length ?? ''} puzzles`;
         btn.addEventListener('click', () => chooseBook(i));
         sizes.append(btn);
-        progress.push({ i, show: (solved, total) => { btn.title = `${name}, ${set.label}: ${solved ? `${solved} / ${total} solved` : `${total} puzzles`}`; btn.classList.toggle('bp-size-done', solved === total); } });
+        progress.push({ i, show: (solved, total) => { btn.title = `${name}, ${set.label} (${set.dims}): ${solved ? `${solved} / ${total} solved` : `${total} puzzles`}`; btn.classList.toggle('bp-size-done', solved === total); } });
       }
       row.append(sizes);
       sec.append(row);

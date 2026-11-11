@@ -1,7 +1,8 @@
-// Pick a bonus book for a grid that is not square (tools/books/hexes.csv or triangles.csv, source books) from pools made by
+// Pick the books for a grid that is not square (tools/books/hexes-{s,m,l}.csv or triangles-{s,m,l}.csv, source books: Small,
+// Medium and Large by the number of cells on the board) from pools made by
 // tools/make_shaped.mjs (--shape hexagon4 --tile hex:h3b, --shape trihexagon3 --tile tri:i4a ...; the board is the first part of a
 // puzzle's name).
-//   node tools/make_grid_book.mjs hex|tri <directory of make_shaped CSVs> [size 300]
+//   node tools/make_grid_book.mjs hex|tri <directory of make_shaped CSVs> [puzzles per book 150]
 // Drops duplicates (up to rotation and reflection of the board), keeps the main books' blocked-cell caps, gives every tier
 // its usual share, shares each tier out over the board sizes and, inside a board, over the tile shapes in rounds (the sparsest
 // puzzle of a tile first), and sorts by tier then score with the shapes mixed locally.
@@ -11,20 +12,22 @@ import { canonicalGrid } from '../js/generator.js';
 import { TIERS } from '../js/rating.js';
 import { spreadByTier, weightedAllocation } from './lib/pick.mjs';
 import { boardShape } from './lib/board_shapes.mjs';
-const grid = process.argv[2], dir = process.argv[3], max = Number(process.argv[4] ?? 300);
+const grid = process.argv[2], dir = process.argv[3], max = Number(process.argv[4] ?? 150);
 // per grid: how much each board shape counts, which tiles are dull (straight strips: one technique over and over), and the book's file and blurb
 const CONFIG = {
   hex: {
     boardWeight: { hexagon4: 1, hexagon5: 1.5, hexagon6: 2 },                    // bigger boards get more puzzles
     dull: ['hex:h2', 'hex:h3a', 'hex:h4a', 'hex:h5a'],
-    file: 'hexes.csv', prefix: 'hexes',
-    header: '# Hexes: hexagonal cells (a hexagon-shaped board of 4, 5 or 6 cells a side), cut into polyhex tiles. Made by tools/make_shaped.mjs; the corners of the array are outside the board.\n',
+    prefix: 'hexes',
+    sizes: { s: ['hexagon4'], m: ['hexagon5'], l: ['hexagon6'] },
+    header: '# Hexes, {size}: hexagonal cells (a hexagon-shaped board of {side} cells a side), cut into polyhex tiles. Made by tools/make_shaped.mjs; the corners of the array are outside the board.\n',
   },
   tri: {
     boardWeight: { trihexagon3: 1, trihexagon4: 1.5, trihexagon5: 1.2, trihexagon6: 0.5, tritriangle8: 1, tritriangle10: 1.5, tritriangle12: 0.5, trirhombus5: 1, trirhombus6: 1.5 },
     dull: ['tri:i3', 'tri:i4a', 'tri:i5a', 'tri:i6a'],
-    file: 'triangles.csv', prefix: 'tri',
-    header: '# Triangles: triangular cells on hexagon, triangle and rhombus boards, cut into polyiamond tiles. Made by tools/make_shaped.mjs; cells outside a board are blocked and not drawn.\n',
+    prefix: 'triangles',
+    sizes: { s: ['trihexagon3', 'trirhombus5', 'tritriangle8'], m: ['trirhombus6', 'trihexagon4', 'tritriangle10'], l: ['trihexagon5', 'tritriangle12', 'trihexagon6'] },
+    header: '# Triangles, {size}: triangular cells on hexagon, triangle and rhombus boards, cut into polyiamond tiles. Made by tools/make_shaped.mjs; cells outside a board are blocked and not drawn.\n',
   },
 }[grid];
 if (!CONFIG) throw new Error('usage: make_grid_book.mjs hex|tri <pools directory> [size]');
@@ -77,16 +80,21 @@ const pickBalanced = (list, n) => {
   });
   return out;
 };
-let picks = [];
-for (const tier of TIERS) {
-  const cands = all.filter(p => p.tier === tier);
-  const n = Math.min(Math.round(max * TIER_SHARE[tier]), cands.length);
-  picks.push(...pickBalanced(cands, n));
-  console.log(`${tier.padEnd(9)} ${n} of ${cands.length} candidates`);
+const SIZE_NAME = { s: 'small', m: 'medium', l: 'large' };
+for (const [size, boards] of Object.entries(CONFIG.sizes)) {
+  let picks = [];
+  const inSize = all.filter(p => boards.includes(p.shape));
+  for (const tier of TIERS) {
+    const cands = inSize.filter(p => p.tier === tier);
+    const n = Math.min(Math.round(max * TIER_SHARE[tier]), cands.length);
+    picks.push(...pickBalanced(cands, n));
+    console.log(`${size} ${tier.padEnd(9)} ${n} of ${cands.length} candidates`);
+  }
+  picks.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
+  const spread = spreadByTier(picks, { key: p => p.tile });
+  const book = spread.map((p, i) => { const { shape, ...rest } = p; return { ...rest, name: `${CONFIG.prefix}-${size}_${String(i + 1).padStart(3, '0')}` }; });
+  const header = CONFIG.header.replace('{size}', SIZE_NAME[size]).replace('{side}', boards.map(b => b.replace(/\D+/, '')).join(', '));
+  writeFileSync(new URL(`./books/${CONFIG.prefix}-${size}.csv`, import.meta.url), header + toCsv(book));
+  const count = f => book.filter(f).length;
+  console.log(size, book.length, 'puzzles; tiers', TIERS.map(t => `${t} ${count(p => p.tier === t)}`).join(' '), '; boards', [...new Set(spread.map(p => p.shape))].sort().map(sh => `${sh} ${spread.filter(p => p.shape === sh).length}`).join(', '), '; tiles', new Set(book.map(p => p.tile)).size);
 }
-picks.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
-const spread = spreadByTier(picks, { key: p => p.tile });
-const book = spread.map((p, i) => { const { shape, ...rest } = p; return { ...rest, name: `${CONFIG.prefix === 'tri' ? 'triangles' : 'hexes'}_${String(i + 1).padStart(3, '0')}` }; });
-writeFileSync(new URL(`./books/${CONFIG.file}`, import.meta.url), CONFIG.header + toCsv(book));
-const count = f => book.filter(f).length;
-console.log(book.length, 'puzzles; tiers', TIERS.map(t => `${t} ${count(p => p.tier === t)}`).join(' '), '; boards', [...new Set(spread.map(p => p.shape))].sort().map(s => `${s} ${spread.filter(p => p.shape === s).length}`).join(', '), '; tiles', new Set(book.map(p => p.tile)).size, 'sizes', [...new Set(book.flatMap(p => tileSizes(p.tile)))].join(','));

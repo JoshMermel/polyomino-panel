@@ -1146,6 +1146,16 @@ test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks nev
   }
 });
 
+test('book picker: One shape, Two shapes, Three shapes, Hexes and Triangles each have Small, Medium and Large (with their real size as dims); no 12x12 books', () => {
+  const { books } = manifestOf();
+  for (const g of ['One shape', 'Two shapes', 'Three shapes', 'Hexes', 'Triangles']) {
+    const mine = books.filter(b => b.group === g);
+    assert.deepEqual(mine.map(b => b.label), ['Small', 'Medium', 'Large'], g);
+    assert.ok(mine.every(b => b.dims), `${g}: every size says what it is`);
+  }
+  assert.ok(!books.some(b => /12/.test(b.id)), 'no 12x12 books');
+});
+
 test('books: no puzzle is in two books; each book is one size and shape count, runs through the tiers, and mixes shapes', () => {
   const manifest = manifestOf();
   const seen = new Set(), names = new Set();
@@ -1163,53 +1173,58 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     // the Intro book (small, easy puzzles of one shape, mixed sizes), and the Bonus books
     // (puzzles with pre-drawn edges, symmetric voids or giant boards) are special: no size or sparseness rules, but every
     // puzzle must be uniquely solvable
-    if (book.id === 'intro' || book.id.startsWith('bonus')) {
-      assert.equal(book.group, {
+    const gridKind = book.id.startsWith('hexes-') ? 'hexes' : book.id.startsWith('triangles-') ? 'triangles' : null;      // Hexes and Triangles: Small, Medium, Large
+    if (book.id === 'intro' || book.id.startsWith('bonus') || gridKind) {
+      assert.equal(book.group, gridKind ? { hexes: 'Hexes', triangles: 'Triangles' }[gridKind] : {
         intro: 'Intro', 'bonus-voids': 'Bonus: symmetric voids', 'bonus-clues': 'Bonus: clues',
-        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: shapes', 'bonus-hexes': 'Bonus: hexes', 'bonus-triangles': 'Bonus: triangles',
+        'bonus-giants': 'Bonus: giants', 'bonus-shapes': 'Bonus: shapes',
       }[book.id]);
       assert.ok(ps.length >= 20, `${book.id}: a reasonable size`);
+      const sizeKey = book.id.split('-')[1];                  // s, m or l (Hexes and Triangles)
       for (const p of ps) {
         const sols = solveWithGivens(p, 2);
         assert.ok(sols.length === 1 && sols[0] === p.solution, `${book.id}/${p.name} is not uniquely solvable`);
         if (book.id === 'bonus-clues') assert.ok(p.givens?.length >= 1, `${book.id}/${p.name} has no given edges`);
         else if (book.id === 'intro') assert.equal(p.tier, 'Beginner');
         else if (book.id === 'bonus-shapes') assert.ok(p.rows >= 5 && p.cols >= 5 && p.rows <= 12 && p.cols <= 12, `${p.name}: a board of a sensible size`);
-        else if (book.id === 'bonus-hexes') {
+        else if (gridKind === 'hexes') {
           assert.ok(p.tile.startsWith('hex:') && tileSpecs(p.tile).length === 1, `${p.name}: one hex tile`);
-          assert.ok(p.rows === p.cols && p.rows >= 7 && p.rows <= 11 && p.outside, `${p.name}: a hexagon of side 4 to 6 (a ${p.rows}x${p.cols} array with its corners outside)`);
+          assert.ok(p.rows === p.cols && p.rows === { s: 7, m: 9, l: 11 }[sizeKey] && p.outside, `${p.name}: a hexagon of side ${{ s: 4, m: 5, l: 6 }[sizeKey]} (a ${p.rows}x${p.cols} array with its corners outside)`);
         }
-        else if (book.id === 'bonus-triangles') {
+        else if (gridKind === 'triangles') {
           assert.ok(p.tile.startsWith('tri:') && tileSpecs(p.tile).length === 1, `${p.name}: one triangle tile`);
           assert.ok(p.outside, `${p.name}: a board with an outline`);
+          const cells = [...p.outside].filter(ch => ch !== 'x').length;      // Small 50 to 64 cells, Medium 72 to 100, Large 144 to 216
+          const [lo, hi] = { s: [50, 64], m: [72, 100], l: [144, 216] }[sizeKey];
+          assert.ok(cells >= lo && cells <= hi, `${p.name}: ${cells} cells is not a ${sizeKey} triangle board`);
         }
         else if (book.id === 'bonus-giants') {
           assert.ok(p.rows === 16 && p.cols === 16, `${p.name}: a 16x16 board`);
           assert.ok(tileSpecs(p.tile).length <= 2, `${p.name}: one or two shapes`);
         }
       }
-      if (book.id === 'bonus-hexes') {
-        assert.ok(ps.length >= 200, 'the hex book is a good size');
+      if (gridKind === 'hexes') {
+        assert.ok(ps.length >= 40, `${book.id}: a good size`);
         for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
           const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
           const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;
           assert.ok(share <= (p.tier === 'Beginner' || p.tier === 'Expert' ? 0.25 : 0.17) + 1e-9, `${p.name}: ${p.tier} puzzle with ${Math.round(share * 100)}% blocked`);
           assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
         }
-        assert.ok(new Set(ps.map(p => p.tile)).size >= 20, 'the hex book mixes many tiles');
-        assert.ok(['Beginner', 'Medium', 'Hard', 'Expert'].every(t => ps.some(p => p.tier === t)), 'the hex book runs through every tier');
+        assert.ok(new Set(ps.map(p => p.tile)).size >= 8, `${book.id}: mixes many tiles`);
+        assert.ok(['Beginner', 'Medium', 'Hard', 'Expert'].every(t => ps.some(p => p.tier === t)), `${book.id}: runs through every tier`);
         assert.ok(ps.every(p => !hasSwastika(p, p.solution)), 'no swastika filter on hexes: it just returns false');
       }
-      if (book.id === 'bonus-triangles') {
-        assert.ok(ps.length >= 200, 'the triangle book is a good size');
+      if (gridKind === 'triangles') {
+        assert.ok(ps.length >= 90, `${book.id}: a good size`);
         for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
           const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
           const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;
           assert.ok(share <= (p.tier === 'Beginner' || p.tier === 'Expert' ? 0.25 : 0.17) + 1e-9, `${p.name}: ${p.tier} puzzle with ${Math.round(share * 100)}% blocked`);
           assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
         }
-        assert.ok(new Set(ps.map(p => p.tile)).size >= 15, 'the triangle book mixes many tiles');
-        assert.ok(['Beginner', 'Medium', 'Hard'].every(t => ps.some(p => p.tier === t)), 'the triangle book runs up to Hard');
+        assert.ok(new Set(ps.map(p => p.tile)).size >= 12, `${book.id}: mixes many tiles`);
+        assert.ok(['Beginner', 'Medium', 'Hard'].every(t => ps.some(p => p.tier === t)), `${book.id}: runs up to Hard`);
       }
       if (book.id === 'bonus-shapes') {
         assert.ok(ps.length >= 300, 'the shapes book is a good size');
@@ -1233,6 +1248,8 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
     assert.ok(ps.every(p => tileSpecs(p.tile).length === shapesOf), `${book.id}: ${kind} shape(s)`);
     assert.equal(book.group, { one: 'One shape', two: 'Two shapes', three: 'Three shapes' }[kind]);
+    assert.equal(book.label, { 6: 'Small', 8: 'Medium', 10: 'Large' }[size], `${book.id}: sizes are Small, Medium, Large (no 12x12 books)`);
+    assert.equal(book.dims, `${size}×${size}`);
     // the one-, two- and three-shape books are the sparse ones: Medium and Hard puzzles have at most 17% blocked cells (22% in the
     // three-shape books), and the Beginner and Expert puzzles of the one- and two-shape books at most 25% (they need more blocked cells)
     const blockedShare = p => [...p.grid].filter(c => c === '#').length / p.grid.length;
@@ -1313,7 +1330,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
-  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: hexes', 'Bonus: triangles', 'Bonus: giants']);
+  assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Hexes', 'Triangles', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: shapes', 'Bonus: giants']);
   assert.ok(manifest.books.every(b => manifest.groups.some(g => g.name === b.group)));
   assert.ok(!manifest.groups.some(g => g.secondary), 'no group is tucked under "More books"');
 });

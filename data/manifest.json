@@ -18,6 +18,14 @@
       "blurb": "Each puzzle uses three tile shapes."
     },
     {
+      "name": "Hexes",
+      "blurb": "Hexagonal cells, cut into polyhex tiles."
+    },
+    {
+      "name": "Triangles",
+      "blurb": "Triangular cells, cut into polyiamond tiles."
+    },
+    {
       "name": "Bonus: symmetric voids",
       "blurb": "The boards are symmetric."
     },
@@ -28,14 +36,6 @@
     {
       "name": "Bonus: shapes",
       "blurb": "Boards that aren't plain squares."
-    },
-    {
-      "name": "Bonus: hexes",
-      "blurb": "Hexagonal cells."
-    },
-    {
-      "name": "Bonus: triangles",
-      "blurb": "Triangular cells."
     },
     {
       "name": "Bonus: giants",
@@ -55,101 +55,152 @@
     {
       "id": "one-6",
       "group": "One shape",
-      "title": "One shape · 6×6",
-      "label": "6×6",
+      "title": "One shape · Small (6×6)",
+      "label": "Small",
       "blurb": "",
+      "dims": "6×6",
       "file": "one-6.csv",
       "count": 250
     },
     {
       "id": "one-8",
       "group": "One shape",
-      "title": "One shape · 8×8",
-      "label": "8×8",
+      "title": "One shape · Medium (8×8)",
+      "label": "Medium",
       "blurb": "",
+      "dims": "8×8",
       "file": "one-8.csv",
       "count": 500
     },
     {
       "id": "one-10",
       "group": "One shape",
-      "title": "One shape · 10×10",
-      "label": "10×10",
+      "title": "One shape · Large (10×10)",
+      "label": "Large",
       "blurb": "",
+      "dims": "10×10",
       "file": "one-10.csv",
-      "count": 500
-    },
-    {
-      "id": "one-12",
-      "group": "One shape",
-      "title": "One shape · 12×12",
-      "label": "12×12",
-      "blurb": "",
-      "file": "one-12.csv",
       "count": 500
     },
     {
       "id": "two-6",
       "group": "Two shapes",
-      "title": "Two shapes · 6×6",
-      "label": "6×6",
+      "title": "Two shapes · Small (6×6)",
+      "label": "Small",
       "blurb": "",
+      "dims": "6×6",
       "file": "two-6.csv",
       "count": 250
     },
     {
       "id": "two-8",
       "group": "Two shapes",
-      "title": "Two shapes · 8×8",
-      "label": "8×8",
+      "title": "Two shapes · Medium (8×8)",
+      "label": "Medium",
       "blurb": "",
+      "dims": "8×8",
       "file": "two-8.csv",
       "count": 500
     },
     {
       "id": "two-10",
       "group": "Two shapes",
-      "title": "Two shapes · 10×10",
-      "label": "10×10",
+      "title": "Two shapes · Large (10×10)",
+      "label": "Large",
       "blurb": "",
+      "dims": "10×10",
       "file": "two-10.csv",
-      "count": 500
-    },
-    {
-      "id": "two-12",
-      "group": "Two shapes",
-      "title": "Two shapes · 12×12",
-      "label": "12×12",
-      "blurb": "",
-      "file": "two-12.csv",
       "count": 500
     },
     {
       "id": "three-6",
       "group": "Three shapes",
-      "title": "Three shapes · 6×6",
-      "label": "6×6",
+      "title": "Three shapes · Small (6×6)",
+      "label": "Small",
       "blurb": "",
+      "dims": "6×6",
       "file": "three-6.csv",
       "count": 300
     },
     {
       "id": "three-8",
       "group": "Three shapes",
-      "title": "Three shapes · 8×8",
-      "label": "8×8",
+      "title": "Three shapes · Medium (8×8)",
+      "label": "Medium",
       "blurb": "",
+      "dims": "8×8",
       "file": "three-8.csv",
       "count": 300
     },
     {
       "id": "three-10",
       "group": "Three shapes",
-      "title": "Three shapes · 10×10",
-      "label": "10×10",
+      "title": "Three shapes · Large (10×10)",
+      "label": "Large",
       "blurb": "",
+      "dims": "10×10",
       "file": "three-10.csv",
       "count": 300
+    },
+    {
+      "id": "hexes-s",
+      "group": "Hexes",
+      "title": "Hexes · Small",
+      "label": "Small",
+      "blurb": "Hexagonal cells, cut into polyhex tiles.",
+      "dims": "hexagon of 4",
+      "file": "hexes-s.csv",
+      "count": 49
+    },
+    {
+      "id": "hexes-m",
+      "group": "Hexes",
+      "title": "Hexes · Medium",
+      "label": "Medium",
+      "blurb": "Hexagonal cells, cut into polyhex tiles.",
+      "dims": "hexagon of 5",
+      "file": "hexes-m.csv",
+      "count": 143
+    },
+    {
+      "id": "hexes-l",
+      "group": "Hexes",
+      "title": "Hexes · Large",
+      "label": "Large",
+      "blurb": "Hexagonal cells, cut into polyhex tiles.",
+      "dims": "hexagon of 6",
+      "file": "hexes-l.csv",
+      "count": 151
+    },
+    {
+      "id": "triangles-s",
+      "group": "Triangles",
+      "title": "Triangles · Small",
+      "label": "Small",
+      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "dims": "50 to 64 triangles",
+      "file": "triangles-s.csv",
+      "count": 94
+    },
+    {
+      "id": "triangles-m",
+      "group": "Triangles",
+      "title": "Triangles · Medium",
+      "label": "Medium",
+      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "dims": "72 to 100 triangles",
+      "file": "triangles-m.csv",
+      "count": 121
+    },
+    {
+      "id": "triangles-l",
+      "group": "Triangles",
+      "title": "Triangles · Large",
+      "label": "Large",
+      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "dims": "144 to 216 triangles",
+      "file": "triangles-l.csv",
+      "count": 151
     },
     {
       "id": "bonus-voids",
@@ -177,24 +228,6 @@
       "blurb": "Boards that aren't plain squares.",
       "file": "bonus-shapes.csv",
       "count": 400
-    },
-    {
-      "id": "bonus-hexes",
-      "group": "Bonus: hexes",
-      "title": "Bonus: hexes",
-      "label": "Hexes",
-      "blurb": "Hexagonal cells.",
-      "file": "bonus-hexes.csv",
-      "count": 301
-    },
-    {
-      "id": "bonus-triangles",
-      "group": "Bonus: triangles",
-      "title": "Bonus: triangles",
-      "label": "Triangles",
-      "blurb": "Triangular cells.",
-      "file": "bonus-triangles.csv",
-      "count": 287
     },
     {
       "id": "bonus-giants",

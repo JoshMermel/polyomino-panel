@@ -115,8 +115,8 @@ for (const name of readdirSync(libDir)) {
 const boardKey = p => `${p.tile}|${canonicalGrid(p.grid, p.rows, p.cols, p.tile)}`;
 const reserved = new Set();
 for (const g of config.groups) {
-  if (!g.source) continue;
-  for (const p of parseCsv(readFileSync(new URL(`tools/books/${g.source}`, root), 'utf8'))) if (!p.givens?.length) reserved.add(boardKey(p));
+  for (const src of g.sources?.map(x => x.source) ?? (g.source ? [g.source] : []))
+    for (const p of parseCsv(readFileSync(new URL(`tools/books/${src}`, root), 'utf8'))) if (!p.givens?.length) reserved.add(boardKey(p));
 }
 for (let i = pool.length - 1; i >= 0; i--) if (reserved.has(boardKey(pool[i]))) pool.splice(i, 1);
 const shapeCount = p => tileSpecs(p.tile).length;
@@ -129,6 +129,10 @@ const bookSize = (g, size) => {
 const specs = [];
 for (const g of config.groups) {
   const common = { group: g.name, title: g.title ?? g.name, label: g.label ?? g.name, blurb: g.blurb ?? '', order: specs.length };
+  if (g.sources) {                      // several hand-assembled books, one per size (Small, Medium, Large)
+    for (const s of g.sources) specs.push({ ...common, id: `${g.idPrefix}-${s.id}`, title: `${g.name} · ${s.label}`, label: s.label, dims: s.dims, source: s.source, count: 0, order: specs.length });
+    continue;
+  }
   if (g.source) {                       // a hand-assembled book: a file in tools/books/ copied as it is
     specs.push({ ...common, id: g.idPrefix, source: g.source, count: 0 });
     continue;
@@ -138,10 +142,10 @@ for (const g of config.groups) {
       sizeWeights: g.sizeWeights ?? {}, count: g.perBook, maxBlocked: null, sparseShare: 1, first: true });
     continue;
   }
-  for (const size of g.boardSizes ?? config.sizes) {          // a group may add sizes (the sparse books also have a 12x12)
+  for (const size of g.boardSizes ?? config.sizes) {          // a group may choose its sizes
     specs.push({
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
-      title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,
+      title: `${g.name} · ${config.sizeLabels[size]} (${size}×${size})`, label: config.sizeLabels[size], dims: `${size}×${size}`,
       blurb: config.sizeBlurbs?.[size] ?? '', count: bookSize(g, size), maxBlocked: g.maxBlocked ?? null,
       tierMaxBlocked: g.tierMaxBlocked ?? null, tierWeights: g.tierWeights ?? config.tierWeights,
       sparseShare: g.sparseShare ?? config.sparseShare ?? 1, order: specs.length,
@@ -268,7 +272,7 @@ const buildOrder = [...specs].sort((a, b) => rank(a) - rank(b) || a.order - b.or
 for (const spec of buildOrder) {
   if (spec.source) {
     const puzzles = parseCsv(readFileSync(new URL(spec.source, new URL('tools/books/', root)), 'utf8'));
-    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles, target: puzzles.length, tourCount: 0, before: undefined });
+    books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb, ...(spec.dims ? { dims: spec.dims } : {}) }, puzzles, target: puzzles.length, tourCount: 0, before: undefined });
     continue;
   }
   if (spec.sizes) {                       // the Intro book: shares by board size, then shapes within each size
@@ -330,7 +334,7 @@ for (const spec of buildOrder) {
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || byScore(a, b));
   const spread = spreadByTier(rest, { key: spreadKey, recent: tour.map(spreadKey) });       // no long runs of one shape
-  books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
+  books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb, ...(spec.dims ? { dims: spec.dims } : {}) }, puzzles: [...tour, ...spread], target: spec.count, tourCount: tour.length, before });
 }
 
 books.sort((a, b) => a.order - b.order);          // manifest order = collections.json order
