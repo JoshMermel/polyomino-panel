@@ -168,7 +168,7 @@
       "label": "Shapes",
       "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L.",
       "file": "bonus-shapes.csv",
-      "count": 190
+      "count": 400
     },
     {
       "id": "bonus-giants",

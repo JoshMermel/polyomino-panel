@@ -1173,7 +1173,10 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         }
       }
       if (book.id === 'bonus-shapes') {
-        assert.ok(ps.some(p => p.rows !== p.cols), 'the shapes book has rectangles');
+        assert.ok(ps.length >= 300, 'the shapes book is a good size');
+        assert.ok(ps.filter(p => p.outside).length >= 0.8 * ps.length, 'almost every puzzle in the shapes book has an outline');
+        assert.ok(new Set(ps.map(p => p.tile)).size >= 15, 'the shapes book mixes many tile specs');
+        assert.ok(ps.some(p => tileSpecs(p.tile).length === 2), 'the shapes book has two-shape puzzles');
         assert.ok(ps.some(p => p.outside), 'the shapes book has boards with an outline');
         for (const p of ps.filter(q => q.outside)) assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
       }
