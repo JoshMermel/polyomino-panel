@@ -24,7 +24,7 @@
   --tile-bad-bg: rgba(224, 146, 90, 0.1);
   --bad: #d9732a;                          /* wrong marks and regions (vermillion; hatched, so not only a colour) */
   --bad-hatch: #e0925a;                    /* the hatching itself, a little softer than the marks */
-  --line-color: #333;                      /* the lines you draw */
+  --line-color: #111;                      /* the lines you draw: the frame's colour and width, so a line meets the frame and the blocked cells (which have the same colour) without a seam */
   --cell-hover: rgba(0, 0, 0, 0.09);       /* cell under the mouse (desktop) */
   --drag-bg: rgba(0, 0, 0, 0.18);          /* cells traced so far, not yet the tile shape */
   --drag-ok-bg: rgba(0, 114, 178, 0.38);   /* traced cells form the tile: release to draw it */
@@ -70,7 +70,7 @@
   --tile-bad-bg: rgba(255, 143, 77, 0.12);
   --bad: #e8905f;
   --bad-hatch: #e08a5e;
-  --line-color: #d8d8d8;
+  --line-color: #e8e8e8;
   --cell-hover: rgba(255, 255, 255, 0.14);
   --drag-bg: rgba(255, 255, 255, 0.22);
   --drag-ok-bg: rgba(86, 180, 233, 0.42);
@@ -223,7 +223,7 @@ select, input[type="number"] {
 
 .seg {
   stroke: var(--line-color);
-  stroke-width: 0.1;
+  stroke-width: 0.08;           /* as thick as the frame (and a blocked cell's oversize) */
   stroke-linecap: round;
   opacity: 0;
   pointer-events: none;
