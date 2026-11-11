@@ -4,6 +4,10 @@
 const SHAPES = {
   plus9: () => ({ rows: 9, cols: 9, keep: (r, c) => (r >= 3 && r < 6) || (c >= 3 && c < 6) }),
   octagon8: () => ({ rows: 8, cols: 8, keep: (r, c) => r + c >= 3 && r + (7 - c) >= 3 && (7 - r) + c >= 3 && (7 - r) + (7 - c) >= 3 }),
+  // donuts: a square with a square hole in the middle that is not part of the board (not drawn; the frame goes round it)
+  donut9: () => ({ rows: 9, cols: 9, keep: (r, c) => !(r >= 3 && r < 6 && c >= 3 && c < 6) }),
+  donut10: () => ({ rows: 10, cols: 10, keep: (r, c) => !(r >= 3 && r < 7 && c >= 3 && c < 7) }),
+  // a ring whose hole is blocked cells inside the board (drawn black)
   ring8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r >= 3 && r < 5 && c >= 3 && c < 5) }),
   lshape8: () => ({ rows: 8, cols: 8, keep: (r, c) => !(r < 4 && c >= 4) }),
 };
