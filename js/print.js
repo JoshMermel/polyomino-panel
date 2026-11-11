@@ -11,6 +11,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const INK = '#111', GRID = '#9a9a9a', SWATCH = '#cfcfcf';
 export const KEY_PER_PAGE = 6;           // answer-key boards per page
 export const MAX_PRINT = 200;
+export const SITE_URL = 'https://joshmermelstein.com/polyomino-panel/';   // linked from every page, so a PDF leads back to the puzzles (and a paper copy shows where)
 
 const svgEl = (tag, attrs, parent) => {
   const el = document.createElementNS(NS, tag);
@@ -113,7 +114,14 @@ export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, soluti
     for (let i = 0; i < list.length; i += k) {
       const page = div(`print-page k${k}`, root);
       const head = div('print-head', page);
-      div('print-brand', head, 'Polyomino Panel');
+      const brand = div('print-brand', head);
+      const link = (text, cls) => {
+        const a = document.createElement('a');
+        a.href = SITE_URL; a.textContent = text; a.className = cls;
+        return a;
+      };
+      brand.append(link('Polyomino Panel', 'print-name'));
+      head.append(link(SITE_URL.replace(/^https:\/\//, '').replace(/\/$/, ''), 'print-url'));
       div('print-book', head, `${bookName}${heading ? ` · ${heading}` : ''}`);
       const grid = div('print-grid', page);
       for (const id of list.slice(i, i + k)) {

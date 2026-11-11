@@ -544,6 +544,8 @@ select, input[type="number"] {
 #print-root .print-page:last-child { break-after: auto; }
 #print-root .print-head { display: flex; align-items: center; gap: 4mm; border-bottom: 0.4mm solid #111; padding-bottom: 2mm; }
 #print-root .print-brand { font-weight: 700; font-size: 5mm; }
+#print-root .print-name, #print-root .print-url { color: inherit; text-decoration: none; }
+#print-root .print-url { font-size: 3.2mm; color: #555; }
 #print-root .print-book { margin-left: auto; font-size: 3.6mm; color: #333; }
 #print-root .print-grid { display: grid; gap: 6mm 8mm; justify-items: center; align-content: start; }
 #print-root .k1 .print-grid, #print-root .k2 .print-grid { grid-template-columns: 1fr; }
