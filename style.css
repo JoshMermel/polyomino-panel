@@ -205,7 +205,7 @@ select, input[type="number"] {
 }
 
 .cell { fill: var(--cell-bg); }
-.cell.blocked { fill: var(--blocked-bg); stroke: var(--blocked-bg); stroke-width: 0.08; }   /* a little oversized, like a tile's thick walls: it then meets the board's frame (also 0.08) without a step */
+.cell.blocked { fill: var(--blocked-bg); stroke: var(--blocked-bg); stroke-width: 0.08; stroke-miterlimit: 1.5; }   /* (1.5: right angles and hex corners keep their sharp corners, but the 60 degree corner of a triangle is cut off instead of poking out past the frame as a spike) */   /* a little oversized, like a tile's thick walls: it then meets the board's frame (also 0.08) without a step */
 .cell.outside { fill: none; pointer-events: none; }   /* outside a shaped board (a plus sign...): not drawn */
 .cell.tile-ok { fill: var(--shape-fill, var(--shape-0-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
 .cell.shape-1 { --shape-fill: var(--shape-1-bg); }

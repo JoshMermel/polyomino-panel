@@ -137,7 +137,7 @@ function shapedBoardSvg(puzzle, solution) {
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
       if (outside(i)) continue;
-      svgEl('polygon', { points: pts(topo.polygon(r, c)), fill: puzzle.grid[i] === '#' ? INK : '#fff', stroke: puzzle.grid[i] === '#' ? INK : 'none', 'stroke-width': 0.08, 'stroke-linejoin': 'miter' }, svg);
+      svgEl('polygon', { points: pts(topo.polygon(r, c)), fill: puzzle.grid[i] === '#' ? INK : '#fff', stroke: puzzle.grid[i] === '#' ? INK : 'none', 'stroke-width': 0.08, 'stroke-linejoin': 'miter', 'stroke-miterlimit': 1.5 }, svg);
     }
   }
   for (const [kind, r, c] of playableEdges(puzzle)) {
