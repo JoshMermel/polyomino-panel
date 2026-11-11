@@ -61,7 +61,8 @@ export function canonicalGrid(grid, rows, cols, tile = 'L', outside = '') {
     for (let flip = 0; flip < 2; flip++) {
       for (let rot = 0; rot < topo.rotations; rot++) {
         const minR = Math.min(...cells.map(p => p[0])), minC = Math.min(...cells.map(p => p[1]));
-        variants.push(cells.map(([r, c, ch]) => [r - minR, c - minC, ch]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(p => p.join(',')).join(';'));
+        const [sr, sc] = topo.originShift(minR, minC);
+        variants.push(cells.map(([r, c, ch]) => [r - sr, c - sc, ch]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(p => p.join(',')).join(';'));
         cells = cells.map(([r, c, ch]) => [...topo.rotate([r, c]), ch]);
       }
       cells = cells.map(([r, c, ch]) => [...topo.reflect([r, c]), ch]);
@@ -110,6 +111,7 @@ function shuffle(arr, rng) {
 // null if none was found within the node budget.
 function randomPacking(rows, cols, tile, preBlocked, holes, rng, budget) {
   const orients = allOrientations(tile);
+  const topo = topologyOfTile(tile);
   const n = rows * cols;
   const assign = new Int32Array(n);
   for (let i = 0; i < n; i++) assign[i] = preBlocked[i] ? -1 : -2;
@@ -124,6 +126,7 @@ function randomPacking(rows, cols, tile, preBlocked, holes, rng, budget) {
 
     const options = [];
     for (const o of orients) {
+      if (!topo.okShift(r, c - o[0][1])) continue;      // (triangles must keep pointing the same way)
       const c0 = c - o[0][1];
       const cells = [];
       let ok = true;

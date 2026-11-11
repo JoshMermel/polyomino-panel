@@ -18,8 +18,12 @@
 //   Only "interior" edges (between two open cells) are playable; edges next to
 //   a blocked cell or the outer border are implicit walls.
 
-import { SQUARE, topologyOfTile, specBody, edgeBetween as topoEdgeBetween, edgeCellsOf } from './topology.js';
+import { SQUARE, HEX, TRI, topologyOfTile, specBody, edgeBetween as topoEdgeBetween, edgeCellsOf } from './topology.js';
 import { HEX_PATTERNS, HEX_LABELS, HEX_ORDER } from './hex_shapes.js';
+import { TRI_PATTERNS, TRI_LABELS, TRI_ORDER } from './tri_shapes.js';
+
+// each topology's named shapes
+const SHAPE_TABLES = { square: null, hex: { patterns: HEX_PATTERNS, labels: HEX_LABELS, order: HEX_ORDER }, tri: { patterns: TRI_PATTERNS, labels: TRI_LABELS, order: TRI_ORDER } };
 
 export { topologyOfTile };
 // The topology (square, hex...) a puzzle lives on, from its tile spec: see topology.js.
@@ -74,12 +78,14 @@ export const SHAPES = Object.fromEntries(
 
 // --- Shapes ----------------------------------------------------------------
 
-// Translate so min row = min col = 0 and sort row-major.
-function normalize(cells) {
+// Slide a shape to the origin (the grid's own origin: triangles may only move by even offsets, see
+// topology.js originShift) and sort row-major.
+function normalize(cells, topo = SQUARE) {
   const minR = Math.min(...cells.map(p => p[0]));
   const minC = Math.min(...cells.map(p => p[1]));
+  const [sr, sc] = topo.originShift(minR, minC);
   return cells
-    .map(([r, c]) => [r - minR, c - minC])
+    .map(([r, c]) => [r - sr, c - sc])
     .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 }
 
@@ -95,7 +101,7 @@ const shapeCache = new Map();
 export function resolveShape(spec) {
   if (shapeCache.has(spec)) return shapeCache.get(spec);
   const topo = topologyOfTile(spec), body = specBody(spec);
-  const named = topo === SQUARE ? NAMED_PATTERNS[body] : HEX_PATTERNS[body];
+  const named = topo === SQUARE ? NAMED_PATTERNS[body] : SHAPE_TABLES[topo.name].patterns[body];
   if (!named && !/^[Xx.]+(\/[Xx.]+)*$/.test(body)) throw new Error(`Unknown tile shape "${spec}"`);
   const cells = patternCells(named ?? body);
   if (!cells.length) throw new Error(`Tile pattern "${spec}" has no cells`);
@@ -106,7 +112,7 @@ export function resolveShape(spec) {
   const stack = [cells[0]];
   while (stack.length) {
     const [r, c] = stack.pop();
-    for (const d of topo.dirs) {
+    for (const d of topo.dirsAt(r, c)) {
       const n = [r + d.dr, c + d.dc];
       if (all.has(key(n)) && !seenCells.has(key(n))) { seenCells.add(key(n)); stack.push(n); }
     }
@@ -128,7 +134,7 @@ export function getOrientations(spec) {
   let cur = base;
   for (let flip = 0; flip < 2; flip++) {
     for (let rot = 0; rot < topo.rotations; rot++) {
-      const norm = normalize(cur);
+      const norm = normalize(cur, topo);
       seen.set(cellsKey(norm), norm);
       cur = cur.map(topo.rotate);
     }
@@ -199,7 +205,7 @@ export function sizeFeasible(spec, n) {
 
 // Which allowed shape (index into tileSpecs) is this set of cells, or -1.
 export function shapeIndexOf(spec, cells, cols) {
-  const key = cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols])));
+  const key = cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols]), topologyOfTile(spec)));
   return tileSpecs(spec).findIndex(sp => getOrientations(sp).some(o => cellsKey(o) === key));
 }
 
@@ -233,16 +239,16 @@ export function shapeName(spec) {
   const topo = topologyOfTile(spec);
   let labels = labelsByCanonical.get(topo.name);
   if (!labels) {
-    const table = topo === SQUARE ? SHAPE_LABELS : HEX_LABELS;
+    const table = topo === SQUARE ? SHAPE_LABELS : SHAPE_TABLES[topo.name].labels;
     labels = new Map(Object.keys(table).map(n => [canonicalKey(topo.prefix + n), table[n]]));
     labelsByCanonical.set(topo.name, labels);
   }
   const n = tileSize(spec);
-  return labels.get(canonicalKey(spec)) ?? (n === 1 ? (topo === SQUARE ? 'monomino' : 'monohex') : `${n}-cell shape`);
+  return labels.get(canonicalKey(spec)) ?? (n === 1 ? (topo === SQUARE ? 'monomino' : topo === HEX ? 'monohex' : 'triangle') : `${n}-cell shape`);
 }
 
 // The named shapes of a topology in menu order, as full specs ("L", "hex:h4a").
-export const shapeOrder = topo => (topo === SQUARE ? SHAPE_ORDER : HEX_ORDER.map(n => topo.prefix + n));
+export const shapeOrder = topo => (topo === SQUARE ? SHAPE_ORDER : SHAPE_TABLES[topo.name].order.map(n => topo.prefix + n));
 
 // --- Parsing ---------------------------------------------------------------
 
@@ -260,7 +266,7 @@ export function parseGivens(text, puzzle) {
   for (const item of text.split(';').map(x => x.trim()).filter(Boolean)) {
     const [type, kind, r, c] = item.split(':');
     const row = Number(r), col = Number(c);
-    if (!['L', 'X'].includes(type) || !['h', 'v'].includes(kind) || !Number.isInteger(row) || !Number.isInteger(col)) {
+    if (!['L', 'X'].includes(type) || !topologyOfTile(puzzle.tile).kinds.includes(kind) || !Number.isInteger(row) || !Number.isInteger(col)) {
       throw new Error(`Puzzle "${puzzle.name}": bad given edge "${item}"`);
     }
     if (!isPlayableEdge(puzzle, kind, row, col)) throw new Error(`Puzzle "${puzzle.name}": given edge "${item}" is not between two open cells`);
@@ -381,8 +387,9 @@ export const isOpen = (puzzle, r, c) =>
 // An edge is playable when both cells it separates are open: the cell (r, c) it is named for and the
 // neighbour across it (square 'h': the cell above, 'v': the cell to the left; see topology.js).
 export function isPlayableEdge(puzzle, kind, r, c) {
-  const [dr, dc] = topologyOf(puzzle).kindOffset[kind];
-  return isOpen(puzzle, r + dr, c + dc) && isOpen(puzzle, r, c);
+  const topo = topologyOf(puzzle);
+  const [dr, dc] = topo.kindOffset[kind];
+  return topo.hasEdge(kind, r, c) && isOpen(puzzle, r + dr, c + dc) && isOpen(puzzle, r, c);
 }
 
 export function getEdge(puzzle, edges, kind, r, c) {
@@ -436,7 +443,7 @@ export function analyze(puzzle, edges) {
     }
     let valid = false, shape = -1;               // shape: which allowed shape (index into tileSpecs) a valid tile is
     if (sizes.includes(cells.length)) {
-      const norm = normalize(cells.map(i => [Math.floor(i / cols), i % cols]));
+      const norm = normalize(cells.map(i => [Math.floor(i / cols), i % cols]), topo);
       valid = keys.has(cellsKey(norm));
       if (valid) shape = specs.length === 1 ? 0 : shapeIndexOf(tile, cells, cols);
     }
@@ -509,9 +516,11 @@ export function boardPlacements(tile, rows, cols) {
   let all = placementsCache.get(key);
   if (!all) {
     all = [];
+    const topo = topologyOfTile(tile);
     for (const o of allOrientations(tile)) {
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
+          if (!topo.okShift(r, c - o[0][1])) continue;      // (triangles must keep pointing the same way)
           const cells = [];
           for (const [dr, dc] of o) {
             const nr = r + dr, nc = c + dc - o[0][1];
@@ -760,6 +769,7 @@ function buildPlacements(puzzle, cell) {
   const out = [];
   for (const o of allOrientations(tile)) {
     for (const [ar, ac] of o) {            // which tile cell lands on `cell`
+      if (!topo.okShift(r0 - ar, c0 - ac)) continue;
       const cells = [];
       let ok = true;
       for (const [dr, dc] of o) {
@@ -880,10 +890,12 @@ const imbalanceCache = new Map();
 function tileImbalances(spec) {
   if (!imbalanceCache.has(spec)) {
     const set = new Set();
+    const flips = topologyOfTile(spec).flipsColor;      // moving a tile by one cell swaps its colours (squares) or not (triangles)
     for (const o of getOrientations(spec)) {
       let i = 0;
       for (const [r, c] of o) i += ((r + c) & 1) === 0 ? 1 : -1;
-      set.add(i); set.add(-i);
+      set.add(i);
+      if (flips) set.add(-i);
     }
     imbalanceCache.set(spec, [...set]);
   }
@@ -1326,7 +1338,7 @@ export function cellsFormTile(puzzle, cells) {
   const { cols, tile } = puzzle;
   if (new Set(cells).size !== cells.length || !tileSizes(tile).includes(cells.length)) return false;
   const keys = new Set(allOrientations(tile).map(cellsKey));
-  return keys.has(cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols]))));
+  return keys.has(cellsKey(normalize(cells.map(i => [Math.floor(i / cols), i % cols]), topologyOf(puzzle))));
 }
 
 // Every playable edge between one of `cells` and an open cell outside the set,

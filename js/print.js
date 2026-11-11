@@ -10,8 +10,7 @@ import { TIER_INFO } from './rating.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const INK = '#111', GRID = '#9a9a9a', SWATCH = '#cfcfcf';
-export const KEY_PER_PAGE = 6;           // answer-key boards per page
-export const MAX_PRINT = 200;
+export const MAX_PRINT = 500;
 export const SITE_URL = 'https://joshmermelstein.com/polyomino-panel/';   // linked from every page, so a PDF leads back to the puzzles (and a paper copy shows where)
 
 const svgEl = (tag, attrs, parent) => {
@@ -39,16 +38,58 @@ export function parseSelection(text, total) {
   return { ids: [...ids].sort((x, y) => x - y) };
 }
 
-// How many pages a booklet takes.
-export function planPrint({ count, perPage, includeKey }) {
-  const puzzlePages = Math.ceil(count / perPage);
-  const keyPages = includeKey ? Math.ceil(count / KEY_PER_PAGE) : 0;
-  return { puzzlePages, keyPages };
+// --- Page layout ------------------------------------------------------------------------------------------
+// Boards are laid out by CELL SIZE, not by a fixed count: every board in the selection is drawn with cells of about
+// `SIZES[size]` millimetres (a puzzle needs room to draw in, an answer only has to show its bold tile outlines), and a page
+// carries as many columns and rows of them as fit. (A 6x6 puzzle then gets 16 to a page instead of 6, its answer 36.) The
+// printable area is the smaller of A4 and Letter minus the 12 mm margins (see style.css), so the layout is the same on both.
+export const SIZES = {
+  comfortable: { label: 'Comfortable', puzzle: 6, answer: 3.5 },
+  compact: { label: 'Compact', puzzle: 4.5, answer: 3 },
+};
+export const PAGE = { w: 186, h: 255, head: 14, caption: 8.5, colGap: 8, rowGap: 6 };       // mm
+const BOARD_PAD = 0.12;       // a board's svg is this many cell units wider and taller than its cells (see boardSvg)
+
+// A puzzle's board size in cell units (a hex or triangle board is not cols x rows cells).
+export function boardUnits(puzzle) {
+  const [x0, y0, x1, y1] = shapeBox(topologyOf(puzzle), puzzle.rows, puzzle.cols, puzzle.outside);
+  return [x1 - x0 + BOARD_PAD, y1 - y0 + BOARD_PAD];
+}
+
+// The grid of boards on a page for these puzzles: { cellMm, cols, rows, perPage }. The cell size is `cellMm`, shrunk if the
+// biggest board would not fit on a page at that size, and (`taper`, for puzzles) a little smaller on boards wider than 8
+// cells, down to three quarters at 16: a big board is drawn on with a finer pen, and fewer fit otherwise. All boards share the
+// cell size and the grid (the biggest board sets it).
+export function layoutFor(puzzles, cellMm, taper = false) {
+  let w = 0, h = 0;
+  for (const p of puzzles) { const [pw, ph] = boardUnits(p); w = Math.max(w, pw); h = Math.max(h, ph); }
+  if (!w) return { cellMm, cols: 1, rows: 1, perPage: 1 };
+  const size = taper ? cellMm * Math.min(1, Math.max(0.75, 1 - (Math.max(w, h) - 8.2) * 0.032)) : cellMm;
+  const cell = Math.min(size, PAGE.w / w, (PAGE.h - PAGE.head - PAGE.caption) / h);
+  const boardW = w * cell, boardH = h * cell;
+  const cols = Math.max(1, Math.floor((PAGE.w + PAGE.colGap) / (boardW + PAGE.colGap)));
+  const rows = Math.max(1, Math.floor((PAGE.h - PAGE.head + PAGE.rowGap) / (boardH + PAGE.caption + PAGE.rowGap)));
+  return { cellMm: cell, cols, rows, perPage: cols * rows };
+}
+
+// How many pages a booklet takes, and how many boards go on each. `keyIds` are the puzzles that have an answer
+// (none: no answer key). `ids` and `puzzles` as in buildPrintRoot.
+export function planPrint({ puzzles, ids, keyIds = [], size = 'comfortable' }) {
+  const { puzzle: puzzleMm, answer: answerMm } = SIZES[size] ?? SIZES.comfortable;
+  const mine = ids.map(id => puzzles[id - 1]);
+  const puzzleLayout = layoutFor(mine, puzzleMm, true);
+  const keyLayout = keyIds.length ? layoutFor(keyIds.map(id => puzzles[id - 1]), answerMm) : null;
+  return {
+    puzzleLayout, keyLayout,
+    perPage: puzzleLayout.perPage, keyPerPage: keyLayout?.perPage ?? 0,
+    puzzlePages: Math.ceil(ids.length / puzzleLayout.perPage),
+    keyPages: keyLayout ? Math.ceil(keyIds.length / keyLayout.perPage) : 0,
+  };
 }
 
 // One board as an SVG. With `solution`, the solution's tile boundaries are drawn bold.
 function boardSvg(puzzle, solution) {
-  if (topologyOf(puzzle) !== SQUARE) return shapedBoardSvg(puzzle, solution);
+  if (topologyOf(puzzle) !== SQUARE || puzzle.outside) return shapedBoardSvg(puzzle, solution);     // (hex, triangles, or a square board with an outline)
   const { rows, cols } = puzzle;
   const pad = 0.06;
   const svg = svgEl('svg', { viewBox: `${-pad} ${-pad} ${cols + 2 * pad} ${rows + 2 * pad}`, class: 'print-board' });
@@ -82,8 +123,8 @@ function boardSvg(puzzle, solution) {
   return svg;
 }
 
-// A board on a grid that is not square (hex...): every cell is a polygon, the grid lines are the playable
-// edges, and cells outside the board's shape are not drawn.
+// A board that is not a plain square grid (hex, triangles, or a square board with an outline: a plus sign, an octagon...):
+// every cell is a polygon, the grid lines are the playable edges, and cells outside the board's shape are not drawn.
 function shapedBoardSvg(puzzle, solution) {
   const { rows, cols } = puzzle;
   const topo = topologyOf(puzzle);
@@ -132,7 +173,7 @@ function shapedBoardSvg(puzzle, solution) {
       }
     }
   }
-  svgEl('path', { d, fill: 'none', stroke: INK, 'stroke-width': 0.08, 'stroke-linecap': 'round' }, svg);
+  svgEl('path', { d, fill: 'none', stroke: INK, 'stroke-width': 0.08, 'stroke-linecap': topo === SQUARE ? 'square' : 'round' }, svg);
   return svg;
 }
 
@@ -162,17 +203,18 @@ const div = (cls, parent, text) => {
 // Fill (and return) the #print-root element.
 //   book       { title } the current book
 //   puzzles    the book's puzzle array;  ids  the 1-based numbers to print
-//   perPage    puzzles per page (1, 2, 4 or 6)
+//   size       'comfortable' or 'compact' (SIZES): how big the boards are, so how many fit on a page
 //   solutionOf puzzle -> solution string (or null)
-export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, solutionOf }) {
+export function buildPrintRoot({ book, puzzles, ids, size = 'comfortable', includeKey, solutionOf }) {
   let root = document.getElementById('print-root');
   if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
   root.textContent = '';
   const bookName = book.title;
 
-  const addPages = (list, k, withSolution, heading) => {
+  const addPages = (list, layout, withSolution, heading) => {
+    const k = layout.perPage;
     for (let i = 0; i < list.length; i += k) {
-      const page = div(`print-page k${k}`, root);
+      const page = div('print-page', root);
       const head = div('print-head', page);
       const brand = div('print-brand', head);
       const link = (text, cls) => {
@@ -184,6 +226,8 @@ export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, soluti
       head.append(link(SITE_URL.replace(/^https:\/\//, '').replace(/\/$/, ''), 'print-url'));
       div('print-book', head, `${bookName}${heading ? ` · ${heading}` : ''}`);
       const grid = div('print-grid', page);
+      grid.style.setProperty('--cols', layout.cols);
+      grid.style.setProperty('--cell', `${layout.cellMm}mm`);
       for (const id of list.slice(i, i + k)) {
         const p = puzzles[id - 1];
         const fig = div('print-item', grid);
@@ -192,12 +236,17 @@ export function buildPrintRoot({ book, puzzles, ids, perPage, includeKey, soluti
         const cap = div('print-caption', fig);
         cap.append(document.createTextNode(`${withSolution ? 'Answer ' : 'Puzzle '}${id}${!withSolution && tier ? ` · ${tier}` : ''}`));
         for (const sp of tileSpecs(p.tile)) cap.append(swatchSvg(sp));
-        fig.append(boardSvg(p, withSolution ? solutionOf(p) : null));
+        const board = boardSvg(p, withSolution ? solutionOf(p) : null);
+        const [bw] = boardUnits(p);
+        board.style.width = `${bw * layout.cellMm}mm`;       // the same cell size for every board (they differ when the selection mixes sizes)
+        fig.append(board);
       }
     }
   };
 
-  addPages(ids, perPage, false, null);
-  if (includeKey) addPages(ids.filter(id => solutionOf(puzzles[id - 1])), KEY_PER_PAGE, true, 'Answers');
+  const keyIds = includeKey ? ids.filter(id => solutionOf(puzzles[id - 1])) : [];
+  const plan = planPrint({ puzzles, ids, keyIds, size });
+  addPages(ids, plan.puzzleLayout, false, null);
+  if (keyIds.length) addPages(keyIds, plan.keyLayout, true, 'Answers');
   return root;
 }

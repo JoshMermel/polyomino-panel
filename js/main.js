@@ -5,7 +5,7 @@ import {
   parseCsv, newEdges, getEdge, setEdge, analyze, playableEdges, isGivenEdge,
   getSolution, checkMarks, crossHints, edgeCells, puzzleHash, tileErasure,
   cellsFormTile, givensRuleOutTile, tileOutline, tileInterior, tileSizes, tileSpecs, minTileSize, shapeName, shapeIndexOf, shapeOrder, topologyOf, } from './logic.js';
-import { SQUARE, HEX } from './topology.js';
+import { SQUARE, HEX, TRI } from './topology.js';
 import { Board } from './board.js';
 import { renderTileInfo, tileShapeSvg } from './tile-view.js';
 import { RULES, TIERS, TIER_INFO, beyondHints, rankPeeks } from './rating.js';
@@ -695,7 +695,7 @@ function refresh() {
 // who likes some shapes can play just those puzzles. Several can be on at once (a puzzle shows if it
 // uses any of them); none on means every puzzle.
 let closeBrowse = () => {};   // set in bindControls
-const ALL_SHAPES = [...shapeOrder(SQUARE), ...shapeOrder(HEX)];
+const ALL_SHAPES = [...shapeOrder(SQUARE), ...shapeOrder(HEX), ...shapeOrder(TRI)];
 const shapeRank = spec => { const i = ALL_SHAPES.indexOf(spec); return i < 0 ? 999 : i; };
 const bookShapes = puzzles => [...new Set(puzzles.flatMap(p => tileSpecs(p.tile)))].sort((a, b) => shapeRank(a) - shapeRank(b) || (a < b ? -1 : 1));
 const matchesShapes = (p, shapes) => !shapes.size || tileSpecs(p.tile).some(s => shapes.has(s));
@@ -791,10 +791,10 @@ const endBookletPrint = () => document.body.classList.remove('printing-booklet')
 window.addEventListener('afterprint', endBookletPrint);
 matchMedia('print').addEventListener?.('change', e => { if (!e.matches) endBookletPrint(); });   // iOS skips afterprint
 function setupPrint(setupModal, hideSettings) {
-  const sel = $('print-selection'), perPageSel = $('print-per-page'), keyBox = $('print-answer-key');
+  const sel = $('print-selection'), sizeSel = $('print-size'), keyBox = $('print-answer-key');
   const err = $('print-error'), summary = $('print-summary'), go = $('print-go-btn');
-  const savedPer = store.get('pp_printPerPage');
-  if ([...perPageSel.options].some(o => o.value === savedPer)) perPageSel.value = savedPer;
+  const savedSize = store.get('pp_printSize');
+  if ([...sizeSel.options].some(o => o.value === savedSize)) sizeSel.value = savedSize;
   keyBox.checked = store.get('pp_printKey') !== '0';
 
   const update = () => {
@@ -804,13 +804,13 @@ function setupPrint(setupModal, hideSettings) {
     err.textContent = error ?? '';
     go.disabled = Boolean(error);
     if (error) { summary.textContent = ''; return null; }
-    const perPage = Number(perPageSel.value);
-    const keyIds = ids.filter(id => solutionFor(puzzles[id - 1]));
-    const plan = planPrint({ count: ids.length, perPage, includeKey: keyBox.checked && keyIds.length > 0 });
+    const size = sizeSel.value;
+    const keyIds = keyBox.checked ? ids.filter(id => solutionFor(puzzles[id - 1])) : [];
+    const plan = planPrint({ puzzles, ids, keyIds, size });
     const pages = n => `${n} page${n === 1 ? '' : 's'}`;
-    summary.textContent = `${ids.length} puzzle${ids.length === 1 ? '' : 's'}, ${perPage} per page: ${pages(plan.puzzlePages)}` +
-      (plan.keyPages ? ` + ${pages(plan.keyPages)} of answers.` : '.');
-    return { ids, puzzles, perPage };
+    summary.textContent = `${ids.length} puzzle${ids.length === 1 ? '' : 's'}, ${plan.perPage} per page: ${pages(plan.puzzlePages)}` +
+      (plan.keyPages ? ` + ${pages(plan.keyPages)} of answers (${plan.keyPerPage} per page).` : '.');
+    return { ids, puzzles, size };
   };
 
   setupModal('print-modal', 'print-btn', () => {
@@ -824,12 +824,12 @@ function setupPrint(setupModal, hideSettings) {
     if (matchMedia('(pointer: fine)').matches) setTimeout(() => { sel.focus(); sel.select(); }, 0);
   });
   sel.addEventListener('input', update);
-  perPageSel.addEventListener('change', () => { store.set('pp_printPerPage', perPageSel.value); update(); });
+  sizeSel.addEventListener('change', () => { store.set('pp_printSize', sizeSel.value); update(); });
   keyBox.addEventListener('change', () => { store.set('pp_printKey', keyBox.checked ? '1' : '0'); update(); });
   go.addEventListener('click', () => {
     const r = update();
     if (!r) return;
-    buildPrintRoot({ book: curSet(), puzzles: r.puzzles, ids: r.ids, perPage: r.perPage, includeKey: keyBox.checked, solutionOf: solutionFor });
+    buildPrintRoot({ book: curSet(), puzzles: r.puzzles, ids: r.ids, size: r.size, includeKey: keyBox.checked, solutionOf: solutionFor });
     document.body.classList.add('printing-booklet');     // style.css prints only the booklet while this is set
     window.print();
   });

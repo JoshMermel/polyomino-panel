@@ -34,6 +34,10 @@
       "blurb": "Hexagonal cells."
     },
     {
+      "name": "Bonus: triangles",
+      "blurb": "Triangular cells."
+    },
+    {
       "name": "Bonus: giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
     }
@@ -182,6 +186,15 @@
       "blurb": "Hexagonal cells.",
       "file": "bonus-hexes.csv",
       "count": 301
+    },
+    {
+      "id": "bonus-triangles",
+      "group": "Bonus: triangles",
+      "title": "Bonus: triangles",
+      "label": "Triangles",
+      "blurb": "Triangular cells.",
+      "file": "bonus-triangles.csv",
+      "count": 287
     },
     {
       "id": "bonus-giants",

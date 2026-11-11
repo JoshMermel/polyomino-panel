@@ -163,6 +163,14 @@
       "blurb": "Hexagonal cells."
     },
     {
+      "name": "Bonus: triangles",
+      "idPrefix": "bonus-triangles",
+      "source": "triangles.csv",
+      "title": "Bonus: triangles",
+      "label": "Triangles",
+      "blurb": "Triangular cells."
+    },
+    {
       "name": "Bonus: giants",
       "idPrefix": "bonus-giants",
       "source": "giants.csv",

@@ -19,6 +19,7 @@ const APP_SHELL = [
   './js/logic.js',
   './js/topology.js',
   './js/hex_shapes.js',
+  './js/tri_shapes.js',
   './js/rating.js',
   './js/board.js',
   './js/tile-view.js',
