@@ -15,6 +15,7 @@ import { boardShape } from './lib/board_shapes.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => { if (a.startsWith('--')) acc.push([a.slice(2), all[i + 1]?.startsWith('--') ? '1' : all[i + 1]]); return acc; }, []));
 const shape = args.shape ?? 'plus9', tile = args.tile ?? 'L', count = Number(args.count ?? 6), maxMs = Number(args.minutes ?? 3) * 60000;
+const perLevel = Number(args['per-level'] ?? 4);          // puzzles tried at each number of extra blocked cells
 const out = new URL(args.out ?? '../data/tmp.csv', import.meta.url);
 
 const { rows, cols, fixed, outside } = boardShape(shape);
@@ -28,7 +29,7 @@ let found = 0;
 // holes (extra blocked cells) from about 6% of the open cells upward, whatever leaves whole tiles
 for (let holes = Math.max(0, Math.round(openBase * 0.06)); Date.now() - t0 < maxMs && found < count && holes < openBase / 2; holes++) {
   if (openBase - holes < minTileSize(tile) || !sizeFeasible(tile, openBase - holes)) continue;
-  for (let k = 0; k < 4 && found < count && Date.now() - t0 < maxMs; k++) {
+  for (let k = 0; k < perLevel && found < count && Date.now() - t0 < maxMs; k++) {
     const res = generatePuzzle({ rows, cols, tile, holes, fixed, rng, maxMs: 8000 });
     if (!res) { console.error(`${shape} ${tile}: no puzzle at ${holes} extra blocked cells`); break; }
     const p = res.puzzle, key = canonicalGrid(p.grid, rows, cols);

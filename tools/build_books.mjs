@@ -143,6 +143,7 @@ for (const g of config.groups) {
       id: `${g.idPrefix}-${size}`, group: g.name, shapes: g.shapes, size,
       title: `${g.name} · ${size}×${size}`, label: `${size}×${size}`,
       blurb: config.sizeBlurbs?.[size] ?? '', count: bookSize(g, size), maxBlocked: g.maxBlocked ?? null,
+      tierMaxBlocked: g.tierMaxBlocked ?? null, tierWeights: g.tierWeights ?? config.tierWeights,
       sparseShare: g.sparseShare ?? config.sparseShare ?? 1, order: specs.length,
     });
   }
@@ -196,7 +197,7 @@ const dropSiblings = (list, against = []) => {
 const blockedFraction = p => (p._blocked ??= [...p.grid].filter(c => c === '#').length / p.grid.length);
 const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && (spec.sizes ? spec.sizes.includes(p.rows) : p.rows === spec.size) && !used.has(p.name) &&
   (!owner.has(hashOf(p)) || owner.get(hashOf(p)) === spec.id) &&
-  (spec.maxBlocked == null || blockedFraction(p) <= spec.maxBlocked) &&
+  (spec.maxBlocked == null || blockedFraction(p) <= (spec.tierMaxBlocked?.[p.tier] ?? spec.maxBlocked)) &&
   (spec.tierList == null || spec.tierList.includes(p.tier)) && (spec.maxScore == null || p.score <= spec.maxScore));
 
 if (flags.has('--list')) {
@@ -299,9 +300,9 @@ for (const spec of buildOrder) {
   const perTier = config.tiers.map(t => cands.filter(p => p.tier === t));
   // Expert (the puzzles the hint rules cannot finish) is the same share in every book, never more: when another tier
   // comes up short its slots go to the others, not to Expert.
-  const tierSum = config.tiers.reduce((sum, t) => sum + (config.tierWeights?.[t] ?? 1), 0);
-  const tierCap = (t, n) => (t === 'Expert' ? Math.min(n, Math.round(spec.count * (config.tierWeights?.[t] ?? 1) / tierSum)) : n);
-  const alloc = weightedAllocation(spec.count, perTier.map((c, i) => tierCap(config.tiers[i], c.length)), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
+  const tierSum = config.tiers.reduce((sum, t) => sum + (spec.tierWeights?.[t] ?? 1), 0);
+  const tierCap = (t, n) => (t === 'Expert' ? Math.min(n, Math.round(spec.count * (spec.tierWeights?.[t] ?? 1) / tierSum)) : n);
+  const alloc = weightedAllocation(spec.count, perTier.map((c, i) => tierCap(config.tiers[i], c.length)), config.tiers.map(t => spec.tierWeights?.[t] ?? 1));
   const tourTier = config.tiers.indexOf(config.tour?.tier);
   if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
   let rest = dropSiblings(perTier.flatMap((c, i) => capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept)));
@@ -320,7 +321,7 @@ for (const spec of buildOrder) {
     const room = expertK < 0 ? 0 : Math.max(0, tierCap('Expert', Infinity) - rest.filter(p => p.tier === 'Expert').length);
     const exN = expertK < 0 ? 0 : Math.min(deficit, room, left[expertK].length);
     const others = fillTiers.map((_, k) => (k === expertK ? 0 : left[k].length));
-    const extra = weightedAllocation(deficit - exN, others, fillTiers.map(i => config.tierWeights?.[config.tiers[i]] ?? 1));
+    const extra = weightedAllocation(deficit - exN, others, fillTiers.map(i => spec.tierWeights?.[config.tiers[i]] ?? 1));
     if (expertK >= 0) extra[expertK] = exN;
     const before = rest.length;
     fillTiers.forEach((_, k) => { if (extra[k]) rest = [...rest, ...dropSiblings(pickAcross(byTile(left[k]), extra[k], isKept, spec.sparseShare), rest)]; });

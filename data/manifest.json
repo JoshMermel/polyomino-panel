@@ -15,7 +15,7 @@
     },
     {
       "name": "Three shapes",
-      "blurb": "Each puzzle uses three tile shapes. Few black squares."
+      "blurb": "Each puzzle uses three tile shapes. Medium to Expert (three shapes leave almost no Beginner puzzles)."
     },
     {
       "name": "Bonus: symmetric voids",
@@ -42,7 +42,7 @@
       "label": "Intro: small and easy",
       "blurb": "The easiest puzzles, on small boards.",
       "file": "intro.csv",
-      "count": 150
+      "count": 100
     },
     {
       "id": "one-6",
@@ -51,7 +51,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "one-6.csv",
-      "count": 400
+      "count": 250
     },
     {
       "id": "one-8",
@@ -60,7 +60,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "one-8.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "one-10",
@@ -69,7 +69,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "one-10.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "one-12",
@@ -78,7 +78,7 @@
       "label": "12×12",
       "blurb": "Giant boards, very long solves.",
       "file": "one-12.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "two-6",
@@ -87,7 +87,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "two-6.csv",
-      "count": 400
+      "count": 250
     },
     {
       "id": "two-8",
@@ -96,7 +96,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "two-8.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "two-10",
@@ -105,7 +105,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "two-10.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "two-12",
@@ -114,7 +114,7 @@
       "label": "12×12",
       "blurb": "Giant boards, very long solves.",
       "file": "two-12.csv",
-      "count": 400
+      "count": 500
     },
     {
       "id": "three-6",
@@ -123,7 +123,7 @@
       "label": "6×6",
       "blurb": "Small boards, quick to solve.",
       "file": "three-6.csv",
-      "count": 400
+      "count": 300
     },
     {
       "id": "three-8",
@@ -132,7 +132,7 @@
       "label": "8×8",
       "blurb": "Mid-size boards.",
       "file": "three-8.csv",
-      "count": 400
+      "count": 300
     },
     {
       "id": "three-10",
@@ -141,7 +141,7 @@
       "label": "10×10",
       "blurb": "Large boards, long solves.",
       "file": "three-10.csv",
-      "count": 400
+      "count": 300
     },
     {
       "id": "bonus-voids",

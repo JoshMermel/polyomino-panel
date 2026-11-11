@@ -26,6 +26,7 @@
   "minBoardDistance": 0.08,
   "_sharedTileShare": "The other sibling test, by board size: two puzzles with the same tile spec are siblings when at least this share of their tiles sit in exactly the same cells (after any rotation or reflection of the board). Higher on small boards, where a few tiles repeat by chance. Two Beginner puzzles are never siblings by this test.",
   "sharedTileShare": { "6": 0.85, "8": 0.6, "10": 0.5, "12": 0.5 },
+  "_groupKeys": "A group may override tierWeights, and may set tierMaxBlocked: a looser blocked-cell cap for some tiers (the Beginner and Expert puzzles of the sparse books need more blocked cells than the 17% the rest use, so every book can have the same share of each tier).",
   "_maxLineShare": "A tier holds at most this fraction of its puzzles in line-piece puzzles (domino, I tromino, I tetromino, I pentomino; pairs of only those). On sparse boards they are almost the only shapes with Beginner puzzles, so a book's opening was mostly them. The tier gets a little smaller instead of refilling. Like shapeWeights, published puzzles are only dropped with --trim.",
   "maxLineShare": 0.3,
   "_shapeWeights": "Relative share of a book each shape (or pair) gets within a tier; unlisted shapes weigh 1. The 'boring' shapes weigh a third: they can only make Beginner or Medium puzzles that all use the same single technique (the line pieces domino, I tromino, I tetromino and I pentomino, and the rigid pentominoes T, U, V, Z and X). A rebuild only adds puzzles unless run with --trim, so new weights take full effect with --trim.",
@@ -63,7 +64,7 @@
         "Beginner"
       ],
       "maxScore": 7,
-      "perBook": 150,
+      "perBook": 100,
       "title": "Intro",
       "label": "Intro: small and easy",
       "blurb": "The easiest puzzles, on small boards."
@@ -75,11 +76,12 @@
       "maxBlocked": 0.17,
       "sparseShare": 1,
       "perBook": {
-        "6": 400,
-        "8": 400,
-        "10": 400,
-        "12": 400
+        "6": 250,
+        "8": 500,
+        "10": 500,
+        "12": 500
       },
+      "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
       "blurb": "Every tile is the same shape. Few black squares.",
       "boardSizes": [
         6,
@@ -95,11 +97,12 @@
       "maxBlocked": 0.17,
       "sparseShare": 1,
       "perBook": {
-        "6": 400,
-        "8": 400,
-        "10": 400,
-        "12": 400
+        "6": 250,
+        "8": 500,
+        "10": 500,
+        "12": 500
       },
+      "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
       "blurb": "Each puzzle uses two tile shapes. Few black squares.",
       "boardSizes": [
         6,
@@ -112,14 +115,15 @@
       "name": "Three shapes",
       "idPrefix": "three",
       "shapes": 3,
-      "maxBlocked": 0.17,
+      "maxBlocked": 0.22,
       "sparseShare": 1,
       "perBook": {
-        "6": 400,
-        "8": 400,
-        "10": 400
+        "6": 300,
+        "8": 300,
+        "10": 300
       },
-      "blurb": "Each puzzle uses three tile shapes. Few black squares.",
+      "tierWeights": { "Beginner": 0, "Medium": 130, "Hard": 120, "Expert": 50 },
+      "blurb": "Each puzzle uses three tile shapes. Medium to Expert (three shapes leave almost no Beginner puzzles).",
       "boardSizes": [
         6,
         8,

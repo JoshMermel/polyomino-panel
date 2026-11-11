@@ -1188,14 +1188,29 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.ok(ps.every(p => p.rows === Number(size) && p.cols === Number(size)), `${book.id}: all ${size}x${size}`);
     assert.ok(ps.every(p => tileSpecs(p.tile).length === shapesOf), `${book.id}: ${kind} shape(s)`);
     assert.equal(book.group, { one: 'One shape', two: 'Two shapes', three: 'Three shapes' }[kind]);
-    // the one-, two- and three-shape books are the sparse ones: they only have puzzles with few blocked cells
-    assert.ok(ps.every(p => [...p.grid].filter(c => c === '#').length <= 0.17 * p.grid.length), `${book.id}: sparse`);
-    // every book reaches the hard end; the small ones start at Beginner (pairs on big boards have almost no Beginner puzzles)
+    // the one-, two- and three-shape books are the sparse ones: Medium and Hard puzzles have at most 17% blocked cells (22% in the
+    // three-shape books), and the Beginner and Expert puzzles of the one- and two-shape books at most 25% (they need more blocked cells)
+    const blockedShare = p => [...p.grid].filter(c => c === '#').length / p.grid.length;
+    for (const p of ps) {
+      const cap = shapesOf === 3 ? 0.22 : (p.tier === 'Beginner' || p.tier === 'Expert') ? 0.25 : 0.17;
+      assert.ok(blockedShare(p) <= cap + 1e-9, `${book.id}/${p.name}: ${p.tier} puzzle with ${Math.round(blockedShare(p) * 100)}% blocked`);
+    }
+    // every book reaches the hard end; one- and two-shape books start at Beginner, three-shape ones at Medium (a triple has almost no Beginner puzzles)
     const tiers = new Set(ps.map(p => p.tier));
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
-    if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
+    if (shapesOf < 3) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
+    else assert.ok(!tiers.has('Beginner'), `${book.id}: three-shape books start at Medium`);
     assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'one' ? 8 : 4), `${book.id}: mixes shapes`);
-    assert.equal(ps.length, 400, `${book.id}: every main book has 400 puzzles`);
+    // every main book has the same size for its group (250 on 6x6 and 500 above for one and two shapes, 300 for three) and about the same share of each tier
+    const want = shapesOf === 3 ? 300 : Number(size) === 6 ? 250 : 500;
+    assert.equal(ps.length, want, `${book.id}: ${want} puzzles`);
+    const tierShare = t => ps.filter(p => p.tier === t).length / ps.length;
+    if (shapesOf < 3) {
+      assert.ok(tierShare('Beginner') >= 0.08, `${book.id}: Beginner share ${tierShare('Beginner')}`);
+      assert.ok(tierShare('Expert') >= (book.id === 'one-6' ? 0.05 : 0.12), `${book.id}: Expert share ${tierShare('Expert')}`);
+    } else {
+      assert.equal(ps.filter(p => p.tier === 'Expert').length, 50, `${book.id}: 50 Expert puzzles`);
+    }
     // no two puzzles with the same tile spec are siblings (blocked cells differing in at most 8% of the board, after any rotation or reflection)
     {
       const n = Number(size), max = Math.floor(0.08 * n * n);
@@ -1247,8 +1262,6 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         }
       }
     }
-    // Expert is the same share (50) in every book; the one-shape 6x6 book has almost no puzzles the hint rules can't finish
-    if (book.id !== 'one-6') assert.equal(ps.filter(p => p.tier === 'Expert').length, 50, `${book.id}: 50 Expert puzzles`);
   }
   // the Expert tier is exactly the puzzles with no logical hints
   for (const book of manifest.books) {
