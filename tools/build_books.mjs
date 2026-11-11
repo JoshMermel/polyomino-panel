@@ -148,6 +148,27 @@ for (const g of config.groups) {
   }
 }
 
+// Siblings: two puzzles with the same tile spec whose blocked cells differ in at most `minBoardDistance` (a share of
+// the board's cells, 0.08 = 5 cells on 8x8) after any rotation or reflection. The generator and the hunter make families
+// of these, and a book that holds several looks repetitive, so a book keeps only one of a family.
+const SYM = [(r, c, n) => [r, c], (r, c, n) => [c, n - 1 - r], (r, c, n) => [n - 1 - r, n - 1 - c], (r, c, n) => [n - 1 - c, r]];
+const blockedSyms = p => p._syms ??= SYM.flatMap(t => [false, true].map(flip => {
+  const n = p.rows, out = new Uint8Array(n * n);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) { const [rr, cc] = t(r, flip ? n - 1 - c : c, n); out[r * n + c] = p.grid[rr * n + cc] === '#' ? 1 : 0; }
+  return out;
+}));
+const blockedBase = p => p._blockedBase ??= Uint8Array.from(p.grid, c => (c === '#' ? 1 : 0));
+const isSibling = (a, b) => {
+  if (config.minBoardDistance == null || a.tile !== b.tile || a.rows !== b.rows || a.cols !== b.cols || a.givens?.length || b.givens?.length) return false;
+  const max = Math.floor(config.minBoardDistance * a.rows * a.cols), x = blockedBase(a);
+  return blockedSyms(b).some(y => { let d = 0; for (let i = 0; i < x.length && d <= max; i++) d += x[i] !== y[i]; return d <= max; });
+};
+// `list` without the puzzles that are siblings of an earlier one, or of any in `against`
+const dropSiblings = (list, against = []) => {
+  const keep = [];
+  for (const p of list) if (!against.some(q => isSibling(p, q)) && !keep.some(q => isSibling(p, q))) keep.push(p);
+  return keep;
+};
 const blockedFraction = p => (p._blocked ??= [...p.grid].filter(c => c === '#').length / p.grid.length);
 const eligible = (spec, used) => pool.filter(p => shapeCount(p) === spec.shapes && (spec.sizes ? spec.sizes.includes(p.rows) : p.rows === spec.size) && !used.has(p.name) &&
   (!owner.has(hashOf(p)) || owner.get(hashOf(p)) === spec.id) &&
@@ -259,17 +280,27 @@ for (const spec of buildOrder) {
   const alloc = weightedAllocation(spec.count, perTier.map((c, i) => tierCap(config.tiers[i], c.length)), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
   const tourTier = config.tiers.indexOf(config.tour?.tier);
   if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
-  const rest = perTier.flatMap((c, i) => capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept));
-  // A tier that comes up short (the line-piece cap leaves Beginner small, a thin pool) would leave the book under its
-  // size, and the main books should all be the same size. Top up from the Medium and Hard tiers, by their weights, with
-  // puzzles that are not line pieces (those are what the cap holds back).
-  const deficit = spec.count - tour.length - rest.length;
-  if (deficit > 0) {
+  let rest = dropSiblings(perTier.flatMap((c, i) => capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept)));
+  // A tier that comes up short (the line-piece cap leaves Beginner small, a thin pool, dropped siblings) would leave the
+  // book under its size, and the main books should all be the same size. Top up from the Medium and Hard tiers, by their
+  // weights, with puzzles that are not line pieces (those are what the cap holds back) and not siblings of one already in.
+  for (let round = 0; round < 6; round++) {
+    const deficit = spec.count - tour.length - rest.length;
+    if (deficit <= 0) break;
     const taken = new Set(rest.map(p => p.name));
-    const fillTiers = config.tiers.map((t, i) => i).filter(i => ['Medium', 'Hard'].includes(config.tiers[i]));
-    const left = fillTiers.map(i => perTier[i].filter(p => !taken.has(p.name) && !isLine(p)));
-    const extra = weightedAllocation(deficit, left.map(c => c.length), fillTiers.map(i => config.tierWeights?.[config.tiers[i]] ?? 1));
-    fillTiers.forEach((_, k) => { if (extra[k]) rest.push(...pickAcross(byTile(left[k]), extra[k], isKept, spec.sparseShare)); });
+    const fillTiers = config.tiers.map((t, i) => i).filter(i => ['Medium', 'Hard', 'Expert'].includes(config.tiers[i]));
+    const left = fillTiers.map(i => perTier[i].filter(p => !taken.has(p.name) && !isLine(p) && !rest.some(q => isSibling(p, q))));
+    // Expert only up to its share (a dropped sibling of an Expert puzzle is replaced by another Expert one, never by more),
+    // and first: its share is the same in every book
+    const expertK = fillTiers.findIndex(i => config.tiers[i] === 'Expert');
+    const room = expertK < 0 ? 0 : Math.max(0, tierCap('Expert', Infinity) - rest.filter(p => p.tier === 'Expert').length);
+    const exN = expertK < 0 ? 0 : Math.min(deficit, room, left[expertK].length);
+    const others = fillTiers.map((_, k) => (k === expertK ? 0 : left[k].length));
+    const extra = weightedAllocation(deficit - exN, others, fillTiers.map(i => config.tierWeights?.[config.tiers[i]] ?? 1));
+    if (expertK >= 0) extra[expertK] = exN;
+    const before = rest.length;
+    fillTiers.forEach((_, k) => { if (extra[k]) rest = [...rest, ...dropSiblings(pickAcross(byTile(left[k]), extra[k], isKept, spec.sparseShare), rest)]; });
+    if (rest.length === before) break;
   }
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || byScore(a, b));

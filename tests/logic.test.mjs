@@ -1187,6 +1187,30 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
     assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'one' ? 8 : 4), `${book.id}: mixes shapes`);
     assert.equal(ps.length, 400, `${book.id}: every main book has 400 puzzles`);
+    // no two puzzles with the same tile spec are siblings (blocked cells differing in at most 8% of the board, after any rotation or reflection)
+    {
+      const n = Number(size), max = Math.floor(0.08 * n * n);
+      const forms = p => {
+        const out = [];
+        for (const t of [(r, c) => [r, c], (r, c) => [c, n - 1 - r], (r, c) => [n - 1 - r, n - 1 - c], (r, c) => [n - 1 - c, r]]) {
+          for (const flip of [false, true]) {
+            const a = [];
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) { const [rr, cc] = t(r, flip ? n - 1 - c : c); a.push(p.grid[rr * n + cc] === '#' ? 1 : 0); }
+            out.push(a);
+          }
+        }
+        return out;
+      };
+      const byTile = new Map();
+      for (const p of ps) { if (!byTile.has(p.tile)) byTile.set(p.tile, []); byTile.get(p.tile).push(p); }
+      for (const group of byTile.values()) {
+        const base = group.map(p => [...p.grid].map(c => (c === '#' ? 1 : 0)));
+        for (let i = 0; i < group.length; i++) for (let j = i + 1; j < group.length; j++) {
+          const dist = Math.min(...forms(group[j]).map(f => f.reduce((d, v, k) => d + (v !== base[i][k]), 0)));
+          assert.ok(dist > max, `${book.id}: ${group[i].name} and ${group[j].name} are siblings (${dist} cells apart)`);
+        }
+      }
+    }
     // Expert is the same share (50) in every book; the one-shape 6x6 book has almost no puzzles the hint rules can't finish
     if (book.id !== 'one-6') assert.equal(ps.filter(p => p.tier === 'Expert').length, 50, `${book.id}: 50 Expert puzzles`);
   }

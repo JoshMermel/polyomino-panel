@@ -21,15 +21,16 @@
   --cell-border: #ccc;
   --blocked-bg: var(--text-primary); /* same as star battle's void cells */
   --tile-bg: rgba(0, 114, 178, 0.2);        /* a selected shape chip */
-  --tile-bad-bg: rgba(213, 94, 0, 0.1);
-  --bad: #d55e00;                          /* wrong marks and regions (vermillion; hatched, so not only a colour) */
-  --line-color: #222;                      /* the lines you draw */
+  --tile-bad-bg: rgba(224, 146, 90, 0.1);
+  --bad: #d9732a;                          /* wrong marks and regions (vermillion; hatched, so not only a colour) */
+  --bad-hatch: #e0925a;                    /* the hatching itself, a little softer than the marks */
+  --line-color: #333;                      /* the lines you draw */
   --cell-hover: rgba(0, 0, 0, 0.09);       /* cell under the mouse (desktop) */
   --drag-bg: rgba(0, 0, 0, 0.18);          /* cells traced so far, not yet the tile shape */
   --drag-ok-bg: rgba(0, 114, 178, 0.38);   /* traced cells form the tile: release to draw it */
-  --hint-yellow: #f0e442;
-  --hint-blue: rgba(0, 0, 0, 0.14);        /* the tiles a hint talks about: grey, so it is never read as a shape color */
-  --hint-line: #111;
+  --hint-yellow: #f4ec9c;
+  --hint-blue: rgba(0, 0, 0, 0.1);         /* the tiles a hint talks about: grey, so it is never read as a shape color */
+  --hint-line: #444;
   --frame: #111;
   /* Colors for the allowed shapes (puzzles with several shapes), from the Okabe-Ito colour-blind-safe set. Each has
      --shape-N     the header picture's outline,
@@ -37,10 +38,10 @@
      --shape-N-ink the pattern drawn over that fill (shape 0 plain, 1 horizontal stripes, 2 dots, 3 vertical stripes;
                    #shape-patterns in index.html), so shapes differ by pattern and not only by colour,
      --shape-N-drag the drag preview once the cells form that shape. */
-  --shape-0: #0072b2; --shape-0-bg: #9cc9e8;
-  --shape-1: #e69f00; --shape-1-bg: #f6d58a; --shape-1-ink: #b77a00;
-  --shape-2: #cc79a7; --shape-2-bg: #e7b4cf; --shape-2-ink: #a5457c;
-  --shape-3: #009e73; --shape-3-bg: #a5dcc8; --shape-3-ink: #00765a;
+  --shape-0: #0072b2; --shape-0-bg: #bdd8ea;
+  --shape-1: #e69f00; --shape-1-bg: #f2e0b6; --shape-1-ink: #cba248;
+  --shape-2: #cc79a7; --shape-2-bg: #ebcfdf; --shape-2-ink: #bc85a5;
+  --shape-3: #009e73; --shape-3-bg: #b9e0d2; --shape-3-ink: #5aa890;
   --shape-0-drag: rgba(0, 114, 178, 0.38);
   --shape-1-drag: rgba(230, 159, 0, 0.42);
   --shape-2-drag: rgba(204, 121, 167, 0.45);
@@ -68,20 +69,21 @@
   --cell-bg: #2a2a2a;
   --cell-border: #444;
   --tile-bg: rgba(86, 180, 233, 0.25);
-  --tile-bad-bg: rgba(255, 143, 77, 0.18);
-  --bad: #ff8f4d;
-  --line-color: #e8e8e8;
+  --tile-bad-bg: rgba(255, 143, 77, 0.12);
+  --bad: #e8905f;
+  --bad-hatch: #e08a5e;
+  --line-color: #d8d8d8;
   --cell-hover: rgba(255, 255, 255, 0.14);
   --drag-bg: rgba(255, 255, 255, 0.22);
   --drag-ok-bg: rgba(86, 180, 233, 0.42);
-  --hint-yellow: rgba(240, 228, 66, 0.8);
-  --hint-blue: rgba(200, 200, 200, 0.35);
-  --hint-line: #fff;
-  --frame: #ddd;
-  --shape-0: #56b4e9; --shape-0-bg: rgba(86, 180, 233, 0.38);
-  --shape-1: #e69f00; --shape-1-bg: rgba(230, 159, 0, 0.38); --shape-1-ink: #ffc04d;
-  --shape-2: #cc79a7; --shape-2-bg: rgba(204, 121, 167, 0.45); --shape-2-ink: #f0a8cc;
-  --shape-3: #2fc79a; --shape-3-bg: rgba(0, 158, 115, 0.45); --shape-3-ink: #7fe0bf;
+  --hint-yellow: rgba(240, 228, 66, 0.5);
+  --hint-blue: rgba(200, 200, 200, 0.22);
+  --hint-line: #ddd;
+  --frame: #bbb;
+  --shape-0: #56b4e9; --shape-0-bg: rgba(86, 180, 233, 0.26);
+  --shape-1: #e69f00; --shape-1-bg: rgba(230, 159, 0, 0.26); --shape-1-ink: #d9a94a;
+  --shape-2: #cc79a7; --shape-2-bg: rgba(204, 121, 167, 0.32); --shape-2-ink: #d893b8;
+  --shape-3: #2fc79a; --shape-3-bg: rgba(0, 158, 115, 0.34); --shape-3-ink: #6fcfb0;
   --shape-0-drag: rgba(86, 180, 233, 0.45);
   --shape-1-drag: rgba(230, 159, 0, 0.45);
   --shape-2-drag: rgba(204, 121, 167, 0.5);
@@ -212,7 +214,7 @@ select, input[type="number"] {
 .cell.shape-3 { --shape-fill: url(#pat-shape-3); }
 .cell.tile-bad { fill: var(--tile-bad-bg); fill: url(#bad-hatch) var(--tile-bad-bg); }   /* hatched: not confusable with the shape tints */
 .hatch-bg { fill: var(--tile-bad-bg); }
-.hatch-line { stroke: var(--bad); stroke-width: 0.05; opacity: 0.8; }
+.hatch-line { stroke: var(--bad-hatch); stroke-width: 0.05; opacity: 0.8; }
 
 .dash {
   stroke: var(--cell-border);
