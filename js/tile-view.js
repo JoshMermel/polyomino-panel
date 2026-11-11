@@ -4,6 +4,8 @@
 import { resolveShape, shapeName, tileSizes, tileSpecs } from './logic.js';
 
 const NS = 'http://www.w3.org/2000/svg';
+// the colour of the cells to be tiled: they are light in the light theme and dark in the dark one
+const openCells = () => (document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'white');
 
 // Build an SVG of the shape (1 unit = 1 cell).
 // `shapeIndex` picks the shape's color (the --shape-N colors in style.css): with several allowed
@@ -44,7 +46,7 @@ export function renderTileInfo(container, spec) {
   container.append(pictures, name);
   const cells = tileSizes(spec).join(' or ');
   container.title = specs.length === 1
-    ? `Cut the white cells into tiles of this shape: ${shapeName(spec)}, ${cells} cells. Rotations and reflections are allowed.`
-    : `Cut the white cells into tiles, each one of these shapes (${cells} cells): ${shapeName(spec)}. ` +
+    ? `Cut the ${openCells()} cells into tiles of this shape: ${shapeName(spec)}, ${cells} cells. Rotations and reflections are allowed.`
+    : `Cut the ${openCells()} cells into tiles, each one of these shapes (${cells} cells): ${shapeName(spec)}. ` +
       'Any of them can be used any number of times. Rotations and reflections are allowed.';
 }

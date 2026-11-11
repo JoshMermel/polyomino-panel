@@ -252,7 +252,7 @@ function renderTier(puzzle) {
     const note = document.createElement('span');
     note.className = 'tier-beyond';
     note.textContent = ' · pre-drawn clues';
-    note.title = 'This puzzle comes with some marks already placed (drawn in black, like the blocked cells). They are part of the puzzle and cannot be changed.';
+    note.title = 'This puzzle comes with some marks already placed (drawn like the blocked cells). They are part of the puzzle and cannot be changed.';
     el.append(note);
   }
   if (beyondHints(puzzle)) {
@@ -867,21 +867,44 @@ function renderBookPicker() {
   body.textContent = '';
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
-  // sections in the manifest's order, then any group a book names that the manifest doesn't list
-  const names = [...state.groups.map(g => g.name)];
-  for (const s of state.sets) if (!names.includes(s.group)) names.push(s.group);
-  const progress = [];                                    // rows to fill in once their book is loaded
+  // Sections in the manifest's order, then any group a book names that the manifest doesn't list. All the Bonus groups
+  // are one section, "Bonus". A section whose books are only board sizes (6×6, 8×8, ...) is one row of size buttons.
+  const sectionOf = g => (g.startsWith('Bonus') ? 'Bonus' : g);
+  const names = [];
+  for (const n of [...state.groups.map(g => g.name), ...state.sets.map(s => s.group)]) if (!names.includes(sectionOf(n))) names.push(sectionOf(n));
+  const progress = [];                                    // rows to fill in once their book is loaded: { i, show(solved, total) }
   const more = el('details', 'bp-more');                  // secondary groups sit under "More books"
   more.append(el('summary', 'bp-more-summary', 'More books'));
   for (const name of names) {
-    const idxs = state.sets.map((s, i) => i).filter(i => state.sets[i].group === name);
+    const idxs = state.sets.map((s, i) => i).filter(i => sectionOf(state.sets[i].group) === name);
     if (!idxs.length) continue;
     const sec = el('div', 'bp-section');
-    sec.append(el('h3', '', name));
-    const blurb = state.groups.find(g => g.name === name)?.blurb;
+    const info = state.groups.find(g => sectionOf(g.name) === name);
+    const blurb = name === 'Bonus' ? '' : info?.blurb;
     const blurbShownByBook = idxs.length === 1 && state.sets[idxs[0]].blurb === blurb;     // "Start here"
-    if (blurb && !blurbShownByBook) sec.append(el('p', 'bp-blurb', blurb));
-    for (const i of idxs) {
+    const sizesOnly = idxs.length > 1 && idxs.every(i => /^\d+×\d+$/.test(state.sets[i].label ?? ''));
+    if (sizesOnly) {
+      sec.append(el('h3', '', name));                     // a header like the others, then one button per board size across the row
+      const row = el('div', 'bp-multi');
+      if (blurb) row.title = blurb;                      // what the books hold is a tooltip
+      const sizes = el('div', 'bp-sizes');
+      for (const i of idxs) {
+        const set = state.sets[i];
+        const btn = el('button', 'bp-size' + (i === state.setIdx ? ' bp-current' : ''), set.label);
+        btn.type = 'button';
+        if (i === state.setIdx) btn.setAttribute('aria-current', 'true');
+        btn.title = `${name}, ${set.label}: ${set.count ?? set.puzzles?.length ?? ''} puzzles`;
+        btn.addEventListener('click', () => chooseBook(i));
+        sizes.append(btn);
+        progress.push({ i, show: (solved, total) => { btn.title = `${name}, ${set.label}: ${solved ? `${solved} / ${total} solved` : `${total} puzzles`}`; btn.classList.toggle('bp-size-done', solved === total); } });
+      }
+      row.append(sizes);
+      sec.append(row);
+    } else {
+      sec.append(el('h3', '', name));
+      if (blurb && !blurbShownByBook) sec.append(el('p', 'bp-blurb', blurb));
+    }
+    for (const i of sizesOnly ? [] : idxs) {
       const set = state.sets[i];
       const row = el('button', 'bp-book' + (i === state.setIdx ? ' bp-current' : ''));
       row.type = 'button';
@@ -899,9 +922,12 @@ function renderBookPicker() {
       row.append(text, count);
       row.addEventListener('click', () => chooseBook(i));
       sec.append(row);
-      progress.push({ i, count });
+      progress.push({ i, show: (solved, total) => {
+        count.textContent = solved ? `${solved} / ${total} solved` : `${total} puzzles`;
+        count.classList.toggle('bp-count-done', solved === total);
+      } });
     }
-    if (state.groups.find(g => g.name === name)?.secondary) {
+    if (info?.secondary) {
       more.append(sec);
       if (idxs.includes(state.setIdx)) more.open = true;      // never hide the book being played
     } else {
@@ -913,12 +939,8 @@ function renderBookPicker() {
 
   // how many of each book's puzzles are solved: needs the book's puzzles, so load them (a small
   // file each, cached by the browser) and update the rows as they arrive
-  for (const { i, count } of progress) {
-    ensureLoaded(state.sets[i]).then(puzzles => {
-      const solved = puzzles.filter(isSolved).length;
-      count.textContent = solved ? `${solved} / ${puzzles.length} solved` : `${puzzles.length} puzzles`;
-      count.classList.toggle('bp-count-done', solved === puzzles.length);
-    }).catch(() => { /* the count stays as it was */ });
+  for (const { i, show } of progress) {
+    ensureLoaded(state.sets[i]).then(puzzles => show(puzzles.filter(isSolved).length, puzzles.length)).catch(() => { /* the count stays as it was */ });
   }
 }
 
@@ -1011,6 +1033,7 @@ function bindControls() {
   dark.addEventListener('change', () => {
     document.documentElement.setAttribute('data-theme', dark.checked ? 'dark' : 'light');
     store.set('pp_dark', dark.checked ? '1' : '0');
+    if (state.puzzle) renderTileInfo($('tile-info'), state.puzzle.tile);       // its tooltip names the colour of the cells to tile
   });
 
   // Offline play: register / remove the service worker (sw.js) and keep every book cached.

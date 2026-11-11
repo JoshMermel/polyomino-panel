@@ -1174,6 +1174,12 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
       }
       if (book.id === 'bonus-shapes') {
         assert.ok(ps.length >= 300, 'the shapes book is a good size');
+        // the same blocked-cell caps as the main books, as a share of the cells that are part of the board
+        for (const p of ps) {
+          const real = [...p.grid].filter((c, i) => p.outside?.[i] !== 'x').length;
+          const share = [...p.grid].filter((c, i) => c === '#' && p.outside?.[i] !== 'x').length / real;
+          assert.ok(share <= (p.tier === 'Beginner' || p.tier === 'Expert' ? 0.25 : 0.17) + 1e-9, `${p.name}: ${p.tier} puzzle with ${Math.round(share * 100)}% blocked`);
+        }
         assert.ok(ps.filter(p => p.outside).length >= 0.8 * ps.length, 'almost every puzzle in the shapes book has an outline');
         assert.ok(new Set(ps.map(p => p.tile)).size >= 15, 'the shapes book mixes many tile specs');
         assert.ok(ps.some(p => tileSpecs(p.tile).length === 2), 'the shapes book has two-shape puzzles');

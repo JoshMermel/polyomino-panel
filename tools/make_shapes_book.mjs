@@ -9,6 +9,10 @@ import { TIERS } from '../js/rating.js';
 import { spreadByTier, weightedAllocation } from './lib/pick.mjs';
 import { boardShape } from './lib/board_shapes.mjs';
 const dir = process.argv[2], max = Number(process.argv[3] ?? 400);
+// the same blocked-cell caps as the main books (a share of the cells that are part of the board, not of the bounding box):
+// at most 17% for Medium and Hard, 25% for Beginner and Expert
+const CAP = { Beginner: 0.25, Medium: 0.17, Hard: 0.17, Expert: 0.25 };
+const blockedShare = p => { const real = [...p.grid].filter((c, i) => p.outside?.[i] !== 'x').length; return ([...p.grid].filter((c, i) => c === '#' && p.outside?.[i] !== 'x').length) / real; };
 const all = [], seen = new Set();
 for (const f of readdirSync(dir).filter(f => f.endsWith('.csv') && !f.startsWith('rect')).sort()) {     // (rectangles were dropped: boring)
   for (const p of parseCsv(readFileSync(`${dir}/${f}`, 'utf8'))) {
@@ -21,7 +25,9 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.csv') && !f.startsWith
     all.push(p);
   }
 }
-console.log('candidates', all.length);
+const before = all.length;
+for (let i = all.length - 1; i >= 0; i--) if (blockedShare(all[i]) > CAP[all[i].tier]) all.splice(i, 1);
+console.log('candidates', before, '->', all.length, 'within the blocked-cell caps');
 const bad = all.filter(p => solveWithGivens(p, 2).length !== 1 || !openCellsConnected(p) || hasSwastika(p, p.solution));
 if (bad.length) throw new Error('bad puzzles: ' + bad.map(p => p.name));
 // Pick `max` puzzles: every tier gets the main books' share (10% Beginner, 45% Medium, 32% Hard, 12.5% Expert) and, inside

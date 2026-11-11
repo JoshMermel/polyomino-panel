@@ -82,7 +82,7 @@
         "12": 500
       },
       "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
-      "blurb": "Every tile is the same shape. Few black squares.",
+      "blurb": "Every tile is the same shape.",
       "boardSizes": [
         6,
         8,
@@ -103,7 +103,7 @@
         "12": 500
       },
       "tierMaxBlocked": { "Beginner": 0.25, "Expert": 0.25 },
-      "blurb": "Each puzzle uses two tile shapes. Few black squares.",
+      "blurb": "Each puzzle uses two tile shapes.",
       "boardSizes": [
         6,
         8,
@@ -123,7 +123,7 @@
         "10": 300
       },
       "tierWeights": { "Beginner": 0, "Medium": 130, "Hard": 120, "Expert": 50 },
-      "blurb": "Each puzzle uses three tile shapes. Medium to Expert (three shapes leave almost no Beginner puzzles).",
+      "blurb": "Each puzzle uses three tile shapes.",
       "boardSizes": [
         6,
         8,
@@ -135,8 +135,8 @@
       "idPrefix": "bonus-voids",
       "source": "sym_voids.csv",
       "title": "Bonus: symmetric voids",
-      "label": "Symmetric voids",
-      "blurb": "The black squares are laid out symmetrically."
+      "label": "Symmetry",
+      "blurb": "The boards are symmetric."
     },
     {
       "name": "Bonus: clues",
@@ -152,7 +152,7 @@
       "source": "shapes.csv",
       "title": "Bonus: shapes",
       "label": "Shapes",
-      "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L."
+      "blurb": "Boards that aren't plain squares."
     },
     {
       "name": "Bonus: giants",
@@ -163,11 +163,5 @@
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen."
     }
   ],
-  "sizeBlurbs": {
-    "6": "Small boards, quick to solve.",
-    "8": "Mid-size boards.",
-    "10": "Large boards, long solves.",
-    "12": "Giant boards, very long solves."
-  },
   "_secondary": "A group with secondary: true is listed under \"More books\" in the book picker; the first two groups (sparse boards, at most 17% blocked) are the main books."
 }

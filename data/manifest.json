@@ -7,19 +7,19 @@
     },
     {
       "name": "One shape",
-      "blurb": "Every tile is the same shape. Few black squares."
+      "blurb": "Every tile is the same shape."
     },
     {
       "name": "Two shapes",
-      "blurb": "Each puzzle uses two tile shapes. Few black squares."
+      "blurb": "Each puzzle uses two tile shapes."
     },
     {
       "name": "Three shapes",
-      "blurb": "Each puzzle uses three tile shapes. Medium to Expert (three shapes leave almost no Beginner puzzles)."
+      "blurb": "Each puzzle uses three tile shapes."
     },
     {
       "name": "Bonus: symmetric voids",
-      "blurb": "The black squares are laid out symmetrically."
+      "blurb": "The boards are symmetric."
     },
     {
       "name": "Bonus: clues",
@@ -27,7 +27,7 @@
     },
     {
       "name": "Bonus: shapes",
-      "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L."
+      "blurb": "Boards that aren't plain squares."
     },
     {
       "name": "Bonus: giants",
@@ -49,7 +49,7 @@
       "group": "One shape",
       "title": "One shape · 6×6",
       "label": "6×6",
-      "blurb": "Small boards, quick to solve.",
+      "blurb": "",
       "file": "one-6.csv",
       "count": 250
     },
@@ -58,7 +58,7 @@
       "group": "One shape",
       "title": "One shape · 8×8",
       "label": "8×8",
-      "blurb": "Mid-size boards.",
+      "blurb": "",
       "file": "one-8.csv",
       "count": 500
     },
@@ -67,7 +67,7 @@
       "group": "One shape",
       "title": "One shape · 10×10",
       "label": "10×10",
-      "blurb": "Large boards, long solves.",
+      "blurb": "",
       "file": "one-10.csv",
       "count": 500
     },
@@ -76,7 +76,7 @@
       "group": "One shape",
       "title": "One shape · 12×12",
       "label": "12×12",
-      "blurb": "Giant boards, very long solves.",
+      "blurb": "",
       "file": "one-12.csv",
       "count": 500
     },
@@ -85,7 +85,7 @@
       "group": "Two shapes",
       "title": "Two shapes · 6×6",
       "label": "6×6",
-      "blurb": "Small boards, quick to solve.",
+      "blurb": "",
       "file": "two-6.csv",
       "count": 250
     },
@@ -94,7 +94,7 @@
       "group": "Two shapes",
       "title": "Two shapes · 8×8",
       "label": "8×8",
-      "blurb": "Mid-size boards.",
+      "blurb": "",
       "file": "two-8.csv",
       "count": 500
     },
@@ -103,7 +103,7 @@
       "group": "Two shapes",
       "title": "Two shapes · 10×10",
       "label": "10×10",
-      "blurb": "Large boards, long solves.",
+      "blurb": "",
       "file": "two-10.csv",
       "count": 500
     },
@@ -112,7 +112,7 @@
       "group": "Two shapes",
       "title": "Two shapes · 12×12",
       "label": "12×12",
-      "blurb": "Giant boards, very long solves.",
+      "blurb": "",
       "file": "two-12.csv",
       "count": 500
     },
@@ -121,7 +121,7 @@
       "group": "Three shapes",
       "title": "Three shapes · 6×6",
       "label": "6×6",
-      "blurb": "Small boards, quick to solve.",
+      "blurb": "",
       "file": "three-6.csv",
       "count": 300
     },
@@ -130,7 +130,7 @@
       "group": "Three shapes",
       "title": "Three shapes · 8×8",
       "label": "8×8",
-      "blurb": "Mid-size boards.",
+      "blurb": "",
       "file": "three-8.csv",
       "count": 300
     },
@@ -139,7 +139,7 @@
       "group": "Three shapes",
       "title": "Three shapes · 10×10",
       "label": "10×10",
-      "blurb": "Large boards, long solves.",
+      "blurb": "",
       "file": "three-10.csv",
       "count": 300
     },
@@ -147,8 +147,8 @@
       "id": "bonus-voids",
       "group": "Bonus: symmetric voids",
       "title": "Bonus: symmetric voids",
-      "label": "Symmetric voids",
-      "blurb": "The black squares are laid out symmetrically.",
+      "label": "Symmetry",
+      "blurb": "The boards are symmetric.",
       "file": "bonus-voids.csv",
       "count": 170
     },
@@ -166,7 +166,7 @@
       "group": "Bonus: shapes",
       "title": "Bonus: shapes",
       "label": "Shapes",
-      "blurb": "Boards that aren't plain squares: rectangles, a plus sign, an octagon, a ring and an L.",
+      "blurb": "Boards that aren't plain squares.",
       "file": "bonus-shapes.csv",
       "count": 398
     },

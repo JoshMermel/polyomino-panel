@@ -567,6 +567,15 @@ select, input[type="number"] {
 }
 .bp-more { margin-top: 14px; border-top: 1px solid var(--border-light); }
 .bp-more-summary { cursor: pointer; padding: 10px 0 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.bp-multi { margin: 4px 0 6px; }
+.bp-sizes { display: flex; gap: 6px; }
+.bp-size {
+  flex: 1 1 0; min-width: 0; min-height: 40px; padding: 8px 4px; font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border-light); border-radius: 8px; background: transparent; color: var(--text-primary);
+}
+.bp-size:hover { border-color: var(--border-strong); }
+.bp-size.bp-current { background: var(--primary-blue-hover-bg); border-color: var(--primary-blue); }
+.bp-size-done { color: var(--color-solved); }
 .bp-blurb { margin: 0 0 6px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
 .bp-book {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
