@@ -284,7 +284,10 @@ select, input[type="number"] {
   stroke-width: 0.08;           /* about a drawn line (0.1): lines along the board's edge are clipped to the board, so half of one shows inside the frame, and a placed tile then looks no thicker there. --frame is the blocked cells' colour, so a blocked cell on the edge joins the frame without a seam */
   pointer-events: none;
 }
-.board-svg.solved .frame { stroke: var(--color-solved); }
+/* A solved board keeps its frame and gets a green glow round it: a wider, blurred green stroke under the frame. (A green frame
+   did not meet the dark lines and the black cells cleanly where they touch it.) */
+.frame-glow { display: none; fill: none; pointer-events: none; }
+.board-svg.solved .frame-glow { display: inline; stroke: var(--color-solved); stroke-width: 0.26; opacity: 0.85; filter: blur(0.07px); }   /* (lengths in a filter on an SVG element are in the board's cell units, not screen pixels) */
 
 
 

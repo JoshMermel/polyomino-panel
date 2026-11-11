@@ -98,8 +98,10 @@ export class Board {
           if (!inShape(r, c + 1)) d += `M${c + 1} ${r}L${c + 1} ${r + 1}`;
         }
       }
+      el('path', { class: 'frame-glow', d, 'stroke-linecap': 'square' }, svg);          // shown only on a solved board (style.css)
       el('path', { class: 'frame', d, 'stroke-linecap': 'square' }, svg);
     } else {
+      el('rect', { class: 'frame-glow', x: 0, y: 0, width: cols, height: rows }, svg);
       el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
     }
 
