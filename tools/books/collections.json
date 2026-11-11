@@ -4,23 +4,23 @@
   "tiers": [
     "Beginner",
     "Medium",
-    "Hard"
+    "Hard",
+    "Expert"
   ],
   "sizes": [
     6,
     8,
     10
   ],
-  "perBook": 1000,
+  "perBook": 400,
   "_sparseShare": "Within each shape and tier a book only draws from the sparsest share of the puzzles (fewest blocked cells), as far as that leaves enough: the original L-panel puzzles have few black squares, and a book that takes puzzles by difficulty alone is mostly dense.",
   "sparseShare": 0.5,
-  "_maxBeyondHints": "At most this share of a book's Hard tier may be puzzles the hint rules cannot finish ('no logical hints'): they score highest, so picking by score rank would fill the tier with them. A book comes out smaller rather than exceed it.",
-  "maxBeyondHints": 0.2,
-  "_tierWeights": "Share of a book each tier gets (1 unless listed). Read as counts for a 1000-puzzle book: 100 Beginner, 450 Medium, 450 Hard (Beginner is the least interesting tier, so it is small). A tier with too few puzzles gives up what it cannot fill.",
+  "_tierWeights": "Share of a book each tier gets (1 unless listed). Read as counts for a 400-puzzle book: 40 Beginner, 180 Medium, 130 Hard, 50 Expert (Beginner is the least interesting tier, so it is small; Expert is the puzzles the hint rules cannot finish, the same share in every book). A tier with too few puzzles gives up what it cannot fill, the others sharing the difference.",
   "tierWeights": {
-    "Beginner": 100,
-    "Medium": 450,
-    "Hard": 450
+    "Beginner": 40,
+    "Medium": 180,
+    "Hard": 130,
+    "Expert": 50
   },
   "_maxLineShare": "A tier holds at most this fraction of its puzzles in line-piece puzzles (domino, I tromino, I tetromino, I pentomino; pairs of only those). On sparse boards they are almost the only shapes with Beginner puzzles, so a book's opening was mostly them. The tier gets a little smaller instead of refilling. Like shapeWeights, published puzzles are only dropped with --trim.",
   "maxLineShare": 0.3,

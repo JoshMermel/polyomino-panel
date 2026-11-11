@@ -497,11 +497,11 @@ test('ratePuzzle uses only the deduction rules and classifies correctly', () => 
   for (let i = 1; i < RULES.length; i++) assert.ok(tierRank(RULES[i].id) >= tierRank(RULES[i - 1].id));
   // the bins: forced steps are Beginner; edges, try-a-line and two-way lookahead are Medium; wide edges, three-way
   // lookahead, chains and puzzles beyond the rules are Hard
-  assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard']);
+  assert.deepEqual(TIERS, ['Beginner', 'Medium', 'Hard', 'Expert']);
   assert.deepEqual(RULES.map(x => [x.id, x.tier]), [
     ['forced', 'Beginner'], ['lookahead2', 'Medium'], ['edges', 'Medium'], ['tryLine', 'Medium'], ['pocket', 'Medium'], ['lookahead3', 'Hard'], ['edgesWide', 'Hard'], ['eliminate', 'Hard'], ['chain', 'Hard'],
   ]);
-  assert.equal(tierOfRule('unsolved'), 'Hard');
+  assert.equal(tierOfRule('unsolved'), 'Expert');
   assert.equal(beyondHints({ rules: 'unsolved' }), true);
   assert.equal(beyondHints({ rules: 'chain' }), false);
   const rt = (tier, o = {}) => ({ tier, remaining: 0, steps: 1, score: 1, ...o });
@@ -1186,7 +1186,13 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
     assert.ok(tiers.has('Medium') && tiers.has('Hard'), `${book.id}: runs up to Hard`);
     if (Number(size) === 6) assert.ok(tiers.has('Beginner'), `${book.id}: starts at Beginner`);
     assert.ok(new Set(ps.map(p => p.tile)).size >= (kind === 'one' ? 8 : 4), `${book.id}: mixes shapes`);
-    assert.ok(ps.length >= 150, `${book.id}: a reasonable size`);
+    assert.equal(ps.length, 400, `${book.id}: every main book has 400 puzzles`);
+    // Expert is the same share (50) in every book; the one-shape 6x6 book has almost no puzzles the hint rules can't finish
+    if (book.id !== 'one-6') assert.equal(ps.filter(p => p.tier === 'Expert').length, 50, `${book.id}: 50 Expert puzzles`);
+  }
+  // the Expert tier is exactly the puzzles with no logical hints
+  for (const book of manifest.books) {
+    for (const p of data(book.file)) assert.equal(p.tier === 'Expert', p.rules === 'unsolved', `${book.id}/${p.name}: Expert iff unsolved`);
   }
   // the book picker lists exactly the groups the manifest names, in order, and no book is left out
   assert.deepEqual(manifest.groups.map(g => g.name), ['Intro', 'One shape', 'Two shapes', 'Three shapes', 'Bonus: symmetric voids', 'Bonus: clues', 'Bonus: giants']);

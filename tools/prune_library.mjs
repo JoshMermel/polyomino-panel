@@ -54,7 +54,7 @@ for (const f of readdirSync(dir).filter(f => /^[A-Z0-9+]+_\d+x\d+\.csv$/.test(f)
     if (syms.every(k => distance(s[0], k) >= minD)) { kept.add(p); syms.push(s); }
   }
   const survivors = puzzles.filter(p => kept.has(p));      // keep the file's own order
-  const tiers = ps => ['Beginner', 'Medium', 'Hard'].map(t => ps.filter(p => p.tier === t).length).join('/');
+  const tiers = ps => ['Beginner', 'Medium', 'Hard', 'Expert'].map(t => ps.filter(p => p.tier === t).length).join('/');
   console.log(`${f.replace('.csv', '').padEnd(12)} ${String(puzzles.length).padStart(5)} -> ${String(survivors.length).padStart(5)}   (B/M/H ${tiers(puzzles)} -> ${tiers(survivors)})`);
   before += puzzles.length; after += survivors.length;
   if (apply) writeFileSync(new URL(f, dir), text.split('\n').filter(l => l.startsWith('#')).join('\n') + '\n' + toCsv(survivors));

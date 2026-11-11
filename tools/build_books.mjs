@@ -10,7 +10,7 @@
 //                                              puzzles of those shapes; use after lowering a shapeWeight). Other shapes only grow.
 //
 // There is one book per (number of tile shapes, board size): "One shape" and "Two shapes", each on
-// 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard; see
+// 6x6, 8x8 and 10x10 boards. A book runs through every difficulty tier (Beginner, Medium, Hard, Expert; see
 // js/rating.js), easiest first. How a book is made:
 //   1. The book's size is split over the tiers in proportion to their weights (tierWeights in
 //      collections.json: Beginner counts half, so a book is about 20% Beginner, 40% Medium, 40% Hard),
@@ -26,7 +26,7 @@
 //      a shape's puzzles in that tier, as long as that leaves at least three times the number needed.
 //   3a. A tier holds at most `maxLineShare` (a fraction of its share) of line-piece puzzles (domino, I tromino, I tetromino,
 //      I pentomino), and the local reshuffle (step 4) treats them as one kind so they never run in a row.
-//   3b. The Hard tier holds at most `maxBeyondHints` (20%) puzzles the hint rules cannot finish; see below.
+//   3b. Puzzles the hint rules cannot finish are their own tier, Expert, so each book's share of them is set by tierWeights.
 //   4. The book is sorted by tier, then score, and then reshuffled locally (spreadByTier in lib/pick.mjs) so the
 //      same shape doesn't come up again and again: each puzzle moves only a little, within its tier. One book can start with a shape-by-shape "tour" of
 //      easy puzzles (the `tour` entry in collections.json), which comes before the rest.
@@ -49,7 +49,7 @@ import {
   readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, rmSync,
 } from 'node:fs';
 import { parseCsv, toCsv, solveWithGivens, tileSpecs, hasSwastika, openCellsConnected, puzzleHash } from '../js/logic.js';
-import { TIERS, TIER_INFO, beyondHints } from '../js/rating.js';
+import { TIERS, TIER_INFO } from '../js/rating.js';
 import { canonicalGrid } from '../js/generator.js';
 import { pickStable, weightedAllocation, spreadByTier, byScoreThenTie, tieHash } from './lib/pick.mjs';
 import { LINEAR } from './lib/tile_weights.mjs';
@@ -252,27 +252,25 @@ for (const spec of buildOrder) {
 
   const cands = eligible(spec, used);
   const perTier = config.tiers.map(t => cands.filter(p => p.tier === t));
-  const alloc = weightedAllocation(spec.count, perTier.map(c => c.length), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
+  // Expert (the puzzles the hint rules cannot finish) is the same share in every book, never more: when another tier
+  // comes up short its slots go to the others, not to Expert.
+  const tierSum = config.tiers.reduce((sum, t) => sum + (config.tierWeights?.[t] ?? 1), 0);
+  const tierCap = (t, n) => (t === 'Expert' ? Math.min(n, Math.round(spec.count * (config.tierWeights?.[t] ?? 1) / tierSum)) : n);
+  const alloc = weightedAllocation(spec.count, perTier.map((c, i) => tierCap(config.tiers[i], c.length)), config.tiers.map(t => config.tierWeights?.[t] ?? 1));
   const tourTier = config.tiers.indexOf(config.tour?.tier);
   if (tour.length && tourTier >= 0) alloc[tourTier] = Math.max(0, alloc[tourTier] - tour.length);   // the tour is part of that tier's share
-  // The Hard tier may hold at most `maxBeyondHints` (a share, e.g. 0.2) of puzzles the hint rules can't
-  // finish ("no logical hints"): they score highest, so rank-based picks would lean heavily on them. Excess
-  // ones are cut back to evenly spaced ranks and replaced by solvable Hard puzzles (fewer if there aren't any).
-  const rest = perTier.flatMap((c, i) => {
-    const picks = capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept);
-    const cap = config.maxBeyondHints;
-    if (config.tiers[i] !== 'Hard' || cap == null) return picks;
-    const stuck = picks.filter(beyondHints), max = Math.floor(cap * alloc[i]);
-    if (stuck.length <= max) return picks;
-    const keepStuck = max ? pickStable(stuck, { count: max, seed, isKept, key: hashOf }).picks : [];      // published ones first
-    const chosen = new Set([...picks.filter(p => !beyondHints(p)), ...keepStuck].map(p => p.name));
-    const solvable = c.filter(p => !beyondHints(p) && !chosen.has(p.name));
-    // replace the cut ones, but only up to the tier's share: a tier that already holds more (every published puzzle
-    // stays, so a book can run over its size) must not grow by the cut ones again on every rebuild
-    const removed = stuck.length - keepStuck.length;
-    const refill = pickAcross(byTile(solvable), Math.min(removed, Math.max(0, alloc[i] - (picks.length - removed))), isKept, spec.sparseShare);
-    return [...picks.filter(p => !beyondHints(p)), ...keepStuck, ...refill];
-  });
+  const rest = perTier.flatMap((c, i) => capLines(pickAcross(byTile(c), alloc[i], isKept, spec.sparseShare), isKept));
+  // A tier that comes up short (the line-piece cap leaves Beginner small, a thin pool) would leave the book under its
+  // size, and the main books should all be the same size. Top up from the Medium and Hard tiers, by their weights, with
+  // puzzles that are not line pieces (those are what the cap holds back).
+  const deficit = spec.count - tour.length - rest.length;
+  if (deficit > 0) {
+    const taken = new Set(rest.map(p => p.name));
+    const fillTiers = config.tiers.map((t, i) => i).filter(i => ['Medium', 'Hard'].includes(config.tiers[i]));
+    const left = fillTiers.map(i => perTier[i].filter(p => !taken.has(p.name) && !isLine(p)));
+    const extra = weightedAllocation(deficit, left.map(c => c.length), fillTiers.map(i => config.tierWeights?.[config.tiers[i]] ?? 1));
+    fillTiers.forEach((_, k) => { if (extra[k]) rest.push(...pickAcross(byTile(left[k]), extra[k], isKept, spec.sparseShare)); });
+  }
   rest.forEach(p => used.add(p.name));
   rest.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || byScore(a, b));
   const spread = spreadByTier(rest, { key: spreadKey, recent: tour.map(spreadKey) });       // no long runs of one shape
@@ -305,10 +303,9 @@ for (const b of books) {
   const rest = b.puzzles.slice(b.tourCount);
   const tiers = config.tiers.map(t => `${TIER_INFO[t].name} ${b.puzzles.filter(p => p.tier === t).length}`).join('  ');
   const shapes = new Set(b.puzzles.map(p => p.tile));
-  const hard = rest.filter(p => p.tier === 'Hard');
   const sc = t => { const s = rest.filter(p => p.tier === t).map(p => p.score); return s.length ? `${Math.min(...s)}..${Math.max(...s)}` : '-'; };
   const keptNow = b.before ? b.puzzles.filter(p => b.before.has(hashOf(p))).length : 0;
-  console.log(`[${b.meta.id}] ${book.length}/${b.target}  ${tiers}  | ${shapes.size} shape sets${b.tourCount ? `, tour ${b.tourCount}` : ''}  | beyond hints ${hard.filter(beyondHints).length}/${hard.length} of Hard` +
+  console.log(`[${b.meta.id}] ${book.length}/${b.target}  ${tiers}  | ${shapes.size} shape sets${b.tourCount ? `, tour ${b.tourCount}` : ''}` +
     `${b.before ? `  | kept ${keptNow} of ${b.before.size} published (${b.before.size - keptNow} dropped, ${book.length - keptNow} new)` : ''}\n` +
     `    scores: ${config.tiers.map(t => `${TIER_INFO[t].name} ${sc(t)}`).join('  ')}`);
 }

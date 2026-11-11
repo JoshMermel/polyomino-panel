@@ -20,25 +20,31 @@
   --cell-bg: #fff;
   --cell-border: #ccc;
   --blocked-bg: var(--text-primary); /* same as star battle's void cells */
-  --tile-bg: rgba(25, 118, 210, 0.14);
-  --tile-bad-bg: rgba(255, 0, 0, 0.18);
+  --tile-bg: rgba(0, 114, 178, 0.2);        /* a selected shape chip */
+  --tile-bad-bg: rgba(213, 94, 0, 0.1);
+  --bad: #d55e00;                          /* wrong marks and regions (vermillion; hatched, so not only a colour) */
+  --line-color: #222;                      /* the lines you draw */
   --cell-hover: rgba(0, 0, 0, 0.09);       /* cell under the mouse (desktop) */
-  --drag-bg: rgba(126, 87, 194, 0.32);     /* cells traced so far, not yet the tile shape */
-  --drag-ok-bg: rgba(46, 160, 67, 0.38);   /* traced cells form the tile: release to draw it */
-  --hint-yellow: rgba(255, 235, 0, 0.65);
-  --hint-blue: rgba(0, 123, 255, 0.28);
-  --hint-line: #e08e00;
+  --drag-bg: rgba(0, 0, 0, 0.18);          /* cells traced so far, not yet the tile shape */
+  --drag-ok-bg: rgba(0, 114, 178, 0.38);   /* traced cells form the tile: release to draw it */
+  --hint-yellow: #f0e442;
+  --hint-blue: rgba(0, 0, 0, 0.14);        /* the tiles a hint talks about: grey, so it is never read as a shape color */
+  --hint-line: #111;
   --frame: #111;
-  /* one color per allowed shape (puzzles with several shapes): the header picture and the fill of a finished tile */
-  --shape-0: var(--primary-blue); --shape-0-bg: var(--tile-bg);
-  --shape-1: #ef6c00; --shape-1-bg: rgba(239, 108, 0, 0.22);
-  --shape-2: #00897b; --shape-2-bg: rgba(0, 137, 123, 0.22);
-  --shape-3: #c2185b; --shape-3-bg: rgba(194, 24, 91, 0.20);
-  /* the drag preview once the cells form that shape: the shape's color, stronger than the finished-tile fill */
-  --shape-0-drag: rgba(25, 118, 210, 0.38);
-  --shape-1-drag: rgba(239, 108, 0, 0.40);
-  --shape-2-drag: rgba(0, 137, 123, 0.40);
-  --shape-3-drag: rgba(194, 24, 91, 0.36);
+  /* Colors for the allowed shapes (puzzles with several shapes), from the Okabe-Ito colour-blind-safe set. Each has
+     --shape-N     the header picture's outline,
+     --shape-N-bg  the fill of a finished tile,
+     --shape-N-ink the pattern drawn over that fill (shape 0 plain, 1 horizontal stripes, 2 dots, 3 vertical stripes;
+                   #shape-patterns in index.html), so shapes differ by pattern and not only by colour,
+     --shape-N-drag the drag preview once the cells form that shape. */
+  --shape-0: #0072b2; --shape-0-bg: #9cc9e8;
+  --shape-1: #e69f00; --shape-1-bg: #f6d58a; --shape-1-ink: #b77a00;
+  --shape-2: #cc79a7; --shape-2-bg: #e7b4cf; --shape-2-ink: #a5457c;
+  --shape-3: #009e73; --shape-3-bg: #a5dcc8; --shape-3-ink: #00765a;
+  --shape-0-drag: rgba(0, 114, 178, 0.38);
+  --shape-1-drag: rgba(230, 159, 0, 0.42);
+  --shape-2-drag: rgba(204, 121, 167, 0.45);
+  --shape-3-drag: rgba(0, 158, 115, 0.4);
 }
 
 :root[data-theme="dark"] {
@@ -61,22 +67,25 @@
 
   --cell-bg: #2a2a2a;
   --cell-border: #444;
-  --tile-bg: rgba(100, 181, 246, 0.2);
-  --tile-bad-bg: rgba(255, 80, 80, 0.28);
+  --tile-bg: rgba(86, 180, 233, 0.25);
+  --tile-bad-bg: rgba(255, 143, 77, 0.18);
+  --bad: #ff8f4d;
+  --line-color: #e8e8e8;
   --cell-hover: rgba(255, 255, 255, 0.14);
-  --drag-bg: rgba(179, 136, 255, 0.38);
-  --drag-ok-bg: rgba(76, 205, 110, 0.42);
-  --hint-yellow: rgba(255, 255, 80, 0.5);
-  --hint-blue: rgba(80, 160, 255, 0.4);
-  --hint-line: #ffb300;
+  --drag-bg: rgba(255, 255, 255, 0.22);
+  --drag-ok-bg: rgba(86, 180, 233, 0.42);
+  --hint-yellow: rgba(240, 228, 66, 0.8);
+  --hint-blue: rgba(200, 200, 200, 0.35);
+  --hint-line: #fff;
   --frame: #ddd;
-  --shape-1: #ffa726; --shape-1-bg: rgba(255, 167, 38, 0.28);
-  --shape-2: #4db6ac; --shape-2-bg: rgba(77, 182, 172, 0.28);
-  --shape-3: #f48fb1; --shape-3-bg: rgba(244, 143, 177, 0.28);
-  --shape-0-drag: rgba(100, 181, 246, 0.45);
-  --shape-1-drag: rgba(255, 167, 38, 0.45);
-  --shape-2-drag: rgba(77, 182, 172, 0.45);
-  --shape-3-drag: rgba(244, 143, 177, 0.45);
+  --shape-0: #56b4e9; --shape-0-bg: rgba(86, 180, 233, 0.38);
+  --shape-1: #e69f00; --shape-1-bg: rgba(230, 159, 0, 0.38); --shape-1-ink: #ffc04d;
+  --shape-2: #cc79a7; --shape-2-bg: rgba(204, 121, 167, 0.45); --shape-2-ink: #f0a8cc;
+  --shape-3: #2fc79a; --shape-3-bg: rgba(0, 158, 115, 0.45); --shape-3-ink: #7fe0bf;
+  --shape-0-drag: rgba(86, 180, 233, 0.45);
+  --shape-1-drag: rgba(230, 159, 0, 0.45);
+  --shape-2-drag: rgba(204, 121, 167, 0.5);
+  --shape-3-drag: rgba(0, 158, 115, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -197,13 +206,13 @@ select, input[type="number"] {
 
 .cell { fill: var(--cell-bg); }
 .cell.blocked { fill: var(--blocked-bg); }
-.cell.tile-ok { fill: var(--shape-fill, var(--tile-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
-.cell.shape-1 { --shape-fill: var(--shape-1-bg); }
-.cell.shape-2 { --shape-fill: var(--shape-2-bg); }
-.cell.shape-3 { --shape-fill: var(--shape-3-bg); }
+.cell.tile-ok { fill: var(--shape-fill, var(--shape-0-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
+.cell.shape-1 { --shape-fill: url(#pat-shape-1); }   /* patterns: #shape-patterns in index.html */
+.cell.shape-2 { --shape-fill: url(#pat-shape-2); }
+.cell.shape-3 { --shape-fill: url(#pat-shape-3); }
 .cell.tile-bad { fill: var(--tile-bad-bg); fill: url(#bad-hatch) var(--tile-bad-bg); }   /* hatched: not confusable with the shape tints */
 .hatch-bg { fill: var(--tile-bad-bg); }
-.hatch-line { stroke: var(--color-error); stroke-width: 0.05; opacity: 0.6; }
+.hatch-line { stroke: var(--bad); stroke-width: 0.05; opacity: 0.8; }
 
 .dash {
   stroke: var(--cell-border);
@@ -212,7 +221,7 @@ select, input[type="number"] {
 }
 
 .seg {
-  stroke: var(--primary-blue);
+  stroke: var(--line-color);
   stroke-width: 0.1;
   stroke-linecap: round;
   opacity: 0;
@@ -221,7 +230,7 @@ select, input[type="number"] {
 .seg.hover { opacity: 0.28; }
 .seg.on { opacity: 1; }
 .seg.cross { opacity: 0; }
-.seg.bad { stroke: var(--color-error); opacity: 1; }
+.seg.bad { stroke: var(--bad); opacity: 1; }
 .seg.given { stroke: var(--blocked-bg); stroke-width: 0.13; }          /* pre-drawn edges look like the blocked cells */
 
 .xmark line {
@@ -232,7 +241,7 @@ select, input[type="number"] {
 }
 
 .xmark.given line { stroke: var(--blocked-bg); stroke-width: 0.09; }
-.xmark.bad line { stroke: var(--color-error); stroke-width: 0.075; }
+.xmark.bad line { stroke: var(--bad); stroke-width: 0.075; }
 
 /* Hint highlights (the board's marks are never changed by a hint). Later
    rules win, so target > tile when cells overlap. */
@@ -255,10 +264,10 @@ select, input[type="number"] {
   stroke-dasharray: 0.14 0.12;
   pointer-events: none;
 }
-.hint-marker circle { fill: var(--color-error); stroke: #fff; stroke-width: 0.04; }
+.hint-marker circle { fill: var(--bad); stroke: #fff; stroke-width: 0.04; }
 .hint-marker text { fill: #fff; font-weight: 700; font-family: sans-serif; }
 .hint-marker { pointer-events: none; }
-.hint-unknown circle { fill: #ffe600; stroke: var(--hint-line); stroke-width: 0.05; }   /* yellow, like the cells a hint points at */
+.hint-unknown circle { fill: #f0e442; stroke: var(--hint-line); stroke-width: 0.05; }   /* yellow, like the cells a hint points at */
 .hint-unknown text { fill: #333; font-weight: 700; font-family: sans-serif; }
 .hint-unknown { pointer-events: none; }
 .hint-x line {
@@ -427,14 +436,21 @@ select, input[type="number"] {
   flex-shrink: 0;
 }
 /* cells are separated by a thin gap in the page background */
-.tile-shape-svg.shape-1 rect { fill: var(--shape-1); }
-.tile-shape-svg.shape-2 rect { fill: var(--shape-2); }
-.tile-shape-svg.shape-3 rect { fill: var(--shape-3); }
+/* the picture matches a finished tile (same fill and pattern), outlined in the shape's colour */
+.tile-shape-svg.shape-1 rect { fill: url(#pat-shape-1); stroke: var(--shape-1); }
+.tile-shape-svg.shape-2 rect { fill: url(#pat-shape-2); stroke: var(--shape-2); }
+.tile-shape-svg.shape-3 rect { fill: url(#pat-shape-3); stroke: var(--shape-3); }
 .tile-shape-svg rect {
-  fill: var(--primary-blue);
-  stroke: var(--bg-white);
+  fill: var(--shape-0-bg);
+  stroke: var(--shape-0);
   stroke-width: 0.08;
 }
+/* the patterns' parts (the patterns live in a hidden svg in index.html; they inherit these from the page) */
+.pat-cell { fill: var(--cell-bg); }
+.pat-bg-1 { fill: var(--shape-1-bg); } .pat-bg-2 { fill: var(--shape-2-bg); } .pat-bg-3 { fill: var(--shape-3-bg); }
+.pat-ink-1 { stroke: var(--shape-1-ink); stroke-width: 0.04; }
+.pat-ink-2 { fill: var(--shape-2-ink); }
+.pat-ink-3 { stroke: var(--shape-3-ink); stroke-width: 0.04; }
 
 
 

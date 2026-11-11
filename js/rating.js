@@ -31,20 +31,21 @@ import {
   EDGE_LINE, EDGE_CROSS, LOOKAHEAD_2, LOOKAHEAD_3, EDGES_NARROW, EDGES_WIDE,
 } from './logic.js';
 
-// Difficulty tiers, easiest first. A puzzle's tier is the tier of the hardest rule it needs.
-// (There used to be five: Hard was split into Hard / Expert / Extreme. The per-puzzle `rules`
-// column keeps that finer information; see beyondHints below for the one split that still shows.)
-export const TIERS = ['Beginner', 'Medium', 'Hard'];
+// Difficulty tiers, easiest first. A puzzle's tier is the tier of the hardest rule it needs; Expert is for
+// the puzzles the rules cannot finish at all (rules 'unsolved'), where Hint runs out of logical steps.
+// (There used to be five tiers with a different split of Hard. The per-puzzle `rules` column keeps the finer information.)
+export const TIERS = ['Beginner', 'Medium', 'Hard', 'Expert'];
 
 // How the app presents each tier: its name and what it means.
 export const TIER_INFO = {
   Beginner: { name: 'Beginner', blurb: 'only needs "this cell can only be covered one way" steps' },
   Medium: { name: 'Medium', blurb: 'needs edges that two or three candidate tiles agree on, an edge where a line would strand a cell or wall off an enclosed region, or trying one of two tiles and seeing it fail' },
-  Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, dropping the tiles that fail and comparing the rest, or a chain of consequences from a cell with two tiles (a few need more than the hint rules can do)' },
+  Hard: { name: 'Hard', blurb: 'needs edges shared by four or more candidate tiles, lookahead over three or more tiles, dropping the tiles that fail and comparing the rest, or a chain of consequences from a cell with two tiles' },
+  Expert: { name: 'Expert', blurb: "the hint rules can't finish it: somewhere you have to try a tile and follow what it forces, further than Hint can explain" },
 };
 
-// Puzzles the deduction rules can't finish (their `rules` value is 'unsolved'). They are in the Hard
-// tier, at the back of any score-sorted book, and are flagged so a player knows the hints will run dry.
+// Puzzles the deduction rules can't finish (their `rules` value is 'unsolved'): the Expert tier. They are also
+// flagged "no logical hints" in the app so a player knows the hints will run dry.
 export const beyondHints = puzzle => puzzle.rules === 'unsolved';
 
 // The rule table. THIS is where rules are binned into tiers and given weights: to
@@ -92,7 +93,7 @@ export const RULES = [
 export const UNDETERMINED_WEIGHT = 40;
 
 export const RULE_IDS = RULES.map(r => r.id);
-export const tierOfRule = id => (id === 'unsolved' ? 'Hard' : RULES.find(r => r.id === id).tier);
+export const tierOfRule = id => (id === 'unsolved' ? 'Expert' : RULES.find(r => r.id === id).tier);
 export const ruleLabel = id => (id === 'unsolved' ? 'none of the current rules finishes it' : RULES.find(r => r.id === id).label);
 
 // Solve with the rules alone. Returns

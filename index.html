@@ -16,6 +16,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Fill patterns for the shapes' colors (so shapes differ by pattern as well as color; colors in style.css). They live here,
+       not in the board, so the pictures of the shapes in the header can use them too. Units are cells. -->
+  <svg id="shape-patterns" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="pat-shape-1" width="0.2" height="0.2" patternUnits="userSpaceOnUse">
+        <rect class="pat-cell" width="0.2" height="0.2"/><rect class="pat-bg-1" width="0.2" height="0.2"/>
+        <line class="pat-ink-1" x1="0" y1="0.1" x2="0.2" y2="0.1"/>
+      </pattern>
+      <pattern id="pat-shape-2" width="0.2" height="0.2" patternUnits="userSpaceOnUse">
+        <rect class="pat-cell" width="0.2" height="0.2"/><rect class="pat-bg-2" width="0.2" height="0.2"/>
+        <circle class="pat-ink-2" cx="0.1" cy="0.1" r="0.036"/>
+      </pattern>
+      <pattern id="pat-shape-3" width="0.2" height="0.2" patternUnits="userSpaceOnUse">
+        <rect class="pat-cell" width="0.2" height="0.2"/><rect class="pat-bg-3" width="0.2" height="0.2"/>
+        <line class="pat-ink-3" x1="0.1" y1="0" x2="0.1" y2="0.2"/>
+      </pattern>
+    </defs>
+  </svg>
   <div id="game-container">
     <div class="column">
       <header class="topbar">
