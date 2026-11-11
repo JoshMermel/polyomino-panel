@@ -78,6 +78,7 @@ export class Board {
 
     // Layers, bottom to top.
     const cellLayer = el('g', { class: 'layer-cells' }, svg);
+    const blockedLayer = el('g', { class: 'layer-blocked' }, svg);     // above the open cells, so a blocked cell's stroke (see style.css) is never covered by a neighbour
     const dashLayer = el('g', { class: 'layer-dash', ...inside }, svg);
     const segLayer = el('g', { class: 'layer-seg', ...inside }, svg);
     const xLayer = el('g', { class: 'layer-x' }, svg);
@@ -108,7 +109,7 @@ export class Board {
         this.cellEls.push(el('rect', {
           class: open ? 'cell' : outside ? 'cell outside' : 'cell blocked',
           x: c, y: r, width: 1, height: 1,
-        }, cellLayer));
+        }, open || outside ? cellLayer : blockedLayer));
       }
     }
 
