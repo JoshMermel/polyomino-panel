@@ -56,7 +56,7 @@ const pickBalanced = (list, n) => {
   });
   return out;
 };
-const TIER_SHARE = { Beginner: 0.10, Medium: 0.45, Hard: 0.32, Expert: 0.125 }, PAIR_SHARE = 0.3;
+const TIER_SHARE = { Beginner: 0.10, Medium: 0.45, Hard: 0.325, Expert: 0.125 }, PAIR_SHARE = 0.3;
 const isPair = p => tileSpecs(p.tile).length === 2;
 let picks = [];
 for (const tier of TIERS) {

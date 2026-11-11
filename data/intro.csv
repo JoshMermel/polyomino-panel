@@ -1,4 +1,4 @@
-# Intro. Built by tools/build_books.mjs from a pool of 189168 puzzles (seed 1).
+# Intro. Built by tools/build_books.mjs from a pool of 189159 puzzles (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).
 # rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. Sorted by tier, then (roughly) score; shapes are mixed locally so they don't repeat.
 name,rows,cols,tile,grid,solution,rules,tier,score
@@ -80,7 +80,7 @@ intro_075,6,6,N5,#....#...#..#...#.#.#...#.##.#####.#,#AAAB#AAC#BB#CCD#B#C#DDB#C
 intro_076,6,6,V5,.##....####....##..##....##.##....##,A##BBBA####BAAA##BC##DDDC##D##CCCD##,forced,Beginner,3
 intro_077,6,6,U5,.#...#...#.#.....#.#..#.###...######,A#ABB#AAA#B#CCCBB#C#CD#D###DDD######,forced,Beginner,3
 intro_078,6,6,Y5,.....##.##...#.#.#.#...#...###.#.###,AAAAB##A##BBC#D#B#C#DDB#CCD###C#D###,forced,Beginner,3
-intro_079,6,6,L5,....#.....#..#..#..#....##.#########,AABB#CADDB#CA#DB#CA#DBCC##D#########,forced,Beginner,3
+intro_079,6,6,L5,.#.#...#.#.#.#.#.#......##....######,A#B#CCA#B#C#A#B#C#AABBCD##DDDD######,forced,Beginner,3
 intro_080,6,6,P5,.....##....##...##.....####..####.##,AAABB##AABB##CCB##CCCDD####DD####D##,forced,Beginner,3
 intro_081,6,6,I5,.##.##.##.#..##.#..##.#..##.#.......,A##B##A##B#CA##B#CA##B#CA##B#CDDDDDC,forced,Beginner,3
 intro_082,6,6,F5,..##..#....##..#.#.....##.##..####.#,AA##BB#AABB##AC#B#CCCDD##C##DD####D#,forced,Beginner,3
@@ -93,8 +93,8 @@ intro_088,6,6,Y5,##....#..#.....##.#.....#...#.#....#,##AAAA#BC#ADBBC##D#BCCDD#B
 intro_089,6,6,S,#.###.#..#.....#.##....###....##.##.,#A###B#AA#BBCCA#B##CCDE###DDEE##D##E,forced,Beginner,4
 intro_090,6,6,N5,...#.###....#...#........#...#.##..#,AAA#B###AABB#CDE#BCCDEEBC#DDE#C##DE#,forced,Beginner,4
 intro_091,6,6,W5,..#..#...#.....#..............#....#,AA#BB#CAA#BBCCA#DBECCDDFEEDDFF#EEFF#,forced,Beginner,5
-intro_092,6,6,P5,.....#....#.#...............##.....#,AABBB#AABB#C#ADDCCEDDDCCEEFF##EEFFF#,forced,Beginner,5
-intro_093,6,6,L5,.#........#.....#..#.....#........#.,A#BBBBAAAA#BCCCC#DC#DDDDE#FFFFEEEE#F,forced,Beginner,5
+intro_092,6,6,L5,....#.......#....#....#.......#....#,AAAA#BACBBBB#CCCC#DDDD#EDFEEEE#FFFF#,forced,Beginner,5
+intro_093,6,6,P5,.....#....#.#...............##.....#,AABBB#AABB#C#ADDCCEDDDCCEEFF##EEFFF#,forced,Beginner,5
 intro_094,6,6,V3,....#.......#....#..####...#####.###,AABB#CADBECC#DDEE#FF####FGG#####G###,forced,Beginner,6
 intro_095,6,6,I3,.....#....#.....#..#.....###.#.###.#,ABCCC#ABDE#FABDE#FG#DEHFG###H#G###H#,forced,Beginner,6
 intro_096,6,6,T,.........#...........#....#..##.##.#,AAABBBCAD#BECCDDEECFD#GEFF#GG##F##G#,forced,Beginner,6

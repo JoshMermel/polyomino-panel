@@ -1,4 +1,4 @@
-# Three shapes · 6×6. Built by tools/build_books.mjs from a pool of 189168 puzzles (seed 1).
+# Three shapes · 6×6. Built by tools/build_books.mjs from a pool of 189159 puzzles (seed 1).
 # grid: # = blocked cell, . = open cell. solution: tile labels, # = blocked. The tile column lists the allowed shapes (joined with +).
 # rules: hardest deduction rule needed; tier: its difficulty tier; score: finer difficulty. Sorted by tier, then (roughly) score; shapes are mixed locally so they don't repeat.
 name,rows,cols,tile,grid,solution,rules,tier,score

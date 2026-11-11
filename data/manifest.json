@@ -150,7 +150,7 @@
       "label": "Symmetry",
       "blurb": "The boards are symmetric.",
       "file": "bonus-voids.csv",
-      "count": 170
+      "count": 400
     },
     {
       "id": "bonus-clues",
@@ -159,7 +159,7 @@
       "label": "Clues",
       "blurb": "Some lines and ✕ marks are already drawn for you.",
       "file": "bonus-clues.csv",
-      "count": 211
+      "count": 400
     },
     {
       "id": "bonus-shapes",
@@ -168,7 +168,7 @@
       "label": "Shapes",
       "blurb": "Boards that aren't plain squares.",
       "file": "bonus-shapes.csv",
-      "count": 398
+      "count": 400
     },
     {
       "id": "bonus-giants",
@@ -177,7 +177,7 @@
       "label": "Giants",
       "blurb": "16×16 boards with one or two tile shapes. Best on a large screen.",
       "file": "bonus-giants.csv",
-      "count": 297
+      "count": 398
     }
   ]
 }
