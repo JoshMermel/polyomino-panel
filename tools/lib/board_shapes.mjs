@@ -29,6 +29,15 @@ const hexDist = (dr, dc) => Math.max(Math.abs(dr), Math.abs(dc), Math.abs(dr + d
 for (const n of [3, 4, 5, 6, 7]) {
   SHAPES[`hexagon${n}`] = () => ({ rows: 2 * n - 1, cols: 2 * n - 1, keep: (r, c) => hexDist(r - (n - 1), c - (n - 1)) <= n - 1 });
 }
+// More hex boards: hexrhombusN is the whole N x N array (a slanted rhombus, N*N cells), hextriangleN the half of it with
+// r + c < N (a triangle with sides of N cells, N(N+1)/2 cells).
+for (const n of [6, 7, 8, 10, 11]) SHAPES[`hexrhombus${n}`] = () => ({ rows: n, cols: n, keep: () => true });
+for (const n of [8, 9, 10, 11, 13, 14]) SHAPES[`hextriangle${n}`] = () => ({ rows: n, cols: n, keep: (r, c) => r + c <= n - 1 });
+// hexrectWxR: a rectangle of R rows of W cells, every other row shifted half a cell (so the sides zigzag). Row r is drawn
+// r / 2 cells to the right of the array's first column, so its cells start at column floor((R - 1) / 2) - floor(r / 2).
+for (const [w, r] of [[6, 6], [7, 7], [8, 8], [9, 9], [10, 10]]) {
+  SHAPES[`hexrect${w}x${r}`] = () => ({ rows: r, cols: w + Math.floor((r - 1) / 2), keep: (i, c) => { const s = Math.floor((r - 1) / 2) - Math.floor(i / 2); return c >= s && c < s + w; } });
+}
 // Triangle boards (see js/topology.js): a region of the triangle lattice, in lattice coordinates (u, j) where u counts half
 // sides and j rows of lattice points; a cell belongs when all three of its corners are in the region. The region's array is
 // cropped to its cells (sliding by an even offset, so up triangles stay up). trihexagonN is a hexagon with sides of N
@@ -53,6 +62,8 @@ for (const n of [4, 5, 6, 7, 8, 10, 12]) {
 for (const n of [3, 4, 5, 6]) {
   SHAPES[`trirhombus${n}`] = triRegion(n, (u, j) => j >= 0 && j <= n && u - j >= 1 && u - j <= 1 + 2 * n);
 }
+// trirectRxW: a rectangle R rows of triangles high and W half sides wide, with zigzag left and right sides (and flat top and bottom)
+for (const [r, w] of [[6, 11], [7, 13], [8, 15], [10, 17]]) SHAPES[`trirect${r}x${w}`] = triRegion(r, (u, j) => j >= 0 && j <= r && u >= 0 && u <= w);
 // -> { rows, cols, fixed: [bool per cell], outside: string ('x' = outside, '.' = in the shape) or '' for a rectangle }
 export function boardShape(name) {
   const m = /^rect(\d+)x(\d+)$/.exec(name);

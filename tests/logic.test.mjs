@@ -1189,7 +1189,10 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         else if (book.id === 'bonus-shapes') assert.ok(p.rows >= 5 && p.cols >= 5 && p.rows <= 12 && p.cols <= 12, `${p.name}: a board of a sensible size`);
         else if (gridKind === 'hexes') {
           assert.ok(p.tile.startsWith('hex:') && tileSpecs(p.tile).length === 1, `${p.name}: one hex tile`);
-          assert.ok(p.rows === p.cols && p.rows === { s: 7, m: 9, l: 11 }[sizeKey] && p.outside, `${p.name}: a hexagon of side ${{ s: 4, m: 5, l: 6 }[sizeKey]} (a ${p.rows}x${p.cols} array with its corners outside)`);
+          assert.ok(p.outside, `${p.name}: a board with an outline`);
+          const cells = [...p.outside].filter(ch => ch !== 'x').length;      // Small 36 to 37 cells, Medium 55 to 64, Large 91 to 100
+          const [lo, hi] = { s: [36, 37], m: [55, 64], l: [91, 100] }[sizeKey];
+          assert.ok(cells >= lo && cells <= hi, `${p.name}: ${cells} cells is not a ${sizeKey} hex board`);
         }
         else if (gridKind === 'triangles') {
           assert.ok(p.tile.startsWith('tri:') && tileSpecs(p.tile).length === 1, `${p.name}: one triangle tile`);
@@ -1204,7 +1207,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         }
       }
       if (gridKind === 'hexes') {
-        assert.ok(ps.length >= 40, `${book.id}: a good size`);
+        assert.equal(ps.length, sizeKey === 's' ? 250 : 500, `${book.id}: as big as the polyomino books`);
         for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
           const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
           const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;
@@ -1216,7 +1219,7 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         assert.ok(ps.every(p => !hasSwastika(p, p.solution)), 'no swastika filter on hexes: it just returns false');
       }
       if (gridKind === 'triangles') {
-        assert.ok(ps.length >= 90, `${book.id}: a good size`);
+        assert.equal(ps.length, sizeKey === 's' ? 250 : 500, `${book.id}: as big as the polyomino books`);
         for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
           const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
           const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;

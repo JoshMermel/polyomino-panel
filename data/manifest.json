@@ -19,11 +19,11 @@
     },
     {
       "name": "Hexes",
-      "blurb": "Hexagonal cells, cut into polyhex tiles."
+      "blurb": "Hexagonal cells, on hexagon, rhombus, triangle and rectangle boards."
     },
     {
       "name": "Triangles",
-      "blurb": "Triangular cells, cut into polyiamond tiles."
+      "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards."
     },
     {
       "name": "Bonus: symmetric voids",
@@ -147,60 +147,60 @@
       "group": "Hexes",
       "title": "Hexes · Small",
       "label": "Small",
-      "blurb": "Hexagonal cells, cut into polyhex tiles.",
-      "dims": "hexagon of 4",
+      "blurb": "Hexagonal cells, on hexagon, rhombus, triangle and rectangle boards.",
+      "dims": "36 to 37 cells",
       "file": "hexes-s.csv",
-      "count": 49
+      "count": 250
     },
     {
       "id": "hexes-m",
       "group": "Hexes",
       "title": "Hexes · Medium",
       "label": "Medium",
-      "blurb": "Hexagonal cells, cut into polyhex tiles.",
-      "dims": "hexagon of 5",
+      "blurb": "Hexagonal cells, on hexagon, rhombus, triangle and rectangle boards.",
+      "dims": "55 to 64 cells",
       "file": "hexes-m.csv",
-      "count": 143
+      "count": 500
     },
     {
       "id": "hexes-l",
       "group": "Hexes",
       "title": "Hexes · Large",
       "label": "Large",
-      "blurb": "Hexagonal cells, cut into polyhex tiles.",
-      "dims": "hexagon of 6",
+      "blurb": "Hexagonal cells, on hexagon, rhombus, triangle and rectangle boards.",
+      "dims": "91 to 100 cells",
       "file": "hexes-l.csv",
-      "count": 151
+      "count": 500
     },
     {
       "id": "triangles-s",
       "group": "Triangles",
       "title": "Triangles · Small",
       "label": "Small",
-      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
       "dims": "50 to 64 triangles",
       "file": "triangles-s.csv",
-      "count": 94
+      "count": 250
     },
     {
       "id": "triangles-m",
       "group": "Triangles",
       "title": "Triangles · Medium",
       "label": "Medium",
-      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
       "dims": "72 to 100 triangles",
       "file": "triangles-m.csv",
-      "count": 121
+      "count": 500
     },
     {
       "id": "triangles-l",
       "group": "Triangles",
       "title": "Triangles · Large",
       "label": "Large",
-      "blurb": "Triangular cells, cut into polyiamond tiles.",
+      "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
       "dims": "144 to 216 triangles",
       "file": "triangles-l.csv",
-      "count": 151
+      "count": 500
     },
     {
       "id": "bonus-voids",
