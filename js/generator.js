@@ -29,8 +29,8 @@ export function mulberry32(seed) {
 }
 
 // Is `holes` a number of blocked cells that leaves open cells made of whole tiles?
-const holesFit = (rows, cols, tile, holes) => {
-  const open = rows * cols - holes;
+const holesFit = (rows, cols, tile, holes, fixedCount = 0) => {
+  const open = rows * cols - fixedCount - holes;
   return holes >= 0 && open >= minTileSize(tile) && sizeFeasible(tile, open);
 };
 
@@ -137,9 +137,9 @@ function randomPacking(rows, cols, tile, preBlocked, holes, rng, budget) {
 }
 
 // Random valid (blocked cells, tiling) pair with exactly `holes` blocked cells.
-export function randomInitial(rows, cols, tile, holes, rng, attempts = 300) {
+export function randomInitial(rows, cols, tile, holes, rng, attempts = 300, fixed = null) {
   const n = rows * cols;
-  const none = new Uint8Array(n);
+  const none = fixed ? Uint8Array.from(fixed, v => (v ? 1 : 0)) : new Uint8Array(n);
   for (let a = 0; a < attempts; a++) {
     const assign = randomPacking(rows, cols, tile, none, holes, rng, 20000);
     if (assign) {
@@ -157,13 +157,13 @@ export function randomInitial(rows, cols, tile, holes, rng, attempts = 300) {
 // With `delta` > 0 the window is re-packed with that many FEWER blocked cells (delta should be a tile
 // size, so the open cells still divide into whole tiles): the puzzle gets sparser. The window is then
 // centred on a blocked cell.
-function proposeMove(state, rows, cols, tile, rng, delta = 0) {
+function proposeMove(state, rows, cols, tile, rng, delta = 0, fixed = null) {
   const { mask, assign } = state;
   const n = rows * cols;
   let centre = Math.floor(rng() * n);
   if (delta > 0) {
     const blocked = [];
-    for (let i = 0; i < n; i++) if (mask[i]) blocked.push(i);
+    for (let i = 0; i < n; i++) if (mask[i] && !fixed?.[i]) blocked.push(i);
     if (!blocked.length) return null;
     centre = blocked[Math.floor(rng() * blocked.length)];
   }
@@ -176,6 +176,7 @@ function proposeMove(state, rows, cols, tile, rng, delta = 0) {
   for (let i = 0; i < n; i++) {
     const r = Math.floor(i / cols), c = i % cols;
     if (Math.abs(r - cr) + Math.abs(c - cc) > radius) continue;
+    if (fixed?.[i]) continue;                          // the board's outline never moves
     if (mask[i]) holesIn.add(i); else tileIds.add(assign[i]);
   }
   if (tileIds.size === 0 || tileIds.size > 6) return null;
@@ -220,7 +221,9 @@ function proposeMove(state, rows, cols, tile, rng, delta = 0) {
 
 // Generate one puzzle with a unique solution.
 //   rows, cols, tile   board size and tile spec (name or pattern)
-//   holes              number of blocked cells (default: ~15% of the board)
+//   holes              number of blocked cells (default: ~15% of the board), not counting `fixed`
+//   fixed              optional per-cell array (truthy = always blocked): the board's outline, e.g. a plus sign
+//                      cut out of a square. These cells stay blocked and are not part of `holes`.
 //   rng                () => [0,1); default mulberry32(1)
 //   maxMs              give up after this long (default 20 s)
 //   cap, budget        solution-count cap and node budget per evaluation
@@ -235,11 +238,12 @@ function proposeMove(state, rows, cols, tile, rng, delta = 0) {
 export function generatePuzzle({
   rows, cols, tile = 'L', holes, rng = mulberry32(1),
   maxMs = 20000, cap = 40, budget = 200000, restartAfter = 4000, allowSwastika = false, allowDisconnected = false,
-  minSolutions = 1, maxSolutions = 1,
+  minSolutions = 1, maxSolutions = 1, fixed = null,
 }) {
+  const fixedCount = fixed ? [...fixed].filter(Boolean).length : 0;
   holes = holes ?? defaultHoles(rows, cols, tile);
-  if (!holesFit(rows, cols, tile, holes)) {
-    throw new Error(`${holes} blocked cells leaves ${rows * cols - holes} open cells, ` +
+  if (!holesFit(rows, cols, tile, holes, fixedCount)) {
+    throw new Error(`${holes} blocked cells leaves ${rows * cols - fixedCount - holes} open cells, ` +
       `which can't be tiled by whole tiles of ${tile}`);
   }
   const start = Date.now();
@@ -249,7 +253,7 @@ export function generatePuzzle({
 
   while (timeLeft()) {
     stats.restarts++;
-    let state = randomInitial(rows, cols, tile, holes, rng);
+    let state = randomInitial(rows, cols, tile, holes, rng, 300, fixed);
     if (!state) continue;
     let cost = count(state.mask);
 
@@ -266,7 +270,7 @@ export function generatePuzzle({
           return { puzzle, stats };
         }
       }
-      const next = proposeMove(state, rows, cols, tile, rng);
+      const next = proposeMove(state, rows, cols, tile, rng, 0, fixed);
       if (!next) continue;
       stats.moves++;
       const c2 = count(next.mask);
