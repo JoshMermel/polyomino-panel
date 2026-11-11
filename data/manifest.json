@@ -178,9 +178,9 @@
       "title": "Triangles · Small",
       "label": "Small",
       "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
-      "dims": "50 to 64 triangles",
+      "dims": "24 to 40 triangles",
       "file": "triangles-s.csv",
-      "count": 250
+      "count": 150
     },
     {
       "id": "triangles-m",
@@ -188,9 +188,9 @@
       "title": "Triangles · Medium",
       "label": "Medium",
       "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
-      "dims": "72 to 100 triangles",
+      "dims": "50 to 64 triangles",
       "file": "triangles-m.csv",
-      "count": 500
+      "count": 250
     },
     {
       "id": "triangles-l",
@@ -198,7 +198,7 @@
       "title": "Triangles · Large",
       "label": "Large",
       "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards.",
-      "dims": "144 to 216 triangles",
+      "dims": "72 to 100 triangles",
       "file": "triangles-l.csv",
       "count": 500
     },

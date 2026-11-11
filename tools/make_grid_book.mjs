@@ -39,8 +39,13 @@ const CONFIG = {
     weights: { 'tri:i6f': 0.5, 'tri:i6k': 0.5, 'tri:i6g': 0.5, 'tri:i6d': 0.5, 'tri:i6e': 1.5,
       'tri:i4c': 0, 'tri:i6c': 0, 'tri:i6h': 0, 'tri:i6i': 0, 'tri:i6l': 0 },
     prefix: 'triangles',
-    cells: { s: '50 to 64', m: '72 to 100', l: '144 to 216' },
-    sizes: { s: ['trihexagon3', 'trirhombus5', 'tritriangle8', 'trirect6x11'], m: ['trirhombus6', 'trihexagon4', 'tritriangle10', 'trirect7x13'], l: ['trihexagon5', 'tritriangle12', 'trihexagon6', 'trirect10x17'] },
+    cells: { s: '24 to 40', m: '50 to 64', l: '72 to 100' },
+    // Small is the gentle book: boards of 24 to 40 triangles (the small triangles are small to tap on, and more cells make a harder
+    // puzzle), where there are no Hard or Expert puzzles, so it is Beginner and Medium only. Medium and Large are the boards that
+    // were Small and Medium when the books were first made (the 144 to 216 cell boards are no longer in a book).
+    sizes: { s: ['trihexagon2', 'tritriangle6', 'trirhombus4', 'trirect5x9'], m: ['trihexagon3', 'trirhombus5', 'tritriangle8', 'trirect6x11'], l: ['trirhombus6', 'trihexagon4', 'tritriangle10', 'trirect7x13'] },
+    book: { s: 150, m: 250, l: 500 },
+    shares: { s: { Beginner: 0.4, Medium: 0.6, Hard: 0, Expert: 0 } },
     header: '# Triangles, {size}: triangular cells on hexagon, triangle, rhombus and rectangle boards, cut into polyiamond tiles. Made by tools/make_shaped.mjs; cells outside a board are blocked and not drawn.\n',
   },
 }[grid];
@@ -94,7 +99,7 @@ const pickBalanced = (list, n) => {
   });
   return out;
 };
-const SIZE_BOOK = { s: 250, m: 500, l: 500 };
+const SIZE_BOOK = CONFIG.book ?? { s: 250, m: 500, l: 500 };
 const SIZE_NAME = { s: 'small', m: 'medium', l: 'large' };
 for (const [size, boards] of Object.entries(CONFIG.sizes)) {
   const max = Number(maxArg ?? SIZE_BOOK[size]);
@@ -102,7 +107,8 @@ for (const [size, boards] of Object.entries(CONFIG.sizes)) {
   const inSize = all.filter(p => boards.includes(p.shape));
   for (const tier of TIERS) {
     const cands = inSize.filter(p => p.tier === tier);
-    const n = Math.min(tier === 'Hard' ? Math.floor(max * TIER_SHARE[tier]) : Math.round(max * TIER_SHARE[tier]), cands.length);
+    const share = (CONFIG.shares?.[size] ?? TIER_SHARE)[tier];
+    const n = Math.min(tier === 'Hard' ? Math.floor(max * share) : Math.round(max * share), cands.length);
     picks.push(...pickBalanced(cands, n));
     console.log(`${size} ${tier.padEnd(9)} ${n} of ${cands.length} candidates`);
   }

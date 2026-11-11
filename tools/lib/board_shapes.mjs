@@ -63,7 +63,7 @@ for (const n of [3, 4, 5, 6]) {
   SHAPES[`trirhombus${n}`] = triRegion(n, (u, j) => j >= 0 && j <= n && u - j >= 1 && u - j <= 1 + 2 * n);
 }
 // trirectRxW: a rectangle R rows of triangles high and W half sides wide, with zigzag left and right sides (and flat top and bottom)
-for (const [r, w] of [[6, 11], [7, 13], [8, 15], [10, 17]]) SHAPES[`trirect${r}x${w}`] = triRegion(r, (u, j) => j >= 0 && j <= r && u >= 0 && u <= w);
+for (const [r, w] of [[4, 7], [5, 9], [6, 11], [7, 13], [8, 15], [10, 17]]) SHAPES[`trirect${r}x${w}`] = triRegion(r, (u, j) => j >= 0 && j <= r && u >= 0 && u <= w);
 // -> { rows, cols, fixed: [bool per cell], outside: string ('x' = outside, '.' = in the shape) or '' for a rectangle }
 export function boardShape(name) {
   const m = /^rect(\d+)x(\d+)$/.exec(name);

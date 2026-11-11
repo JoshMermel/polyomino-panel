@@ -1197,8 +1197,8 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         else if (gridKind === 'triangles') {
           assert.ok(p.tile.startsWith('tri:') && tileSpecs(p.tile).length === 1, `${p.name}: one triangle tile`);
           assert.ok(p.outside, `${p.name}: a board with an outline`);
-          const cells = [...p.outside].filter(ch => ch !== 'x').length;      // Small 50 to 64 cells, Medium 72 to 100, Large 144 to 216
-          const [lo, hi] = { s: [50, 64], m: [72, 100], l: [144, 216] }[sizeKey];
+          const cells = [...p.outside].filter(ch => ch !== 'x').length;      // Small 24 to 40 cells, Medium 50 to 64, Large 72 to 100
+          const [lo, hi] = { s: [24, 40], m: [50, 64], l: [72, 100] }[sizeKey];
           assert.ok(cells >= lo && cells <= hi, `${p.name}: ${cells} cells is not a ${sizeKey} triangle board`);
         }
         else if (book.id === 'bonus-giants') {
@@ -1219,15 +1219,16 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         assert.ok(ps.every(p => !hasSwastika(p, p.solution)), 'no swastika filter on hexes: it just returns false');
       }
       if (gridKind === 'triangles') {
-        assert.equal(ps.length, sizeKey === 's' ? 250 : 500, `${book.id}: as big as the polyomino books`);
+        assert.equal(ps.length, { s: 150, m: 250, l: 500 }[sizeKey], `${book.id}: its size`);
         for (const p of ps) {         // the same blocked-cell caps as the shapes book, as a share of the cells on the board
           const real = [...p.grid].filter((c, i) => p.outside[i] !== 'x').length;
           const share = [...p.grid].filter((c, i) => c === '#' && p.outside[i] !== 'x').length / real;
           assert.ok(share <= (p.tier === 'Beginner' || p.tier === 'Expert' ? 0.25 : 0.17) + 1e-9, `${p.name}: ${p.tier} puzzle with ${Math.round(share * 100)}% blocked`);
           assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
         }
-        assert.ok(new Set(ps.map(p => p.tile)).size >= 12, `${book.id}: mixes many tiles`);
-        assert.ok(['Beginner', 'Medium', 'Hard'].every(t => ps.some(p => p.tier === t)), `${book.id}: runs up to Hard`);
+        assert.ok(new Set(ps.map(p => p.tile)).size >= 10, `${book.id}: mixes many tiles`);
+        // (the Small triangle book, boards of 24 to 40 cells, is Beginner and Medium only: there are no Hard puzzles that small)
+        assert.ok((sizeKey === 's' ? ['Beginner', 'Medium'] : ['Beginner', 'Medium', 'Hard']).every(t => ps.some(p => p.tier === t)), `${book.id}: runs up to ${sizeKey === 's' ? 'Medium' : 'Hard'}`);
       }
       if (book.id === 'bonus-shapes') {
         assert.ok(ps.length >= 300, 'the shapes book is a good size');

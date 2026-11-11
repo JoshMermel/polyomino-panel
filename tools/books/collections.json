@@ -143,9 +143,9 @@
       "name": "Triangles",
       "idPrefix": "triangles",
       "sources": [
-        { "id": "s", "label": "Small", "source": "triangles-s.csv", "dims": "50 to 64 triangles" },
-        { "id": "m", "label": "Medium", "source": "triangles-m.csv", "dims": "72 to 100 triangles" },
-        { "id": "l", "label": "Large", "source": "triangles-l.csv", "dims": "144 to 216 triangles" }
+        { "id": "s", "label": "Small", "source": "triangles-s.csv", "dims": "24 to 40 triangles" },
+        { "id": "m", "label": "Medium", "source": "triangles-m.csv", "dims": "50 to 64 triangles" },
+        { "id": "l", "label": "Large", "source": "triangles-l.csv", "dims": "72 to 100 triangles" }
       ],
       "blurb": "Triangular cells, on hexagon, triangle, rhombus and rectangle boards."
     },
