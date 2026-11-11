@@ -149,7 +149,7 @@ for (const g of config.groups) {
 }
 
 // Siblings: two puzzles with the same tile spec whose blocked cells differ in at most `minBoardDistance` (a share of
-// the board's cells, 0.08 = 5 cells on 8x8) after any rotation or reflection. The generator and the hunter make families
+// the board's cells, 0.08 = 5 cells on 8x8) after any rotation or reflection, or that share many tiles (below). The generator and the hunter make families
 // of these, and a book that holds several looks repetitive, so a book keeps only one of a family.
 const SYM = [(r, c, n) => [r, c], (r, c, n) => [c, n - 1 - r], (r, c, n) => [n - 1 - r, n - 1 - c], (r, c, n) => [n - 1 - c, r]];
 const blockedSyms = p => p._syms ??= SYM.flatMap(t => [false, true].map(flip => {
@@ -158,10 +158,34 @@ const blockedSyms = p => p._syms ??= SYM.flatMap(t => [false, true].map(flip => 
   return out;
 }));
 const blockedBase = p => p._blockedBase ??= Uint8Array.from(p.grid, c => (c === '#' ? 1 : 0));
+// The other measure: how many of one solution's tiles sit exactly where a tile of the other solution does (after any
+// rotation or reflection of the board). Two puzzles sharing more than `sharedTileShare[size]` of their tiles are siblings.
+const tileSyms = p => p._tileSyms ??= SYM.flatMap(t => [false, true].map(flip => {
+  const n = p.rows, groups = new Map();
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    const ch = p.solution[r * n + c];
+    if (ch === '#') continue;
+    const [rr, cc] = t(r, flip ? n - 1 - c : c, n);
+    if (!groups.has(ch)) groups.set(ch, []);
+    groups.get(ch).push(rr * n + cc);
+  }
+  return new Set([...groups.values()].map(cells => cells.sort((x, y) => x - y).join(',')));
+}));
+const sharedTiles = (a, b) => {
+  const x = tileSyms(a)[0];
+  let best = 0;
+  for (const y of tileSyms(b)) { let k = 0; for (const key of x) if (y.has(key)) k++; best = Math.max(best, k); }
+  return best / Math.min(x.size, tileSyms(b)[0].size);
+};
 const isSibling = (a, b) => {
-  if (config.minBoardDistance == null || a.tile !== b.tile || a.rows !== b.rows || a.cols !== b.cols || a.givens?.length || b.givens?.length) return false;
-  const max = Math.floor(config.minBoardDistance * a.rows * a.cols), x = blockedBase(a);
-  return blockedSyms(b).some(y => { let d = 0; for (let i = 0; i < x.length && d <= max; i++) d += x[i] !== y[i]; return d <= max; });
+  if (a.tile !== b.tile || a.rows !== b.rows || a.cols !== b.cols || a.givens?.length || b.givens?.length) return false;
+  if (config.minBoardDistance != null) {
+    const max = Math.floor(config.minBoardDistance * a.rows * a.cols), x = blockedBase(a);
+    if (blockedSyms(b).some(y => { let d = 0; for (let i = 0; i < x.length && d <= max; i++) d += x[i] !== y[i]; return d <= max; })) return true;
+  }
+  const share = config.sharedTileShare?.[a.rows];
+  if (a.tier === 'Beginner' && b.tier === 'Beginner') return false;       // forced-move puzzles repeat their tiles by nature
+  return share != null && sharedTiles(a, b) >= share;
 };
 // `list` without the puzzles that are siblings of an earlier one, or of any in `against`
 const dropSiblings = (list, against = []) => {

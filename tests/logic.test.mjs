@@ -1210,6 +1210,33 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
           assert.ok(dist > max, `${book.id}: ${group[i].name} and ${group[j].name} are siblings (${dist} cells apart)`);
         }
       }
+      // ... nor do they share too many tiles in exactly the same cells (the limit grows on small boards; two Beginner puzzles are exempt)
+      const limit = { 6: 0.85, 8: 0.6, 10: 0.5, 12: 0.5 }[n];
+      const tileForms = p => {
+        const out = [];
+        for (const t of [(r, c) => [r, c], (r, c) => [c, n - 1 - r], (r, c) => [n - 1 - r, n - 1 - c], (r, c) => [n - 1 - c, r]]) {
+          for (const flip of [false, true]) {
+            const groups = new Map();
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+              const ch = p.solution[r * n + c];
+              if (ch === '#') continue;
+              const [rr, cc] = t(r, flip ? n - 1 - c : c);
+              if (!groups.has(ch)) groups.set(ch, []);
+              groups.get(ch).push(rr * n + cc);
+            }
+            out.push(new Set([...groups.values()].map(cells => cells.sort((x, y) => x - y).join(','))));
+          }
+        }
+        return out;
+      };
+      for (const group of byTile.values()) {
+        const forms = group.map(tileForms);
+        for (let i = 0; i < group.length; i++) for (let j = i + 1; j < group.length; j++) {
+          if (group[i].tier === 'Beginner' && group[j].tier === 'Beginner') continue;
+          const best = Math.max(...forms[j].map(y => [...forms[i][0]].filter(k => y.has(k)).length)) / Math.min(forms[i][0].size, forms[j][0].size);
+          assert.ok(best < limit, `${book.id}: ${group[i].name} and ${group[j].name} share ${Math.round(best * 100)}% of their tiles`);
+        }
+      }
     }
     // Expert is the same share (50) in every book; the one-shape 6x6 book has almost no puzzles the hint rules can't finish
     if (book.id !== 'one-6') assert.equal(ps.filter(p => p.tier === 'Expert').length, 50, `${book.id}: 50 Expert puzzles`);
