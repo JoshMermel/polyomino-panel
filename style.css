@@ -35,13 +35,11 @@
   /* Colors for the allowed shapes (puzzles with several shapes), from the Okabe-Ito colour-blind-safe set. Each has
      --shape-N     the header picture's outline,
      --shape-N-bg  the fill of a finished tile,
-     --shape-N-ink the pattern drawn over that fill (shape 0 plain, 1 horizontal stripes, 2 dots, 3 vertical stripes;
-                   #shape-patterns in index.html), so shapes differ by pattern and not only by colour,
      --shape-N-drag the drag preview once the cells form that shape. */
   --shape-0: #0072b2; --shape-0-bg: #bdd8ea;
-  --shape-1: #e69f00; --shape-1-bg: #f2e0b6; --shape-1-ink: #cba248;
-  --shape-2: #cc79a7; --shape-2-bg: #ebcfdf; --shape-2-ink: #bc85a5;
-  --shape-3: #009e73; --shape-3-bg: #b9e0d2; --shape-3-ink: #5aa890;
+  --shape-1: #e69f00; --shape-1-bg: #f2e0b6;
+  --shape-2: #cc79a7; --shape-2-bg: #ebcfdf;
+  --shape-3: #009e73; --shape-3-bg: #b9e0d2;
   --shape-0-drag: rgba(0, 114, 178, 0.38);
   --shape-1-drag: rgba(230, 159, 0, 0.42);
   --shape-2-drag: rgba(204, 121, 167, 0.45);
@@ -81,9 +79,9 @@
   --hint-line: #ddd;
   --frame: #bbb;
   --shape-0: #56b4e9; --shape-0-bg: rgba(86, 180, 233, 0.26);
-  --shape-1: #e69f00; --shape-1-bg: rgba(230, 159, 0, 0.26); --shape-1-ink: #d9a94a;
-  --shape-2: #cc79a7; --shape-2-bg: rgba(204, 121, 167, 0.32); --shape-2-ink: #d893b8;
-  --shape-3: #2fc79a; --shape-3-bg: rgba(0, 158, 115, 0.34); --shape-3-ink: #6fcfb0;
+  --shape-1: #e69f00; --shape-1-bg: rgba(230, 159, 0, 0.26);
+  --shape-2: #cc79a7; --shape-2-bg: rgba(204, 121, 167, 0.32);
+  --shape-3: #2fc79a; --shape-3-bg: rgba(0, 158, 115, 0.34);
   --shape-0-drag: rgba(86, 180, 233, 0.45);
   --shape-1-drag: rgba(230, 159, 0, 0.45);
   --shape-2-drag: rgba(204, 121, 167, 0.5);
@@ -209,9 +207,9 @@ select, input[type="number"] {
 .cell { fill: var(--cell-bg); }
 .cell.blocked { fill: var(--blocked-bg); }
 .cell.tile-ok { fill: var(--shape-fill, var(--shape-0-bg)); }   /* finished tile: its shape's color (--shape-fill, set below) */
-.cell.shape-1 { --shape-fill: url(#pat-shape-1); }   /* patterns: #shape-patterns in index.html */
-.cell.shape-2 { --shape-fill: url(#pat-shape-2); }
-.cell.shape-3 { --shape-fill: url(#pat-shape-3); }
+.cell.shape-1 { --shape-fill: var(--shape-1-bg); }
+.cell.shape-2 { --shape-fill: var(--shape-2-bg); }
+.cell.shape-3 { --shape-fill: var(--shape-3-bg); }
 .cell.tile-bad { fill: var(--tile-bad-bg); fill: url(#bad-hatch) var(--tile-bad-bg); }   /* hatched: not confusable with the shape tints */
 .hatch-bg { fill: var(--tile-bad-bg); }
 .hatch-line { stroke: var(--bad-hatch); stroke-width: 0.05; opacity: 0.8; }
@@ -438,21 +436,16 @@ select, input[type="number"] {
   flex-shrink: 0;
 }
 /* cells are separated by a thin gap in the page background */
-/* the picture matches a finished tile (same fill and pattern), outlined in the shape's colour */
-.tile-shape-svg.shape-1 rect { fill: url(#pat-shape-1); stroke: var(--shape-1); }
-.tile-shape-svg.shape-2 rect { fill: url(#pat-shape-2); stroke: var(--shape-2); }
-.tile-shape-svg.shape-3 rect { fill: url(#pat-shape-3); stroke: var(--shape-3); }
+/* the picture matches a finished tile (same fill), outlined in the shape's colour */
+.tile-shape-svg.shape-1 rect { fill: var(--shape-1-bg); stroke: var(--shape-1); }
+.tile-shape-svg.shape-2 rect { fill: var(--shape-2-bg); stroke: var(--shape-2); }
+.tile-shape-svg.shape-3 rect { fill: var(--shape-3-bg); stroke: var(--shape-3); }
 .tile-shape-svg rect {
   fill: var(--shape-0-bg);
   stroke: var(--shape-0);
   stroke-width: 0.08;
 }
-/* the patterns' parts (the patterns live in a hidden svg in index.html; they inherit these from the page) */
-.pat-cell { fill: var(--cell-bg); }
-.pat-bg-1 { fill: var(--shape-1-bg); } .pat-bg-2 { fill: var(--shape-2-bg); } .pat-bg-3 { fill: var(--shape-3-bg); }
-.pat-ink-1 { stroke: var(--shape-1-ink); stroke-width: 0.04; }
-.pat-ink-2 { fill: var(--shape-2-ink); }
-.pat-ink-3 { stroke: var(--shape-3-ink); stroke-width: 0.04; }
+.pat-cell { fill: var(--cell-bg); }   /* the cell's own color under the (translucent) hatching of a wrong region */
 
 
 
