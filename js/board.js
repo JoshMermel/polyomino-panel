@@ -74,6 +74,12 @@ export class Board {
     el('rect', { class: 'pat-cell', width: 0.2, height: 0.2 }, hatch);
     el('rect', { class: 'hatch-bg', width: 0.2, height: 0.2 }, hatch);
     el('line', { class: 'hatch-line', x1: 0.1, y1: 0, x2: 0.1, y2: 0.2 }, hatch);
+    // The green glow of a solved board is clipped to the OUTSIDE of the board's shape (the whole plane minus its cells), so it
+    // only glows outward and never over the blocked cells inside.
+    const outsideClip = el('clipPath', { id: 'board-outside' }, defs);
+    let outsideD = `M-3 -3H${cols + 3}V${rows + 3}H-3Z`;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (puzzle.outside?.[r * cols + c] !== 'x') outsideD += `M${c} ${r}h1v1h-1Z`;
+    el('path', { d: outsideD, 'clip-rule': 'evenodd' }, outsideClip);
     const inside = { 'clip-path': 'url(#board-clip)' };
 
     // Layers, bottom to top.
@@ -98,10 +104,10 @@ export class Board {
           if (!inShape(r, c + 1)) d += `M${c + 1} ${r}L${c + 1} ${r + 1}`;
         }
       }
-      el('path', { class: 'frame-glow', d, 'stroke-linecap': 'square' }, svg);          // shown only on a solved board (style.css)
+      el('path', { class: 'frame-glow', d, 'stroke-linecap': 'square', 'clip-path': 'url(#board-outside)' }, svg);          // shown only on a solved board (style.css)
       el('path', { class: 'frame', d, 'stroke-linecap': 'square' }, svg);
     } else {
-      el('rect', { class: 'frame-glow', x: 0, y: 0, width: cols, height: rows }, svg);
+      el('rect', { class: 'frame-glow', x: 0, y: 0, width: cols, height: rows, 'clip-path': 'url(#board-outside)' }, svg);
       el('rect', { class: 'frame', x: 0, y: 0, width: cols, height: rows }, svg);
     }
 
