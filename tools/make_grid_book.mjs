@@ -21,10 +21,15 @@ const CONFIG = {
     dull: ['hex:h2', 'hex:h3a', 'hex:h4a', 'hex:h5a'],
     // How often a tile gets a turn, on top of 1 (0.33 for the dull straight pieces above). Measured on the pools: 'rich' tiles
     // (8 or 9 different deduction rules, from Beginner up to Hard and Expert) get 1.5, 'easy' tiles (only Beginner and Medium
-    // puzzles, 1 to 5 rules) 0.5, and tiles that only make Beginner puzzles 0, so they are never picked.
+    // puzzles, 1 to 5 rules) 0.5, and tiles that only make Beginner puzzles 0.5 too (they were 0 while Beginner was 10% of a book;
+    // now that it is 20 to 25% they are a fair share of it).
     weights: { 'hex:h4f': 1.5, 'hex:h5k': 1.5, 'hex:h5l': 1.5, 'hex:h5o': 1.5, 'hex:h5p': 1.5,
       'hex:h4d': 0.5, 'hex:h5s': 0.5, 'hex:h5g': 0.5, 'hex:h5c': 0.5, 'hex:h5r': 0.5, 'hex:h5q': 0.5,
-      'hex:h4g': 0, 'hex:h5u': 0, 'hex:h5t': 0 },
+      'hex:h4g': 0.5, 'hex:h5u': 0.5, 'hex:h5t': 0.5 },
+    // Tier shares per size, gentler than the polyomino books' (10 / 45 / 32 / 12.5): the solver rates hex puzzles no harder than
+    // square ones, but they feel harder (12 orientations, no rows or columns to line up against), and an Expert puzzle (no logical
+    // hints) means trial and error. Small has no Expert at all.
+    shares: { s: { Beginner: 0.25, Medium: 0.6, Hard: 0.15, Expert: 0 }, m: { Beginner: 0.25, Medium: 0.55, Hard: 0.18, Expert: 0.02 }, l: { Beginner: 0.2, Medium: 0.5, Hard: 0.25, Expert: 0.05 } },
     prefix: 'hexes',
     cells: { s: '36', m: '55 to 64', l: '91 to 100' },
     sizes: { s: ['hexagon4', 'hexrhombus6', 'hextriangle8', 'hexrect6x6'], m: ['hexagon5', 'hexrhombus8', 'hextriangle10', 'hexrect8x8'], l: ['hexagon6', 'hexrhombus10', 'hextriangle13', 'hexrect10x10'] },
@@ -37,7 +42,7 @@ const CONFIG = {
     // easy tiles are turned down: i6f, i6k, i6g and i6d (almost no Hard puzzles; 3 or 4 rules); i3 (a strip of three, 8 rules, Hard puzzles on the
     // Small boards) is left at 1, and the tiles that only make Beginner puzzles (i4c, i6c, i6h, i6i, i6l) are left out.
     weights: { 'tri:i6f': 0.5, 'tri:i6k': 0.5, 'tri:i6g': 0.5, 'tri:i6d': 0.5, 'tri:i6e': 1.5,
-      'tri:i4c': 0, 'tri:i6c': 0, 'tri:i6h': 0, 'tri:i6i': 0, 'tri:i6l': 0 },
+      'tri:i4c': 0.5, 'tri:i6c': 0.5, 'tri:i6h': 0.5, 'tri:i6i': 0.5, 'tri:i6l': 0.5 },
     prefix: 'triangles',
     cells: { s: '24 to 40', m: '50 to 64', l: '72 to 100' },
     // Small is the gentle book: boards of 24 to 40 triangles (the small triangles are small to tap on, and more cells make a harder
@@ -45,7 +50,9 @@ const CONFIG = {
     // were Small and Medium when the books were first made (the 144 to 216 cell boards are no longer in a book).
     sizes: { s: ['trihexagon2', 'tritriangle6', 'trirhombus4', 'trirect5x9'], m: ['trihexagon3', 'trirhombus5', 'tritriangle8', 'trirect6x11'], l: ['trirhombus6', 'trihexagon4', 'tritriangle10', 'trirect7x13'] },
     book: { s: 150, m: 250, l: 500 },
-    shares: { s: { Beginner: 0.4, Medium: 0.6, Hard: 0, Expert: 0 } },
+    // Small has no Hard or Expert puzzles at all; Medium and Large have the same gentle shares as the hex books (Medium has only 5
+    // Expert puzzles to give, so 2% of 250)
+    shares: { s: { Beginner: 0.4, Medium: 0.6, Hard: 0, Expert: 0 }, m: { Beginner: 0.24, Medium: 0.56, Hard: 0.18, Expert: 0.02 }, l: { Beginner: 0.2, Medium: 0.5, Hard: 0.25, Expert: 0.05 } },
     header: '# Triangles, {size}: triangular cells on hexagon, triangle, rhombus and rectangle boards, cut into polyiamond tiles. Made by tools/make_shaped.mjs; cells outside a board are blocked and not drawn.\n',
   },
 }[grid];

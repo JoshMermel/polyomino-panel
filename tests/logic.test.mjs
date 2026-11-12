@@ -1215,7 +1215,10 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
           assert.ok([...p.outside].every((ch, i) => ch !== 'x' || p.grid[i] === '#'), `${p.name}: outside cells are blocked`);
         }
         assert.ok(new Set(ps.map(p => p.tile)).size >= 8, `${book.id}: mixes many tiles`);
-        assert.ok(['Beginner', 'Medium', 'Hard', 'Expert'].every(t => ps.some(p => p.tier === t)), `${book.id}: runs through every tier`);
+        // gentler than the polyomino books: at least 20% Beginner and 50% Medium, at most 25% Hard and 5% Expert (Small has no Expert)
+        const share = t => ps.filter(p => p.tier === t).length / ps.length;
+        assert.ok(share('Beginner') >= 0.2 && share('Medium') >= 0.5 && share('Hard') <= 0.25 + 1e-9 && share('Expert') <= 0.05 + 1e-9, `${book.id}: a gentle tier mix`);
+        assert.ok((sizeKey === 's' ? ['Beginner', 'Medium', 'Hard'] : ['Beginner', 'Medium', 'Hard', 'Expert']).every(t => ps.some(p => p.tier === t)), `${book.id}: runs through its tiers`);
         assert.ok(ps.every(p => !hasSwastika(p, p.solution)), 'no swastika filter on hexes: it just returns false');
       }
       if (gridKind === 'triangles') {
@@ -1229,6 +1232,8 @@ test('books: no puzzle is in two books; each book is one size and shape count, r
         assert.ok(new Set(ps.map(p => p.tile)).size >= 10, `${book.id}: mixes many tiles`);
         // (the Small triangle book, boards of 24 to 40 cells, is Beginner and Medium only: there are no Hard puzzles that small)
         assert.ok((sizeKey === 's' ? ['Beginner', 'Medium'] : ['Beginner', 'Medium', 'Hard']).every(t => ps.some(p => p.tier === t)), `${book.id}: runs up to ${sizeKey === 's' ? 'Medium' : 'Hard'}`);
+        const share = t => ps.filter(p => p.tier === t).length / ps.length;
+        assert.ok(share('Beginner') >= (sizeKey === 's' ? 0.4 : 0.2) && share('Medium') >= 0.5 && share('Hard') <= 0.25 + 1e-9 && share('Expert') <= 0.05 + 1e-9, `${book.id}: a gentle tier mix`);
       }
       if (book.id === 'bonus-shapes') {
         assert.ok(ps.length >= 300, 'the shapes book is a good size');
