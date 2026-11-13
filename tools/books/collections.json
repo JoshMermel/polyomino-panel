@@ -66,6 +66,7 @@
         "Beginner"
       ],
       "maxScore": 7,
+      "extra": [{ "source": "intro_hex.csv" }],
       "perBook": 100,
       "title": "Intro",
       "label": "Intro: small and easy",

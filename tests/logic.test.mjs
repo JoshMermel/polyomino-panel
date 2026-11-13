@@ -1155,6 +1155,21 @@ test('multi-shape tiles: the hint rules stay sound, and pocket/parity checks nev
   }
 });
 
+test('Intro: the extra-small hex puzzles sit among the 5x5 ones, after the 4x4 boards', () => {
+  const ps = data('intro.csv');
+  const hexes = ps.map((p, i) => [p, i]).filter(([p]) => p.tile.startsWith('hex:'));
+  assert.equal(ps.length, 100);
+  assert.equal(hexes.length, 20, 'twenty hex puzzles');
+  assert.ok(ps.slice(0, 16).every(p => p.rows === 4 && !p.tile.startsWith('hex:')), 'the book opens on the 4x4 boards');
+  for (const [p] of hexes) {
+    const cells = [...p.outside].filter(ch => ch !== 'x').length;
+    assert.ok(cells >= 16 && cells <= 25, `${p.name}: ${cells} cells`);
+    assert.equal(p.tier, 'Beginner');
+    assert.ok(Number(p.score) <= 7, `${p.name}: score ${p.score}`);
+  }
+  assert.ok(new Set(hexes.map(([p]) => p.tile)).size >= 6, 'a mix of hex tiles');
+});
+
 test('book picker: Polyomino, Polyomino pair, Polyomino triple, Hexes and Triangles each have Small, Medium and Large (with their real size as dims); no 12x12 books', () => {
   const { books } = manifestOf();
   for (const g of ['Polyomino', 'Polyomino pair', 'Polyomino triple', 'Hexes', 'Triangles']) {

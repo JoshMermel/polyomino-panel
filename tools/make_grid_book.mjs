@@ -15,7 +15,7 @@ import { spreadByTier, weightedAllocation } from './lib/pick.mjs';
 import { boardShape } from './lib/board_shapes.mjs';
 const grid = process.argv[2], dir = process.argv[3], maxArg = process.argv[4];
 // per grid: how much each board shape counts, which tiles are dull (straight strips: one technique over and over), and the book's file and blurb
-const CONFIG = {
+const ALL = {
   hex: {
     boardWeight: { hexagon4: 1.5, hexagon5: 1.5, hexagon6: 1.5 },                // the hexagon is the classic board, the others add variety
     dull: ['hex:h2', 'hex:h3a', 'hex:h4a', 'hex:h5a'],
@@ -55,8 +55,21 @@ const CONFIG = {
     shares: { s: { Beginner: 0.4, Medium: 0.6, Hard: 0, Expert: 0 }, m: { Beginner: 0.24, Medium: 0.56, Hard: 0.18, Expert: 0.02 }, l: { Beginner: 0.2, Medium: 0.5, Hard: 0.25, Expert: 0.05 } },
     header: '# Triangles, {size}: triangular cells on hexagon, triangle, rhombus and rectangle boards, cut into polyiamond tiles. Made by tools/make_shaped.mjs; cells outside a board are blocked and not drawn.\n',
   },
-}[grid];
-if (!CONFIG) throw new Error('usage: make_grid_book.mjs hex|tri <pools directory> [size]');
+};
+// hexintro: the extra-small hex boards (16 to 25 cells) for the Intro book, Beginner puzzles with a score of 7 or less, like the Intro's square ones;
+// build_books.mjs mixes this source book in (collections.json, the Intro group's `extra`)
+ALL.hexintro = {
+  ...ALL.hex,
+  boardWeight: {},
+  prefix: 'intro-hex', file: 'intro_hex.csv', maxScore: 7,
+  cells: { x: '16 to 25' },
+  sizes: { x: ['hexagon3', 'hexrhombus4', 'hexrhombus5', 'hextriangle6', 'hexrect5x5'] },
+  book: { x: 20 },
+  shares: { x: { Beginner: 1, Medium: 0, Hard: 0, Expert: 0 } },
+  header: '# Extra-small hexes for the Intro book ({cells} cells): Beginner puzzles, score 7 or less. Made by tools/make_grid_book.mjs hexintro from pools of tools/make_shaped.mjs (hexagon3, hexrhombus4, hexrhombus5, hextriangle6, hexrect5x5).\n',
+};
+const CONFIG = ALL[grid];
+if (!CONFIG) throw new Error('usage: make_grid_book.mjs hex|tri|hexintro <pools directory> [size]');
 // the same blocked-cell caps as the shapes book: a share of the cells that are part of the board
 const CAP = { Beginner: 0.25, Medium: 0.17, Hard: 0.17, Expert: 0.25 };
 const TIER_SHARE = { Beginner: 0.10, Medium: 0.45, Hard: 0.325, Expert: 0.125 };
@@ -79,7 +92,7 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.csv')).sort()) {
   }
 }
 const before = all.length;
-for (let i = all.length - 1; i >= 0; i--) if (blockedShare(all[i]) > CAP[all[i].tier]) all.splice(i, 1);
+for (let i = all.length - 1; i >= 0; i--) if (blockedShare(all[i]) > CAP[all[i].tier] || (CONFIG.maxScore != null && all[i].score > CONFIG.maxScore)) all.splice(i, 1);
 console.log('candidates', before, '->', all.length, 'within the blocked-cell caps');
 const bad = all.filter(p => solveWithGivens(p, 2).length !== 1 || !openCellsConnected(p));
 if (bad.length) throw new Error('bad puzzles: ' + bad.map(p => p.name));
@@ -107,7 +120,7 @@ const pickBalanced = (list, n) => {
   return out;
 };
 const SIZE_BOOK = CONFIG.book ?? { s: 250, m: 500, l: 500 };
-const SIZE_NAME = { s: 'small', m: 'medium', l: 'large' };
+const SIZE_NAME = { s: 'small', m: 'medium', l: 'large', x: 'extra small' };
 for (const [size, boards] of Object.entries(CONFIG.sizes)) {
   const max = Number(maxArg ?? SIZE_BOOK[size]);
   let picks = [];
@@ -132,7 +145,7 @@ for (const [size, boards] of Object.entries(CONFIG.sizes)) {
   const spread = spreadByTier(picks, { key: p => p.tile });
   const book = spread.map((p, i) => { const { shape, ...rest } = p; return { ...rest, name: `${CONFIG.prefix}-${size}_${String(i + 1).padStart(3, '0')}` }; });
   const header = CONFIG.header.replace('{size}', SIZE_NAME[size]).replace('{cells}', CONFIG.cells[size]);
-  writeFileSync(new URL(`./books/${CONFIG.prefix}-${size}.csv`, import.meta.url), header + toCsv(book));
+  writeFileSync(new URL(`./books/${CONFIG.file ?? `${CONFIG.prefix}-${size}.csv`}`, import.meta.url), header + toCsv(book));
   const count = f => book.filter(f).length;
   console.log(size, book.length, 'puzzles; tiers', TIERS.map(t => `${t} ${count(p => p.tier === t)}`).join(' '), '; boards', [...new Set(spread.map(p => p.shape))].sort().map(sh => `${sh} ${spread.filter(p => p.shape === sh).length}`).join(', '), '; tiles', new Set(book.map(p => p.tile)).size);
 }

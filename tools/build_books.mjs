@@ -139,7 +139,7 @@ for (const g of config.groups) {
   }
   if (g.sizes) {                        // one book mixing several board sizes (the Intro book)
     specs.push({ ...common, id: g.idPrefix, shapes: g.shapes, sizes: g.sizes, tierList: g.tiers ?? config.tiers, maxScore: g.maxScore ?? null,
-      sizeWeights: g.sizeWeights ?? {}, count: g.perBook, maxBlocked: null, sparseShare: 1, first: true });
+      sizeWeights: g.sizeWeights ?? {}, extra: g.extra ?? [], count: g.perBook, maxBlocked: null, sparseShare: 1, first: true });
     continue;
   }
   for (const size of g.boardSizes ?? config.sizes) {          // a group may choose its sizes
@@ -278,13 +278,18 @@ for (const spec of buildOrder) {
   if (spec.sizes) {                       // the Intro book: shares by board size, then shapes within each size
     const cands = eligible(spec, used);
     const bySize = spec.sizes.map(sz => cands.filter(p => p.rows === sz));
-    const alloc = weightedAllocation(spec.count, bySize.map(c => c.length), spec.sizes.map(sz => spec.sizeWeights[sz] ?? 1));
+    // `extra`: source books (tools/books/, from make_grid_book.mjs hexintro) whose puzzles are all taken, as part of the book's size;
+    // they sit with the 5x5 puzzles, after the 4x4 ones, so the book opens on plain square boards
+    const extras = spec.extra.flatMap(e => parseCsv(readFileSync(new URL(e.source, new URL('tools/books/', root)), 'utf8')));
+    const alloc = weightedAllocation(spec.count - extras.length, bySize.map(c => c.length), spec.sizes.map(sz => spec.sizeWeights[sz] ?? 1));
     const before = published.get(spec.id);
     const isKept = before ? (p => before.has(hashOf(p))) : (() => false);
     const picks = bySize.flatMap((c, i) => (alloc[i] ? pickAcross(byTile(c), alloc[i], isKept, 1) : []));
     picks.forEach(p => used.add(p.name));
-    picks.sort((a, b) => a.rows - b.rows || byScore(a, b));      // smallest boards first
-    const spread = spreadByTier(picks, { tierOf: p => p.rows, key: spreadKey });                  // shapes mixed within a size
+    picks.push(...extras);
+    const sizeOf = p => (extras.includes(p) ? spec.sizes[1] : p.rows);
+    picks.sort((a, b) => sizeOf(a) - sizeOf(b) || byScore(a, b));      // smallest boards first
+    const spread = spreadByTier(picks, { tierOf: sizeOf, key: spreadKey });                  // shapes mixed within a size
     books.push({ order: spec.order, meta: { id: spec.id, group: spec.group, title: spec.title, label: spec.label, blurb: spec.blurb }, puzzles: spread, target: spec.count, tourCount: 0, before });
     continue;
   }
