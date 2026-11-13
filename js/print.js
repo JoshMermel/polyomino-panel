@@ -47,7 +47,8 @@ export const SIZES = {
   comfortable: { label: 'Comfortable', puzzle: 6, answer: 3.5 },
   compact: { label: 'Compact', puzzle: 4.5, answer: 3 },
 };
-export const PAGE = { w: 186, h: 255, head: 14, caption: 8.5, colGap: 8, rowGap: 6 };       // mm
+export const PAGE = { w: 186, h: 255, head: 14, caption: 8.5, colGap: 5, rowGap: 6 };       // mm
+const CAPTION = { charMm: 2.0, gapMm: 2, swatchCellMm: 1.7 };       // a caption's text is about 2 mm a character at 3.6 mm type; a swatch is 1.7 mm a cell
 const BOARD_PAD = 0.12;       // a board's svg is this many cell units wider and taller than its cells (see boardSvg)
 
 // A puzzle's board size in cell units (a hex or triangle board is not cols x rows cells).
@@ -60,14 +61,25 @@ export function boardUnits(puzzle) {
 // biggest board would not fit on a page at that size, and (`taper`, for puzzles) a little smaller on boards wider than 8
 // cells, down to three quarters at 16: a big board is drawn on with a finer pen, and fewer fit otherwise. All boards share the
 // cell size and the grid (the biggest board sets it).
-export function layoutFor(puzzles, cellMm, taper = false) {
+// An item is as wide as its board or its caption (the number, the tier and a picture of each shape), whichever is wider: a
+// caption is not wrapped, so on a narrow board (a 6x6 at a small cell size, or a hex board) it sets the width of the column.
+export function captionMm(puzzle, answer = false) {
+  const tier = answer ? '' : TIER_INFO[puzzle.tier]?.name;
+  const chars = 1 + 3 + (tier ? 3 + tier.length : 0);                   // '#', up to three digits, ' · ' and the tier
+  const shapes = tileSpecs(puzzle.tile).map(sp => swatchSize(sp)[0]);
+  return chars * CAPTION.charMm + shapes.reduce((a, w) => a + w + CAPTION.gapMm, 0);
+}
+
+export function layoutFor(puzzles, cellMm, taper = false, answer = false) {
   let w = 0, h = 0;
   for (const p of puzzles) { const [pw, ph] = boardUnits(p); w = Math.max(w, pw); h = Math.max(h, ph); }
   if (!w) return { cellMm, cols: 1, rows: 1, perPage: 1 };
   const size = taper ? cellMm * Math.min(1, Math.max(0.75, 1 - (Math.max(w, h) - 8.2) * 0.032)) : cellMm;
   const cell = Math.min(size, PAGE.w / w, (PAGE.h - PAGE.head - PAGE.caption) / h);
-  const boardW = w * cell, boardH = h * cell;
-  const cols = Math.max(1, Math.floor((PAGE.w + PAGE.colGap) / (boardW + PAGE.colGap)));
+  const boardH = h * cell;
+  let itemW = 0;
+  for (const p of puzzles) itemW = Math.max(itemW, boardUnits(p)[0] * cell, captionMm(p, answer));
+  const cols = Math.max(1, Math.floor((PAGE.w + PAGE.colGap) / (itemW + PAGE.colGap)));
   const rows = Math.max(1, Math.floor((PAGE.h - PAGE.head + PAGE.rowGap) / (boardH + PAGE.caption + PAGE.rowGap)));
   return { cellMm: cell, cols, rows, perPage: cols * rows };
 }
@@ -78,7 +90,7 @@ export function planPrint({ puzzles, ids, keyIds = [], size = 'comfortable' }) {
   const { puzzle: puzzleMm, answer: answerMm } = SIZES[size] ?? SIZES.comfortable;
   const mine = ids.map(id => puzzles[id - 1]);
   const puzzleLayout = layoutFor(mine, puzzleMm, true);
-  const keyLayout = keyIds.length ? layoutFor(keyIds.map(id => puzzles[id - 1]), answerMm) : null;
+  const keyLayout = keyIds.length ? layoutFor(keyIds.map(id => puzzles[id - 1]), answerMm, false, true) : null;
   return {
     puzzleLayout, keyLayout,
     perPage: puzzleLayout.perPage, keyPerPage: keyLayout?.perPage ?? 0,
@@ -179,16 +191,20 @@ function shapedBoardSvg(puzzle, solution) {
 }
 
 // A picture of one allowed shape, `cellMm` millimetres per cell.
-function swatchSvg(spec, cellMm = 1.7) {
-  const cells = resolveShape(spec);
-  const topo = topologyOfTile(spec);
-  const polys = cells.map(([r, c]) => topo.polygon(r, c));
+function swatchGeometry(spec) {
+  const polys = resolveShape(spec).map(([r, c]) => topologyOfTile(spec).polygon(r, c));
   const xs = polys.flat().map(p => p[0]), ys = polys.flat().map(p => p[1]);
   const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
-  const cols = Math.max(...xs) - x0, rows = Math.max(...ys) - y0;
+  return { polys, x0, y0, cols: Math.max(...xs) - x0, rows: Math.max(...ys) - y0 };
+}
+function swatchSize(spec, cellMm = CAPTION.swatchCellMm) {
+  const { cols, rows } = swatchGeometry(spec);
+  return [(cols + 0.1) * cellMm, (rows + 0.1) * cellMm];
+}
+function swatchSvg(spec, cellMm = CAPTION.swatchCellMm) {
+  const { polys, x0, y0, cols, rows } = swatchGeometry(spec);
   const svg = svgEl('svg', { viewBox: `${x0 - 0.05} ${y0 - 0.05} ${cols + 0.1} ${rows + 0.1}`, class: 'print-swatch' });
-  svg.style.height = `${(rows + 0.1) * cellMm}mm`;
-  svg.style.width = `${(cols + 0.1) * cellMm}mm`;
+  [svg.style.width, svg.style.height] = swatchSize(spec, cellMm).map(v => `${v}mm`);
   for (const poly of polys) svgEl('polygon', { points: poly.map(([x, y]) => `${x},${y}`).join(' '), fill: SWATCH, stroke: INK, 'stroke-width': 0.06 }, svg);
   return svg;
 }
@@ -235,7 +251,7 @@ export function buildPrintRoot({ book, puzzles, ids, size = 'comfortable', inclu
         const tier = TIER_INFO[p.tier]?.name;
         // books mix shapes, so each puzzle says which tile shapes it uses
         const cap = div('print-caption', fig);
-        cap.append(document.createTextNode(`${withSolution ? 'Answer ' : 'Puzzle '}${id}${!withSolution && tier ? ` · ${tier}` : ''}`));
+        cap.append(document.createTextNode(`#${id}${!withSolution && tier ? ` · ${tier}` : ''}`));
         for (const sp of tileSpecs(p.tile)) cap.append(swatchSvg(sp));
         const board = boardSvg(p, withSolution ? solutionOf(p) : null);
         const [bw] = boardUnits(p);

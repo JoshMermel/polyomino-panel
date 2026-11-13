@@ -1003,15 +1003,24 @@ test('print: selection parsing and page planning', async () => {
     assert.ok(parseSelection(bad, 50).error, `"${bad}" should be rejected`);
   }
   assert.ok(parseSelection(`1-${MAX_PRINT + 1}`, 1000).error);
-  // layout by cell size: a 6x6 board at 6 mm is 36 mm wide, so 4 columns, and 4 rows fit; its answer at 3.5 mm is 21 mm: 6 columns, 6 rows
+  // layout by cell size: a 6x6 board at 6 mm is 36 mm wide, so 4 columns, and 4 rows fit; its answer at 3.5 mm is 21 mm: 7 columns (5 mm gaps), 6 rows
   const six = Array.from({ length: 40 }, (_, i) => ({ name: `p${i}`, rows: 6, cols: 6, tile: 'L', grid: '.'.repeat(36), solution: 'A'.repeat(36) }));
   const ids = six.map((_, i) => i + 1);
   const plan = planPrint({ puzzles: six, ids, keyIds: ids });
   assert.deepEqual([plan.puzzleLayout.cols, plan.puzzleLayout.rows, plan.perPage], [4, 4, 16]);
-  assert.deepEqual([plan.keyLayout.cols, plan.keyLayout.rows, plan.keyPerPage], [6, 6, 36]);
-  assert.deepEqual([plan.puzzlePages, plan.keyPages], [3, 2]);
+  assert.deepEqual([plan.keyLayout.cols, plan.keyLayout.rows, plan.keyPerPage], [7, 6, 42]);
+  assert.deepEqual([plan.puzzlePages, plan.keyPages], [3, 1]);
   assert.equal(planPrint({ puzzles: six, ids: [1], keyIds: [] }).keyPages, 0);
   assert.ok(planPrint({ puzzles: six, ids, keyIds: ids, size: 'compact' }).perPage > plan.perPage, 'compact fits more');
+  // a caption (number, tier, a picture of each shape) is not wrapped, so it can be wider than a small board: the columns must fit it
+  // (hexes and 6x6 books at the compact size used to run into the page margins)
+  const { layoutFor, captionMm, SIZES, PAGE } = await import('../js/print.js');
+  const wide = six.map(p => ({ ...p, tier: 'Beginner', tile: 'L+T+S' }));
+  for (const [size, mm] of Object.entries({ comfortable: SIZES.comfortable.puzzle, compact: SIZES.compact.puzzle })) {
+    const L = layoutFor(wide, mm, true);
+    assert.ok(L.cols * captionMm(wide[0]) + (L.cols - 1) * PAGE.colGap <= PAGE.w + 1e-9, `${size}: ${L.cols} columns of captions fit across the page`);
+  }
+  assert.ok(layoutFor(wide, SIZES.compact.puzzle, true).cols < layoutFor(six, SIZES.compact.puzzle, true).cols, 'wide captions leave fewer columns');
 });
 
 test('openCellsConnected: one region of white cells, islands rejected', () => {

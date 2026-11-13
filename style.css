@@ -550,7 +550,7 @@ select, input[type="number"] {
 #print-root .print-url { font-size: 3.2mm; color: #555; }
 #print-root .print-book { margin-left: auto; font-size: 3.6mm; color: #333; }
 /* the number of columns is --cols (js/print.js: as many boards as fit at the chosen cell size); the gaps match PAGE there */
-#print-root .print-grid { display: grid; grid-template-columns: repeat(var(--cols, 1), max-content); gap: 6mm 8mm; justify-content: center; justify-items: center; align-content: start; }
+#print-root .print-grid { display: grid; grid-template-columns: repeat(var(--cols, 1), max-content); gap: 6mm 5mm; justify-content: center; justify-items: center; align-content: start; }
 #print-root .print-item { margin: 0; text-align: center; }
 #print-root .print-caption { font-weight: 600; font-size: 3.6mm; margin-bottom: 1.5mm; text-align: left; display: flex; align-items: center; gap: 2mm; }
 #print-root .print-board { display: block; height: auto; }        /* (its width is set per board from the cell size) */
