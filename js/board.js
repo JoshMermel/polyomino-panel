@@ -14,7 +14,7 @@
 //                  other open cell dragged across, then onRelease (or onCancel if the
 //                  browser cancels the pointer).
 import {
-  EDGE_LINE, EDGE_CROSS, OPEN, isOpen, getEdge, isGivenEdge, playableEdges, topologyOf,
+  EDGE_LINE, EDGE_CROSS, OPEN, isOpen, getEdge, isGivenEdge, playableEdges, topologyOf, edgeCells, maxTileSize,
 } from './logic.js';
 import { edgeEnds as topoEdgeEnds, shapeBox } from './topology.js';
 
@@ -128,6 +128,8 @@ export class Board {
     // Per-edge elements, keyed "h:r:c" / "v:r:c".
     this.segs = new Map();
     this.xs = new Map();
+    this.crossOn = new Set();       // the edges that hold a cross, and (below) those inside a closed shape, where it is not drawn
+    this.crossHidden = new Set();
     for (const [kind, r, c] of playableEdges(puzzle)) this._buildEdge(kind, r, c, { dashLayer, segLayer, xLayer });
 
     // a single rectangle that follows the pointer over open cells (hover hint: cells can be dragged across)
@@ -323,7 +325,16 @@ export class Board {
     this.xs.get(key).classList.toggle('given', given);
     seg.classList.toggle('on', state === EDGE_LINE);
     seg.classList.toggle('cross', state === EDGE_CROSS); // suppress hover ghost under an X
-    this.xs.get(key).setAttribute('visibility', state === EDGE_CROSS ? 'visible' : 'hidden');
+    if (state === EDGE_CROSS) this.crossOn.add(key); else this.crossOn.delete(key);
+    this.paintCross(key);
+  }
+
+  // A cross is drawn when the edge holds one, unless it sits inside a shape that is already closed (it tells the player nothing
+  // there; the mark stays in the saved state and comes back if the shape is opened again). Pre-drawn clues are always drawn.
+  paintCross(key) {
+    const [kind, r, c] = key.split(':');
+    const hide = this.crossHidden.has(key) && !isGivenEdge(this.puzzle, kind, +r, +c);
+    this.xs.get(key).setAttribute('visibility', this.crossOn.has(key) && !hide ? 'visible' : 'hidden');
   }
 
   // Highlight wrong marks ([{kind, r, c, state}] from logic.checkMarks).
@@ -411,5 +422,16 @@ export class Board {
       this._badTimer = setTimeout(() => newlyBad.forEach(rect => rect.classList.add('tile-bad')), BAD_DELAY_MS);
     }
     this.svg.classList.toggle('solved', analysis.solved);
+    // crosses inside a closed shape (a region walled in, as big as one tile or smaller, as for the cross hints) are hidden
+    const size = maxTileSize(this.puzzle.tile), closed = new Map();
+    analysis.regions.forEach((reg, id) => { if (reg.cells.length <= size) reg.cells.forEach(i => closed.set(i, id)); });
+    for (const key of this.xs.keys()) {
+      const [kind, r, c] = key.split(':');
+      const [a, b] = edgeCells(this.puzzle, kind, +r, +c);
+      const inside = closed.has(a) && closed.get(a) === closed.get(b);
+      if (inside === this.crossHidden.has(key)) continue;
+      if (inside) this.crossHidden.add(key); else this.crossHidden.delete(key);
+      this.paintCross(key);
+    }
   }
 }

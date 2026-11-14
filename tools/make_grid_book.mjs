@@ -142,7 +142,7 @@ for (const [size, boards] of Object.entries(CONFIG.sizes)) {
     if (extra.length) console.log(`${size} ${tier.padEnd(9)} +${extra.length} to make up the size`);
   }
   picks.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.score - b.score);
-  const spread = spreadByTier(picks, { key: p => p.tile });
+  const spread = spreadByTier(picks, { key: p => p.tile, balance: true, window: 80 });
   const book = spread.map((p, i) => { const { shape, ...rest } = p; return { ...rest, name: `${CONFIG.prefix}-${size}_${String(i + 1).padStart(3, '0')}` }; });
   const header = CONFIG.header.replace('{size}', SIZE_NAME[size]).replace('{cells}', CONFIG.cells[size]);
   writeFileSync(new URL(`./books/${CONFIG.file ?? `${CONFIG.prefix}-${size}.csv`}`, import.meta.url), header + toCsv(book));

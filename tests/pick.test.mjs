@@ -145,6 +145,20 @@ test('spreadOut: breaks up runs of one key, moves puzzles only a little, and is 
   assert.deepEqual(spreadOut([], {}), []);
 });
 
+test('spreadOut balance: a shape that is 40% of the list is not left for the end', () => {
+  // by score the big shape is everywhere (two of every five puzzles, often side by side); the others come in blocks of ties
+  const items = [];
+  const others = ['a', 'b', 'c', 'd'];
+  for (let i = 0; i < 120; i++) items.push({ k: i % 5 < 2 ? 'big' : others[Math.floor(i / 10) % 4], score: i });
+  const runs = list => { let run = 1, max = 1; for (let i = 1; i < list.length; i++) { run = list[i].k === list[i - 1].k ? run + 1 : 1; max = Math.max(max, run); } return max; };
+  const plain = spreadOut(items, { key: x => x.k, window: 80 });
+  const out = spreadOut(items, { key: x => x.k, window: 80, balance: true });
+  assert.equal(out.length, items.length);
+  assert.deepEqual(out.map(x => x.score).sort((p, q) => p - q), items.map(x => x.score), 'same puzzles');
+  assert.ok(runs(out) <= 2, `balanced: longest run ${runs(out)} (plain: ${runs(plain)})`);
+  assert.deepEqual(spreadOut(items, { key: x => x.k, window: 80, balance: true }), out, 'deterministic');
+});
+
 test('spreadByTier keeps the tiers in order and continues from the keys before the first tier', () => {
   const mk = (tier, tile, score) => ({ tier, tile, score });
   const sorted = [mk('Beginner', 'a', 1), mk('Beginner', 'a', 2), mk('Beginner', 'b', 3), mk('Medium', 'b', 4), mk('Medium', 'b', 5), mk('Medium', 'c', 6)];

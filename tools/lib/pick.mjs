@@ -81,15 +81,35 @@ export const evenAllocation = (count, caps) => weightedAllocation(count, caps);
 // (For spreadByTier, `recent` is the keys of whatever comes before the book's first tier, e.g. a tour.)
 export const SPREAD_WINDOW = 40;
 export const SPREAD_GAP = 4;
-export function spreadOut(items, { key = x => x, window = SPREAD_WINDOW, gap = SPREAD_GAP, recent = [] } = {}) {
+// `balance` (for lists where one shape is a big share, such as a hex or triangle book, where one tile can be 40% of a tier): among
+// the puzzles in the window whose shape has not just appeared, take the one whose shape has the most puzzles left (the earliest of
+// those), not simply the earliest. The plain rule leaves the shapes with many puzzles for the end of a tier, where nothing else is
+// left to put between them (a run of five of one tile); this uses them up evenly. A shape's gap is about its spacing in the list
+// (the length over its count, less one), at most `gap`, at least 1, since a shape that is 40% of a list cannot keep a gap of 4.
+// A puzzle can then move a long way from its sorted place, so a balanced list is only roughly in order of score.
+export function spreadOut(items, { key = x => x, window = SPREAD_WINDOW, gap = SPREAD_GAP, recent = [], balance = false } = {}) {
   const left = [...items];
   const out = [];
   const hist = [...recent];
+  const remaining = new Map();
+  if (balance) for (const it of left) remaining.set(key(it), (remaining.get(key(it)) ?? 0) + 1);
+  const total = left.length, count0 = new Map(remaining);
+  const gapOf = k => Math.max(1, Math.min(gap, Math.floor(total / count0.get(k)) - 1));
   while (left.length) {
-    const last = new Set(hist.slice(-gap));
     let pick = 0;
-    for (let i = 0; i < Math.min(window, left.length); i++) {
-      if (!last.has(key(left[i]))) { pick = i; break; }
+    if (balance) {
+      let best = -1, found = false;
+      for (let i = 0; i < Math.min(window, left.length); i++) {
+        const k = key(left[i]);
+        if (hist.slice(-gapOf(k)).includes(k)) continue;
+        if (!found || remaining.get(k) > best) { pick = i; best = remaining.get(k); found = true; }
+      }
+      remaining.set(key(left[pick]), remaining.get(key(left[pick])) - 1);
+    } else {
+      const last = new Set(hist.slice(-gap));
+      for (let i = 0; i < Math.min(window, left.length); i++) {
+        if (!last.has(key(left[i]))) { pick = i; break; }
+      }
     }
     const [item] = left.splice(pick, 1);
     out.push(item);
