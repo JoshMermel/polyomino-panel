@@ -1055,6 +1055,7 @@ function bindControls() {
   dark.checked = document.documentElement.getAttribute('data-theme') === 'dark';
   dark.addEventListener('change', () => {
     document.documentElement.setAttribute('data-theme', dark.checked ? 'dark' : 'light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark.checked ? '#1a1a1a' : '#ffffff');
     store.set('pp_dark', dark.checked ? '1' : '0');
     if (state.puzzle) renderTileInfo($('tile-info'), state.puzzle.tile);       // its tooltip names the colour of the cells to tile
   });
