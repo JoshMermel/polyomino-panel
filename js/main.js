@@ -988,12 +988,16 @@ function bindControls() {
 
   // --- Modals (settings, help) ---
   const modals = [];
+  // While a dialog is open the game behind it is inert: Tab cannot reach it, clicks go nowhere, screen readers skip it.
+  // (Done before focus moves, since an inert element cannot take focus.)
+  const syncInert = () => { $('game-container').inert = modals.some(({ modal }) => !modal.classList.contains('modal-hidden')); };
   const setupModal = (modalId, openBtnId, onOpen) => {
     const modal = $(modalId), openBtn = $(openBtnId);
-    const close = () => { modal.classList.add('modal-hidden'); openBtn.focus(); };
+    const close = () => { modal.classList.add('modal-hidden'); syncInert(); openBtn.focus(); };
     const open = () => {
       onOpen?.();
       modal.classList.remove('modal-hidden');
+      syncInert();
       modal.querySelector('[data-close]').focus();
     };
     openBtn.addEventListener('click', open);
@@ -1132,10 +1136,10 @@ function bindControls() {
       const puzzles = parseCsv(await file.text());
       if (!puzzles.length) throw new Error('no puzzles found');
       state.sets.push({ id: `custom:${file.name}`, custom: true, group: 'Loaded from file', title: `📄 ${file.name}`, label: `📄 ${file.name}`, count: puzzles.length, puzzles });
-      $('settings-modal').classList.add('modal-hidden');
+      settings.close();
       await goTo(state.sets.length - 1, 0);
     } catch (err) {
-      $('settings-modal').classList.add('modal-hidden');
+      settings.close();
       showToast(`Couldn't load ${file.name}: ${err.message}`, 'error', 4000);
     }
   });

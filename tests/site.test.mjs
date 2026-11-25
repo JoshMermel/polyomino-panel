@@ -52,3 +52,19 @@ test('site: the theme color is set in the head, and by both scripts that change 
   const light = /--bg-white: (#[0-9a-f]+)/i.exec(css)?.[1];
   assert.ok(html.includes(`'${dark}'`) && html.includes(`'#ffffff'`) && light === '#fff', 'theme-color matches --bg-white in both themes');
 });
+
+test('site: dialogs sit outside #game-container, which main.js makes inert while one is open', () => {
+  // walk the <div> nesting to find where #game-container ends
+  const start = html.indexOf('<div id="game-container"');
+  let depth = 0, end = -1;
+  for (const m of html.matchAll(/<div\b|<\/div>/g)) {
+    if (m.index < start) continue;
+    depth += m[0] === '</div>' ? -1 : 1;
+    if (depth === 0) { end = m.index; break; }
+  }
+  assert.ok(start >= 0 && end > start, 'found #game-container');
+  const modals = [...html.matchAll(/<div id="[^"]+" class="modal-overlay[^"]*"[^>]*role="dialog"/g)];
+  assert.ok(modals.length >= 5, 'the five dialogs are there');
+  for (const m of modals) assert.ok(m.index > end, `${m[0].slice(0, 30)}... is outside #game-container`);
+  assert.match(read('js/main.js'), /\$\('game-container'\)\.inert = /);
+});
