@@ -55,22 +55,17 @@ for (const size of ['s', 'm', 'l']) {
   const tileCount = new Map();
   for (const p of book) tileCount.set(p.tile, (tileCount.get(p.tile) ?? 0) + 1);
   // positions to give up: pentahex puzzles, the over-used tiles first (by count per unit of weight), spread along the book
-  const swapped = new Set();
   const near = (i, f, r = 3) => { for (let j = Math.max(0, i - r); j <= Math.min(book.length - 1, i + r); j++) if (j !== i && f(book[j])) return true; return false; };
   let done = 0;
   for (let round = 0; done < need && round < 4 * need; round++) {
-    // the next position: the middle of the longest stretch with no tetrahex and no swap
-    const marks = [-1, ...book.map((p, i) => (family(p.tile) === 4 || swapped.has(i) ? i : null)).filter(i => i != null), book.length];
-    let best = null;
-    for (let k = 1; k < marks.length; k++) if (!best || marks[k] - marks[k - 1] > best[1] - best[0]) best = [marks[k - 1], marks[k]];
-    const order = [];
-    // candidate positions: pentahex puzzles in the longest gaps, nearest the middle first; the longest gap first, then the others
-    const gaps = [];
+    // candidate positions: pentahex puzzles in the stretches between tetrahex puzzles, the longest stretch first, the middle of each first
+    const marks = [-1, ...book.map((p, i) => (family(p.tile) === 4 ? i : null)).filter(i => i != null), book.length];
+    const order = [], gaps = [];
     for (let k = 1; k < marks.length; k++) gaps.push([marks[k - 1], marks[k]]);
     gaps.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]));
     for (const [lo, hi] of gaps) {
       const mid = (lo + hi) / 2;
-      for (let i = lo + 1; i < hi; i++) if (family(book[i].tile) === 5 && !swapped.has(i)) order.push([Math.abs(i - mid) - (hi - lo) * 0.001, i]);
+      for (let i = lo + 1; i < hi; i++) if (family(book[i].tile) === 5) order.push([Math.abs(i - mid) - (hi - lo) * 0.001, i]);
     }
     order.sort((a, b) => a[0] - b[0]);
     let placed = false;
@@ -86,7 +81,7 @@ for (const size of ['s', 'm', 'l']) {
       used.add(`${c.tile}|${canonicalGrid(c.grid, c.rows, c.cols, c.tile, c.outside)}`);
       const { shape, ...rest } = c;
       book[i] = { ...rest, name: v.name, shape: c.shape };
-      swapped.add(i); done++; placed = true;
+      done++; placed = true;
       break;
     }
     if (!placed) break;

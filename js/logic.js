@@ -18,7 +18,7 @@
 //   Only "interior" edges (between two open cells) are playable; edges next to
 //   a blocked cell or the outer border are implicit walls.
 
-import { SQUARE, HEX, TRI, topologyOfTile, specBody, edgeBetween as topoEdgeBetween, edgeCellsOf } from './topology.js';
+import { SQUARE, HEX, topologyOfTile, specBody, edgeBetween as topoEdgeBetween, edgeCellsOf } from './topology.js';
 import { HEX_PATTERNS, HEX_LABELS, HEX_ORDER } from './hex_shapes.js';
 import { TRI_PATTERNS, TRI_LABELS, TRI_ORDER } from './tri_shapes.js';
 
@@ -725,18 +725,21 @@ export function edgeCells(puzzle, kind, r, c) {
   return edgeCellsOf(topologyOf(puzzle), puzzle.cols, kind, r, c);
 }
 
+// Cell -> id (index in `regions`, from analyze) of the closed region it is in: a region fully walled in by lines and
+// blocked cells that is as big as one tile or smaller. A cross between two cells of one of these tells the player nothing.
+export function closedRegions(puzzle, regions) {
+  const size = maxTileSize(puzzle.tile), closed = new Map();
+  regions.forEach((reg, id) => { if (reg.cells.length <= size) reg.cells.forEach(i => closed.set(i, id)); });
+  return closed;
+}
+
 // Edges where the solution has no line and the player has made no mark:
 // candidates for a "place a cross" hint. Edges inside an already closed shape
 // (a region fully walled in, as big as one tile or smaller) are skipped: a
 // cross there tells the player nothing. Returns [[kind, r, c], ...].
 export function crossHints(puzzle, edges, solution) {
   const expected = edgesFromSolution(puzzle, solution);
-  const size = maxTileSize(puzzle.tile);
-  // region id per cell, for regions that are closed (tile-sized or smaller)
-  const closed = new Map();
-  analyze(puzzle, edges).regions.forEach((reg, id) => {
-    if (reg.cells.length <= size) reg.cells.forEach(i => closed.set(i, id));
-  });
+  const closed = closedRegions(puzzle, analyze(puzzle, edges).regions);
   return playableEdges(puzzle).filter(([kind, r, c]) => {
     if (getEdge(puzzle, expected, kind, r, c) === EDGE_LINE) return false;
     if (getEdge(puzzle, edges, kind, r, c) !== EDGE_EMPTY) return false;

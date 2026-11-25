@@ -8,7 +8,7 @@
 // its usual share, shares each tier out over the board sizes and, inside a board, over the tile shapes in rounds (the sparsest
 // puzzle of a tile first), and sorts by tier then score with the shapes mixed locally.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { parseCsv, toCsv, solveWithGivens, openCellsConnected, tileSizes } from '../js/logic.js';
+import { parseCsv, toCsv, solveWithGivens, openCellsConnected } from '../js/logic.js';
 import { canonicalGrid } from '../js/generator.js';
 import { TIERS } from '../js/rating.js';
 import { spreadByTier, weightedAllocation } from './lib/pick.mjs';

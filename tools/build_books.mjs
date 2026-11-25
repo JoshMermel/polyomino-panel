@@ -376,7 +376,7 @@ for (const b of books) {
 }
 
 if (flags.has('--promote')) {
-  for (const f of readdirSync(dataDir)) if (f.endsWith('.csv')) rmSync(new URL(f, dataDir));    // the previous books
+  for (const f of readdirSync(dataDir)) if (f.endsWith('.csv') && f !== 'tmp.csv') rmSync(new URL(f, dataDir));    // the previous books (not tmp.csv, the git-ignored local scratch book)
   for (const b of books) copyFileSync(new URL(b.meta.file, stageDir), new URL(b.meta.file, dataDir));
   const manifest = {
     default: config.default,

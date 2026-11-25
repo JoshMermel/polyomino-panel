@@ -32,7 +32,7 @@ import './lib/wasm_counter.mjs';        // faster tiling counter, when built (to
 import {
   generatePuzzle, mulberry32, canonicalGrid, stateFromPuzzle, puzzleFromState, neighborState,
 } from '../js/generator.js';
-import { ratePuzzle, TIERS } from '../js/rating.js';
+import { ratePuzzle } from '../js/rating.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => {
   if (a.startsWith('--')) acc.push([a.slice(2), all[i + 1]]);

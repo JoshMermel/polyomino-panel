@@ -14,7 +14,7 @@
 //                  other open cell dragged across, then onRelease (or onCancel if the
 //                  browser cancels the pointer).
 import {
-  EDGE_LINE, EDGE_CROSS, OPEN, isOpen, getEdge, isGivenEdge, playableEdges, topologyOf, edgeCells, maxTileSize,
+  EDGE_LINE, EDGE_CROSS, OPEN, isOpen, getEdge, isGivenEdge, playableEdges, topologyOf, edgeCells, closedRegions,
 } from './logic.js';
 import { edgeEnds as topoEdgeEnds, shapeBox } from './topology.js';
 
@@ -423,8 +423,7 @@ export class Board {
     }
     this.svg.classList.toggle('solved', analysis.solved);
     // crosses inside a closed shape (a region walled in, as big as one tile or smaller, as for the cross hints) are hidden
-    const size = maxTileSize(this.puzzle.tile), closed = new Map();
-    analysis.regions.forEach((reg, id) => { if (reg.cells.length <= size) reg.cells.forEach(i => closed.set(i, id)); });
+    const closed = closedRegions(this.puzzle, analysis.regions);
     for (const key of this.xs.keys()) {
       const [kind, r, c] = key.split(':');
       const [a, b] = edgeCells(this.puzzle, kind, +r, +c);
